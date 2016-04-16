@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+
+    <dimen name="thread_header_image_height">200dp</dimen>
+    <bool name="two_pane">false</bool>
+
+    <dimen name="thumbnail_image_small">50dp</dimen>
+    <dimen name="thumbnail_image_medium">90dp</dimen>
+    <dimen name="thumbnail_image_large">100dp</dimen>
+
+    <integer name="bmp_square_size">400</integer>
+
+    <dimen name="sidebar_text_size">18sp</dimen>
+    <dimen name="sidebar_row_height">54dp</dimen>
+    <dimen name="sidebar_icon_size">22sp</dimen>
+
+    <dimen name="advert_height">50dp</dimen>
+
+    <dimen name="post_header_text_size">12sp</dimen>
+
+    <dimen name="history_item_badge_size">20dp</dimen>
+    <dimen name="history_item_text_size">11sp</dimen>
+
+    <dimen name="toolbar_visible_spacing">60dp</dimen>
+
+    <dimen name="toolbar_height">70dp</dimen>
+    <dimen name="toolbar_icon_size">22sp</dimen>
+    <dimen name="toolbar_button_size">50dp</dimen>
+
+    <dimen name="menu_icon_size">26sp</dimen>
+
+    <!--
+Refer to App Widget Documentation for margin information
+http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
+    -->
+    <dimen name="widget_margin">8dp</dimen>
+    <dimen name="thumb_button_height">30dp</dimen>
+    <dimen name="board_order_item_height">40dp</dimen>
+
+    <dimen name="tab_container_height">40dp</dimen>
+    <dimen name="circle_size">50dp</dimen>
+
+</resources>

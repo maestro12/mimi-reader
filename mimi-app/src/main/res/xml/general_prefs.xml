@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:key="@string/general_preference_category"
+        android:title="@string/general_title">
+
+        <SwitchPreference
+            android:title="@string/use_catalog_title"
+            android:key="@string/use_catalog_pref"
+            android:defaultValue="true"
+            android:summaryOff="@string/user_catalog_summary_off"
+            android:summaryOn="@string/user_catalog_summary_on"
+            />
+
+        <SwitchPreference
+            android:title="@string/use_fast_scroll"
+            android:summary="@string/use_fast_scroll_summary"
+            android:key="@string/use_fast_scroll_pref"
+            android:defaultValue="true"/>
+
+        <SwitchPreference
+            android:title="@string/remember_thread_position_title"
+            android:summary="@string/remember_thread_position_summary"
+            android:key="@string/remember_thread_position_pref"
+            android:defaultValue="true"/>
+
+        <SwitchPreference
+            android:title="@string/handle_youtube_links_title"
+            android:summaryOn="@string/handle_youtube_links_summary_on"
+            android:summaryOff="@string/handle_youtube_links_summary_off"
+            android:key="@string/handle_youtube_links_pref"
+            android:defaultValue="true"/>
+
+        <ListPreference
+            android:title="@string/nav_drawer_bookmark_count"
+            android:key="@string/nav_drawer_bookmark_count_pref"
+            android:defaultValue="5"
+            android:entries="@array/nav_drawer_bookmark_list"
+            android:entryValues="@array/nav_drawer_bookmark_list"/>
+
+        <SwitchPreference
+            android:title="@string/ask_before_closing_tabs"
+            android:key="@string/close_all_tabs_prompt_pref"
+            android:defaultValue="true" />
+
+        <SwitchPreference
+            android:title="@string/close_tab_on_back_title"
+            android:summaryOn="@string/close_tab_on_back_summary_on"
+            android:summaryOff="@string/close_tab_on_back_summary_off"
+            android:key="@string/close_tab_on_back_pref"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

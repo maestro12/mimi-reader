@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+
+    <string name="app_name">Mimi</string>
+    <string name="app_title">Mimi</string>
+    <string name="title_postitem_detail">PostItem Detail</string>
+
+    <!-- Colors -->
+    <string name="red">Red</string>
+    <string name="green">Green</string>
+    <string name="blue">Blue</string>
+    <string name="indigo">Indigo</string>
+    <string name="pink">Pink</string>
+    <string name="purple">Purple</string>
+    <string name="orange">Orange</string>
+    <string name="deep_orange">Deep Orange</string>
+    <string name="brown">Brown</string>
+    <string name="blue_grey">Blue Grey</string>
+    <string name="light_grey">Light Grey</string>
+    <string name="grey">Grey</string>
+    <string name="dark_grey">Dark Grey</string>
+    <string name="black">Black</string>
+
+    <!-- Drawer Strings -->
+    <string name="home">Home</string>
+    <string name="favorites">Favorites</string>
+    <string name="watched_threads">Watched Threads</string>
+    <string name="edit_boards">Edit Boards</string>
+    <string name="boards">Boards</string>
+    <string name="settings">Settings</string>
+    <string name="chanpass_login">Chanpass Login</string>
+    <string name="chanpass_logout">Logout</string>
+    <string name="manage_boards">Manage Boards</string>
+    <string name="drawer_title">Mimi</string>
+    <string name="bookmarks_tab">Bookmarks</string>
+    <string name="history_tab">History</string>
+    <string name="no_history_message">No history found</string>
+    <string name="no_bookmarks_message">No bookmarks found</string>
+    <string name="no_bookmarks">No Bookmarks</string>
+    <string name="clear_all">Clear All</string>
+    <string name="exit">Exit</string>
+    <string name="are_you_sure">Are you sure you want to sign out from 4chan pass?</string>
+
+    <!-- Menu Strings -->
+    <string name="gallery_menu_item">Gallery</string>
+    <string name="report_menu_item">Report</string>
+    <string name="reply_menu_item">Reply</string>
+    <string name="quote_menu_item">Quote</string>
+    <string name="watch_thread_menu_item">Watch Thread</string>
+    <string name="search">Search</string>
+    <string name="share">Share</string>
+    <string name="close_tab">Close Tab</string>
+    <string name="bookmark">Bookmark</string>
+    <string name="bookmarks">Bookmarks</string>
+    <string name="save">Save</string>
+    <string name="refresh">Refresh</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="configure">Configure</string>
+    <string name="add_widget">Add widget</string>
+    <string name="copy_text">Copy Text</string>
+    <string name="add_board">Add Board</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="text_copied_to_clipboard">Text copied to clipboard</string>
+    <string name="link_copied_to_clipboard">Link copied to clipboard</string>
+    <string name="download">Download</string>
+    <string name="all">All</string>
+    <string name="none">None</string>
+    <string name="invert">Invert</string>
+    <string name="open_link_menu_item">Open Link</string>
+    <string name="copy_link_menu_item">Copy Link</string>
+
+    <!-- Settings -->
+    <string name="theme_title">Theme</string>
+    <string name="theme_summary">Select the dark or light theme</string>
+    <string name="toolbar_color">Toolbar Color</string>
+    <string name="toolbar_color_summary">Select toolbar color</string>
+    <string name="layout_type">Layout Type</string>
+    <string name="layout_type_summary">Select the layout type</string>
+    <string name="board_order_title">Board Order</string>
+    <string name="sort_by">Sort By</string>
+    <string name="board_order_summary">How the boards are ordered</string>
+    <string name="use_catalog_title">Use Catalog</string>
+    <string name="use_fast_scroll">Use fast scroll</string>
+    <string name="use_fast_scroll_summary">Quickly scroll to the bottom or top of a thread</string>
+    <string name="user_catalog_summary_off">Individual pages</string>
+    <string name="user_catalog_summary_on">Use the catalog</string>
+    <string name="advanced_title">Advanced</string>
+    <string name="advanced_summary">Extended Preferences</string>
+    <string name="external_cache_title">External Cache</string>
+    <string name="external_cache_summary_on">Cache saved on external storage</string>
+    <string name="external_cache_summary_off">Cache saved on internal storage</string>
+    <string name="prevent_screen_from_rotating">Prevent screen from rotating</string>
+    <string name="prevent_screen_from_rotating_summary_on">Screen locked to portrait</string>
+    <string name="prevent_screen_from_rotating_summary_off">Screen rotation unlocked</string>
+    <string name="clear_cache_title">Clear Cache</string>
+    <string name="clear_cache_summary">Clear the app cache now</string>
+    <string name="secure_connection_title">Secure Connection</string>
+    <string name="secure_connection_summary">Use SSL for all communication</string>
+    <string name="save_history_title">Save History</string>
+    <string name="save_history_summary_off">History is not saved</string>
+    <string name="save_history_summary_on">History is saved</string>
+    <string name="auto_refresh_interval_title">Auto Refresh Interval</string>
+    <string name="background_refresh_interval_title">Background Refresh Interval</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="clear_history_title">Clear History</string>
+    <string name="history_prune_time_title">Prune History</string>
+    <string name="history_prune_time_summary">Every %s</string>
+    <string name="more_info_about">About</string>
+    <string name="more_info_website">MimiReader.com</string>
+    <string name="more_info_privacy">Privacy Policy</string>
+    <string name="more_info_licences">Licences</string>
+    <string name="more_info_changelog">ChangeLog</string>
+    <string name="more_info_version">Version</string>
+    <string name="all_boards_visible">Show All Boards</string>
+    <string name="image_file_location">Save Location</string>
+    <string name="use_original_filename_title">Use Original Filename</string>
+    <string name="use_original_filename_summary">Save files using the original filename</string>
+    <string name="image_file_location_summary">Image save location</string>
+    <string name="remember_thread_position_title">Remember thread position</string>
+    <string name="remember_thread_position_summary">Pick up a thread where you left off</string>
+    <string name="handle_youtube_links_title">Handle YouTube Links</string>
+    <string name="handle_youtube_links_summary_on">Open YouTube links in app</string>
+    <string name="handle_youtube_links_summary_off">Open YouTube links in browser</string>
+    <string name="scroll_thread_with_gallery_title">Scroll thread with gallery</string>
+    <string name="scroll_thread_with_gallery_summary">Swiping in the gallery scrolls the thread</string>
+    <string name="close_gallery_on_click_title">Tap image to close gallery</string>
+
+    <string name="disabled">Disabled</string>
+
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_summary">Theme settings</string>
+    <string name="general_title">General</string>
+    <string name="general_summary">General Preferences</string>
+    <string name="gallery_summary">Preferences for the gallery</string>
+    <string name="history_title">History</string>
+    <string name="history_summary">How and when history is saved</string>
+    <string name="more_info_title">More Info</string>
+    <string name="more_info_summary">Some more information about Mimi</string>
+    <string name="posting_title">Posting</string>
+    <string name="posting_summary">Posting Preferences</string>
+    <string name="board_title">Board</string>
+    <string name="board_summary">Board Preferences</string>
+    <string name="debug_title">Debug</string>
+    <string name="remove_ads_title">Remove Ads</string>
+    <string name="enable_ads_title">Enable Ads</string>
+
+    <string name="auto_refresh_disabled">Disabled</string>
+    <string name="auto_refresh_5_seconds">5 Seconds</string>
+    <string name="auto_refresh_10_seconds">10 Seconds</string>
+    <string name="auto_refresh_20_seconds">20 Seconds</string>
+    <string name="auto_refresh_30_seconds">30 Seconds</string>
+    <string name="auto_refresh_60_seconds">60 Seconds</string>
+    <string name="auto_refresh_2_minutes">2 Minutes</string>
+    <string name="auto_refresh_5_minutes">5 Minutes</string>
+
+    <string name="background_auto_refresh_disabled">Disabled</string>
+    <string name="background_auto_refresh_1_minute">1 Minute</string>
+    <string name="background_auto_refresh_2_minutes">2 Minutes</string>
+    <string name="background_auto_refresh_5_minutes">5 Minutes</string>
+    <string name="background_auto_refresh_10_minutes">10 Minutes</string>
+    <string name="background_auto_refresh_30_minutes">30 Minutes</string>
+    <string name="background_auto_refresh_60_minutes">60 Minutes</string>
+    <string name="background_auto_refresh_90_minutes">90 Minutes</string>
+
+    <string name="history_prune_time_start">App Start</string>
+    <string name="history_prune_time_1_day">1 Day</string>
+    <string name="history_prune_time_2_days">2 Days</string>
+    <string name="history_prune_time_3_days">3 Days</string>
+
+    <!-- Board Order Names -->
+    <string name="board_order_none">None</string>
+    <string name="board_order_board_title">Board Title</string>
+    <string name="board_order_board_name">Board Name</string>
+    <string name="board_order_access_count">Access Count</string>
+    <string name="board_order_post_count">Post Count</string>
+    <string name="board_order_last_access">Last Access</string>
+    <string name="board_order_favorites">Favorites</string>
+    <string name="board_order_custom">Custom</string>
+
+    <string name="error_opening_url">Could not find browser to open URL</string>
+
+    <!-- Catalog Header -->
+    <string name="board_list_type">Board View Type</string>
+    <string name="board_type_grid">Catalog</string>
+    <string name="board_type_list">List</string>
+
+    <!-- Reply Form -->
+    <string name="post">Post</string>
+    <string name="comment">comment</string>
+    <string name="name">Name</string>
+    <string name="options">Options</string>
+    <string name="subject">Subject</string>
+    <string name="captcha">captcha</string>
+    <string name="send">Send</string>
+    <string name="sending">Sending...</string>
+    <string name="cancel">Cancel</string>
+    <string name="success">Success!</string>
+    <string name="just_now">Just now</string>
+    <string name="error_fetching_captcha_image">Error fetching captcha image</string>
+
+    <!-- User Info Form -->
+    <string name="clear_info">Clear</string>
+    <string name="sage_info">Sage</string>
+    <string name="done_info">Done</string>
+
+    <string name="reply_to">Reply to %s</string>
+
+    <!-- Error Strings -->
+    <string name="error_404">404 Not Found!</string>
+    <string name="generic_board_load_error">Error loading board. Please refresh.</string>
+    <string name="could_not_find_post">Error loading post. Sending error report.</string>
+
+    <!-- File saving messages -->
+    <string name="file_saved">File saved</string>
+    <string name="failed_to_save_file">Failed to save file</string>
+
+    <!-- Gallery Strings -->
+    <string name="gallery">Gallery</string>
+    <string name="error_loading_image">Error loading image</string>
+
+    <!-- 4chan pass Login Activity -->
+    <string name="token_hint">token</string>
+    <string name="pin_hint">pin</string>
+    <string name="login_button">Login</string>
+    <string name="login_success">Signed in</string>
+    <string name="login_error">Error signing in</string>
+    <string name="auth_failure">Incorrect Token or PIN</string>
+    <string name="auth_success">Success! Logged in</string>
+    <string name="token_length_error">Your Token must be exactly 10 characters</string>
+
+    <!-- Share Menu -->
+    <string name="no_app_to_share">No app installed to share data of type %s!</string>
+    <string name="no_share_type">No share type specified!</string>
+    <string name="error_occurred">Sorry, an error occurred.</string>
+
+    <!-- Download Service -->
+    <string name="content_title">Mimi Downloader</string>
+    <string name="download_ticker">Starting Download…</string>
+
+    <!-- Video -->
+    <string name="could_not_play_video">Could not play video</string>
+
+    <!-- Font Awesome Icons -->
+    <string name="font_path">fonts/Material-Design-Iconic-Font.ttf</string>
+
+    <!-- Font size -->
+    <string name="font_small">Small</string>
+    <string name="font_medium">Medium</string>
+    <string name="font_large">Large</string>
+
+    <string name="ic_post">\uf106</string>
+    <string name="ic_favorite_set">\uf2E5</string>
+    <string name="ic_favorite_unset">\uf2E7</string>
+    <string name="ic_bookmark_set">\uf019</string>
+    <string name="ic_bookmark_unset">\uf01A</string>
+    <string name="ic_refresh">\uf016</string>
+    <string name="ic_goto">\uf29C</string>
+    <string name="ic_add">+</string>
+    <string name="ic_close">\uf29A</string>
+    <string name="ic_check">\uf299</string>
+    <string name="ic_chat">\uf0EC</string>
+    <string name="ic_content_hidden">\uf29C</string>
+    <string name="ic_content_shown">\uf29E</string>
+    <string name="ic_home">\uf036</string>
+    <string name="ic_history">\uf05E</string>
+    <string name="ic_bookmarks">\uf044</string>
+    <string name="ic_menu">\uf1BA</string>
+    <string name="ic_lock">\uf037</string>
+    <string name="ic_chat_bubble">\uf2BE</string>
+    <string name="ic_images">\uf241</string>
+    <string name="ic_reply">\uf114</string>
+    <string name="ic_drag_handle">\uf094</string>
+    <string name="ic_settings">\uf060</string>
+    <string name="ic_dash">\uf111</string>
+    <string name="ic_send">\uf119</string>
+
+    <!-- Only used for the unique key -->
+    <string name="thread_id_key">Thread ID</string>
+    <string name="replies_key">Replies</string>
+
+    <string name="add">Add</string>
+    <string name="error_adding_board">Error adding board specified</string>
+    <string name="board_name_input_hint">Example: /g/</string>
+
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+
+    <string name="unknown_error">Something went wrong!</string>
+    <string name="attach_image">Attach Image</string>
+    <string name="image_info">Image Info</string>
+    <string name="ok">OK</string>
+
+    <string name="percent_complete">%s%% complete</string>
+    <string name="download_complete">Download Complete</string>
+    <string name="batch_download">Batch Download</string>
+    <string name="long_press_to_batch_download">Long press a thumbnail to start batch download mode</string>
+    <string name="long_press_to_manage_boards">Long press an item on the list to manage the boards</string>
+    <string name="dont_show_again">Do not show this again</string>
+    <string name="feedback">Feedback</string>
+
+    <!-- Rating -->
+    <string name="please_rate">Please take a moment to rate Mimi!</string>
+    <string name="never">Never</string>
+    <string name="rate">Rate</string>
+    <string name="later">Later</string>
+
+    <!-- Image Info -->
+    <string name="file_name">File Name:</string>
+    <string name="dimensions">Dimensions:</string>
+
+    <!-- Image Search -->
+    <string name="google_image_search_link">https://www.google.com/searchbyimage?hl=en&amp;site=imghp&amp;image_url=%1$s</string>
+    <string name="iqdb_image_search_link">http://iqdb.org/?url=%1$s</string>
+    <string name="saucenao_image_search_link">https://saucenao.com/search.php?db=999&amp;bgcolor=none&amp;url=%1$s</string>
+    <string name="youtube_generic_error">Error opening YouTube link</string>
+
+    <plurals name="replies_plural">
+        <item quantity="zero">no replies</item>
+        <item quantity="one">1 reply</item>
+        <item quantity="other">%d replies</item>
+    </plurals>
+
+    <plurals name="image_plural">
+        <item quantity="zero">no images</item>
+        <item quantity="one">1 image</item>
+        <item quantity="other">%d images</item>
+    </plurals>
+
+    <plurals name ="unread_plural">
+        <item quantity="zero">no unread posts</item>
+        <item quantity="one">1 unread post</item>
+        <item quantity="other">%d unread posts</item>
+    </plurals>
+
+    <plurals name="has_unread_plural">
+        <item quantity="zero"> has no unread posts</item>
+        <item quantity="one"> has 1 unread post</item>
+        <item quantity="other"> has %d unread posts</item>
+    </plurals>
+
+    <plurals name="threads_updated_plural">
+        <item quantity="zero">no threads updated</item>
+        <item quantity="one">1 thread updated</item>
+        <item quantity="other">%d threads updated</item>
+    </plurals>
+    <plurals name="replies_to_you_plurals" >
+        <item quantity="zero">no replies to you</item>
+        <item quantity="one">1 reply to you</item>
+        <item quantity="other">%d replies to you</item>
+    </plurals>
+
+    <!-- Native Ads -->
+    <string name="sponsored">Sponsored</string>
+    <string name="loading_captcha">Loading captcha...</string>
+    <string name="copy_file">Copy File</string>
+    <string name="file_name_is_taken">File name is taken</string>
+    <string name="overwrite">Overwrite</string>
+    <string name="rename">Rename</string>
+    <string name="only_replies">Only replies to me</string>
+    <string name="all_new_posts">All new posts</string>
+    <string name="new_posts">New Posts</string>
+    <string name="open">Open</string>
+    <string name="error_opening_replies">Error opening replies</string>
+    <string name="select_picture">Select Picture</string>
+    <string name="replies">Replies</string>
+    <string name="font_size">Font Size</string>
+    <string name="you_have_unread_posts_exclamation">You have unread posts!</string>
+    <string name="closing_tab">CLOSING TAB</string>
+
+    <!-- Layout Types -->
+    <string name="layout_browser">Browser</string>
+    <string name="layout_tabbed">Tabbed</string>
+    <string name="layout_sliding_panel">Sliding Panel</string>
+    <string name="ads_disabled_for">Ads Disabled For %s</string>
+    <string name="video_failed_to_load">Video failed to load</string>
+    <string name="video_playback_did_not_complete">Video did no complete</string>
+    <string name="loading_video_please_wait">Loading video, please wait</string>
+    <string name="watch_video">Watch Video (30 mins ad free)</string>
+    <string name="buy_ad_free_version">Buy Ad Free Version</string>
+    <string name="save_file_permission_denied">Good job! You denied the permission! WINRAR!!</string>
+    <string name="app_needs_your_permission_to_save">The app needs your permission to save pictures</string>
+    <string name="app_needs_your_permission_to_attach">The app needs your permission to attach pictures</string>
+
+    <string name="error_opening_bookmark">Error opening bookmark</string>
+    <string name="error_loading_board">Error loading board</string>
+    <string name="link">Link</string>
+    <string name="image">Image</string>
+    <string name="country">Country</string>
+    <string name="youtube_link">YouTube Link</string>
+    <string name="no_images_selected">No images selected</string>
+
+    <string name="set_default">Default</string>
+    <string name="set_default_color">Set default color</string>
+    <string name="default_colors">Default colors</string>
+    <string name="material_colors">Material colors</string>
+    <string name="apply">Apply</string>
+    <string name="update">Update</string>
+    <string name="text_colors">Text colors</string>
+    <string name="text_colors_summary">Set colors for reply, quote, and link text</string>
+
+    <string name="nav_drawer_bookmark_count">Nav Drawer Bookmark Count</string>
+    <string name="close_other_tabs">Close Other Tabs</string>
+    <string name="catalog">Catalog</string>
+    <string name="list">List</string>
+    <string name="close_all_tabs">Close All Tabs</string>
+    <string name="ask_before_closing_tabs">Ask before closing all tabs</string>
+    <string name="close_all_tabs_question">Close all tabs?</string>
+    <string name="close_tab_on_back_title">Close tab on back pressed</string>
+    <string name="close_tab_on_back_summary_on">Back button closes the current tab</string>
+    <string name="close_tab_on_back_summary_off">Back button changes the current tab</string>
+    <string name="sort">Sort</string>
+    <string name="bump_time">Bump Time</string>
+    <string name="thread_id">Thread ID</string>
+    <string name="image_count">Image Count</string>
+    <string name="reply_count">Reply Count</string>
+    <string name="history">History</string>
+    <string name="invert_sort">Invert Sort</string>
+    <string name="youtube_id_not_defined">Youtube ID not defined</string>
+
+    <string-array name="youtube_dialog_list">
+        <item>Open in browser</item>
+        <item>Copy link</item>
+    </string-array>
+
+    <string-array name="link_dialog_list">
+        <item>Open in browser</item>
+        <item>Share link</item>
+        <item>Copy link</item>
+    </string-array>
+
+    <string-array name="color_types_list">
+        <item>Quote</item>
+        <item>Reply</item>
+        <item>Highlight</item>
+        <item>Link</item>
+    </string-array>
+
+    <string-array name="color_types_map">
+        <item>@string/quote_color_pref</item>
+        <item>@string/reply_color_pref</item>
+        <item>@string/highlight_color_pref</item>
+        <item>@string/link_color_pref</item>
+    </string-array>
+</resources>

@@ -1,0 +1,74 @@
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<preference-headers
+        xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <header
+        android:id="@+id/general_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.GeneralPrefsFragment"
+        android:title="@string/general_title"
+        android:summary="@string/general_summary" />
+
+    <header
+        android:id="@+id/gallery_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.GalleryPrefsFragment"
+        android:title="@string/gallery"
+        android:summary="@string/gallery_summary" />
+
+    <header
+        android:id="@+id/appearance_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.AppearancePrefsFragment"
+        android:title="@string/theme_title"
+        android:summary="@string/appearance_summary" />
+
+    <header
+        android:id="@+id/history_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.HistoryPrefsFragment"
+        android:title="@string/history_title"
+        android:summary="@string/history_summary" />
+
+    <header
+        android:id="@+id/advanced_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.AdvancedPrefsFragment"
+        android:title="@string/advanced_title"
+        android:summary="@string/advanced_summary" />
+
+    <header
+        android:id="@+id/more_prefs_fragment"
+        android:fragment="com.emogoth.android.phone.mimi.prefs.MoreInfoPrefsFragment"
+        android:title="@string/more_info_title"
+        android:summary="@string/more_info_summary" />
+
+    <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$PostingPrefsHCFragment"-->
+            <!--android:title="Posting"-->
+            <!--android:summary="Preferences for posting">-->
+        <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
+             <!--arguments to its fragment. &ndash;&gt;-->
+        <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--</header>-->
+    <!---->
+    <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$ThreadPrefsHCFragment"-->
+            <!--android:title="Thread"-->
+            <!--android:summary="Preferences for threads">-->
+        <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
+             <!--arguments to its fragment. &ndash;&gt;-->
+        <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--</header>-->
+
+
+
+</preference-headers>

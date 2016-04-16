@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="?defaultLayoutBackground"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.v4.widget.Space
+        android:id="@+id/spacer"
+        android:layout_width="wrap_content"
+        android:layout_height="45dp" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/boards_list"
+        style="?rowItemBackground"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/spacer"
+        android:layout_gravity="bottom"
+        android:layout_marginLeft="2dp"
+        android:layout_marginRight="2dp"
+        android:drawSelectorOnTop="true"
+        android:fadingEdge="none"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:paddingTop="4dp" />
+
+    <FrameLayout
+        android:id="@+id/board_order_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88000000"
+        android:visibility="gone" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <!--android:background="@color/sort_by_row_color"-->
+        <LinearLayout
+            android:id="@+id/board_order_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/board_order_container"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/board_order_type_favorite"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/board_order_item_height"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_favorites"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_name"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_board_name"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_title"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_board_title"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_access_count"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_access_count"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_post_count"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_post_count"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_last_access"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_last_access"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+            <TextView
+                android:id="@+id/board_order_type_custom"
+                android:background="?attr/mimiPrimaryColorDark"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:paddingLeft="8dp"
+                android:text="@string/board_order_custom"
+                android:textColor="@color/sort_by_text_color_selector"
+                android:textSize="?attr/font_label_small" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/board_order_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:orientation="horizontal"
+            android:background="?attr/mimiPrimaryColor"
+            android:visibility="invisible">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingLeft="8dp">
+
+                <TextView
+                    style="?defaultTextColor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sort_by"
+                    android:textAllCaps="true"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="?attr/font_label_xsmall" />
+
+                <TextView
+                    android:id="@+id/board_order_subtitle"
+                    style="?defaultTextColor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/board_order_title"
+                    android:textColor="#E6E6E6"
+                    android:textSize="?attr/font_small" />
+            </LinearLayout>
+
+            <com.emogoth.android.phone.mimi.view.IconTextView
+                android:id="@+id/board_header_show_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                android:text="@string/ic_content_hidden"
+                android:textColor="?attr/mimiPrimaryColorDark"
+                android:textSize="?attr/font_large"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

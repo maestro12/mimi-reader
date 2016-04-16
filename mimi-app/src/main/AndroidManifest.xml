@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.emogoth.android.phone.mimi" >
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.GET_ACCOUNTS"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.USE_CREDENTIALS"
+        tools:node="remove" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+
+    <application
+        android:name=".app.MimiApplication"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_title"
+        android:largeHeap="true"
+        android:theme="@style/Theme.Mimi.Light.Toolbar.Default"
+        tools:replace="android:theme, icon, label">
+
+        <meta-data android:name="AA_DB_NAME" android:value="mimi.db" />
+        <meta-data android:name="AA_DB_VERSION" android:value="8" />
+        <meta-data
+            android:name="AA_MODELS"
+            android:value="com.emogoth.android.phone.mimi.db.model.Board" />
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="@string/fileprovider_authority"
+            android:grantUriPermissions="true"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+
+        <service android:name=".service.AutoRefreshService" />
+        <service android:name=".service.DownloadService" />
+
+        <activity
+            android:name=".activity.PostItemListActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/app_title" >
+        </activity>
+        <activity
+            android:name=".activity.StartupActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/app_title" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".activity.TabsActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/app_title" >
+        </activity>
+        <activity
+            android:name=".activity.SlidingPanelActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="@string/app_title" >
+        </activity>
+        <activity
+            android:name=".activity.PostItemDetailActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:parentActivityName=".activity.PostItemListActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.emogoth.android.phone.mimi.activity.PostItemListActivity" />
+        </activity>
+        <activity
+            android:name=".activity.GalleryActivity"
+            android:theme="@style/Theme.Mimi.Gallery"
+            android:configChanges="orientation|screenLayout|screenSize"/>
+        <activity android:name=".activity.LoginActivity" />
+        <activity android:name=".activity.UrlRouter" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="@string/board_link"
+                    android:pathPattern="/.*"
+                    android:scheme="http" />
+                <data
+                    android:host="@string/board_link"
+                    android:pathPattern="/.*"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+        <activity android:name="net.rdrei.android.dirchooser.DirectoryChooserActivity" />
+        <activity
+            android:name=".prefs.MimiSettings"
+            android:label="@string/settings" />
+        <activity android:name=".activity.ThemeSettingsActivity"
+            android:label="@string/theme_title" >
+            <intent-filter>
+                <action android:name="com.emogoth.android.phone.mimi.activity.ThemeSettingsActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".util.RefreshScheduler"
+            android:enabled="true" />
+
+    </application>
+
+</manifest>

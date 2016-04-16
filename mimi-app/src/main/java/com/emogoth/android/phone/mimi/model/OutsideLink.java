@@ -1,0 +1,73 @@
+/*
+ * Copyright (c) 2016. Eli Connelly
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+package com.emogoth.android.phone.mimi.model;
+
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class OutsideLink implements Parcelable {
+    private String boardName;
+    private String threadId;
+
+    public OutsideLink() {}
+
+    protected OutsideLink(Parcel in) {
+        boardName = in.readString();
+        threadId = in.readString();
+    }
+
+    public String getBoardName() {
+        return boardName;
+    }
+
+    public void setBoardName(String boardName) {
+        this.boardName = boardName;
+    }
+
+    public String getThreadId() {
+        return threadId;
+    }
+
+    public void setThreadId(String threadId) {
+        this.threadId = threadId;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(boardName);
+        dest.writeString(threadId);
+    }
+
+    @SuppressWarnings("unused")
+    public static final Parcelable.Creator<OutsideLink> CREATOR = new Parcelable.Creator<OutsideLink>() {
+        @Override
+        public OutsideLink createFromParcel(Parcel in) {
+            return new OutsideLink(in);
+        }
+
+        @Override
+        public OutsideLink[] newArray(int size) {
+            return new OutsideLink[size];
+        }
+    };
+}

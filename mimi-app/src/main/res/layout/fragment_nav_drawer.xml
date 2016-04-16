@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/sidebar_background">
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <FrameLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="16dp">
+
+        <com.emogoth.android.phone.mimi.view.IconTextView
+            android:id="@+id/settings_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#888888"
+            android:textSize="26sp"
+            android:layout_marginRight="8dp"
+            android:layout_gravity="top|right"
+            android:padding="8dp"
+            android:gravity="center"
+            android:text="@string/ic_settings"
+            android:background="@drawable/nav_drawer_item_selector"/>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/sidebar_row_height"
+            android:clickable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:divider="#151515">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="28dp"
+                        android:layout_marginBottom="30dp"
+                        android:text="@string/drawer_title"
+                        android:textSize="25sp"
+                        android:paddingTop="8dp"
+                        android:textColor="?attr/mimiAccentColor"
+                        android:textStyle="bold" />
+
+                    <RelativeLayout
+                        android:id="@+id/home_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/sidebar_row_height"
+                        android:paddingLeft="16dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/nav_drawer_row_selector">
+
+                        <com.emogoth.android.phone.mimi.view.IconTextView
+                            android:id="@+id/home_icon_textview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:layout_gravity="center"
+                            android:layout_alignParentLeft="true"
+                            android:textSize="@dimen/sidebar_icon_size"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:text="@string/ic_home"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:textSize="@dimen/sidebar_text_size"
+                            android:paddingLeft="16dp"
+                            android:paddingBottom="8dp"
+                            android:paddingTop="8dp"
+                            android:layout_toRightOf="@+id/home_icon_textview"
+                            android:gravity="center_vertical"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/home"/>
+                    </RelativeLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/sidebar_divider"/>
+
+                    <FrameLayout
+                        android:id="@+id/close_tabs_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <RelativeLayout
+                            android:id="@+id/close_tabs_row"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/sidebar_row_height"
+                            android:paddingLeft="16dp"
+                            android:orientation="horizontal"
+                            android:background="@drawable/nav_drawer_row_selector">
+
+                            <com.emogoth.android.phone.mimi.view.IconTextView
+                                android:id="@+id/close_tabs_icon_textview"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:gravity="center"
+                                android:layout_gravity="center"
+                                android:layout_alignParentLeft="true"
+                                android:textSize="@dimen/sidebar_icon_size"
+                                android:textColor="@color/nav_bar_text_color_selector"
+                                android:text="@string/ic_close"/>
+
+                            <TextView
+                                android:id="@+id/close_tabs_row_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:textColor="@color/nav_bar_text_color_selector"
+                                android:textSize="@dimen/sidebar_text_size"
+                                android:paddingLeft="16dp"
+                                android:paddingBottom="8dp"
+                                android:paddingTop="8dp"
+                                android:layout_toRightOf="@+id/close_tabs_icon_textview"
+                                android:gravity="center_vertical"
+                                android:layout_gravity="center_vertical"
+                                android:text="@string/close_all_tabs"/>
+
+                        </RelativeLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_gravity="bottom"
+                            android:background="@color/sidebar_divider"/>
+
+                    </FrameLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/bookmarks_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/sidebar_row_height"
+                        android:paddingLeft="16dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/nav_drawer_row_selector">
+
+                        <com.emogoth.android.phone.mimi.view.IconTextView
+                            android:id="@+id/bookmarks_icon_textview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:layout_gravity="center"
+                            android:layout_alignParentLeft="true"
+                            android:textSize="@dimen/sidebar_icon_size"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:text="@string/ic_bookmark_set"/>
+
+                        <TextView
+                            android:id="@+id/bookmarks_row_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:textSize="@dimen/sidebar_text_size"
+                            android:paddingLeft="16dp"
+                            android:paddingBottom="8dp"
+                            android:paddingTop="8dp"
+                            android:layout_toRightOf="@+id/bookmarks_icon_textview"
+                            android:gravity="center_vertical"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/bookmarks"/>
+
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginRight="8dp"
+                            android:layout_gravity="center"
+                            android:gravity="center_vertical|right"
+                            android:layout_alignParentRight="true"
+                            android:layout_toRightOf="@+id/bookmarks_row_text" >
+                            <FrameLayout
+                                android:id="@+id/notification_container"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical|right"/>
+                        </FrameLayout>
+                    </RelativeLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/sidebar_divider"/>
+
+                    <LinearLayout
+                        android:id="@+id/bookmark_items"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <RelativeLayout
+                            android:id="@+id/no_bookmarks"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@color/sidebar_background">
+
+                            <com.emogoth.android.phone.mimi.view.IconTextView
+                                android:id="@+id/no_bookmarks_icon"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="40sp"
+                                android:gravity="center"
+                                android:text="@string/ic_bookmark_set"
+                                android:textSize="60sp"
+                                android:textColor="#414141"/>
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_below="@+id/no_bookmarks_icon"
+                                android:gravity="center"
+                                android:layout_marginTop="20sp"
+                                android:layout_marginBottom="40dp"
+                                android:text="@string/no_bookmarks"
+                                android:textColor="#414141"/>
+
+                        </RelativeLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/sidebar_divider"/>
+
+                    <RelativeLayout
+                        android:id="@+id/history_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/sidebar_row_height"
+                        android:paddingLeft="16dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/nav_drawer_row_selector">
+
+                        <com.emogoth.android.phone.mimi.view.IconTextView
+                            android:id="@+id/history_icon_textview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:layout_gravity="center"
+                            android:layout_alignParentLeft="true"
+                            android:textSize="@dimen/sidebar_icon_size"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:text="@string/ic_history"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:textColor="@color/nav_bar_text_color_selector"
+                            android:textSize="@dimen/sidebar_text_size"
+                            android:paddingLeft="16dp"
+                            android:paddingBottom="8dp"
+                            android:paddingTop="8dp"
+                            android:layout_toRightOf="@+id/history_icon_textview"
+                            android:gravity="center_vertical"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/history_title"/>
+                    </RelativeLayout>
+
+                </LinearLayout>
+
+
+        </LinearLayout>
+
+    </FrameLayout>
+</ScrollView>
+</FrameLayout>

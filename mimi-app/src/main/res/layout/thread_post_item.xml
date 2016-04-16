@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="?postBackground"
+    android:id="@+id/post_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/post_header"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:layout_gravity="center"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp">
+
+        <ImageView
+            android:id="@+id/flag_icon"
+            android:layout_width="22dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:adjustViewBounds="true"
+            android:visibility="gone"/>
+
+        <TextView
+            style="?postUserName"
+            android:id="@+id/user_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:layout_toRightOf="@+id/flag_icon"
+            android:textSize="?attr/font_xsmall"
+            tools:text="Anonymous"/>
+
+        <TextView
+            style="?postHeaderText"
+            android:id="@+id/user_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingLeft="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone"
+            android:layout_toRightOf="@+id/user_name"
+            android:textSize="?attr/font_xxsmall"
+            tools:text="User ID"/>
+
+        <TextView
+            style="?postHeaderText"
+            android:id="@+id/tripcode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingLeft="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone"
+            android:layout_toRightOf="@+id/user_id"
+            android:textSize="?attr/font_xxsmall"
+            tools:text="Tripcode"/>
+
+        <View
+            style="?postHeaderDecoration"
+            android:id="@+id/spacer"
+            android:layout_width="1px"
+            android:layout_height="12dp"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/tripcode"/>
+
+        <TextView
+            style="?postHeaderText"
+            android:id="@+id/thread_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
+            android:paddingLeft="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textStyle="normal"
+            android:layout_toRightOf="@+id/spacer"
+            android:textSize="?attr/font_xxsmall"
+            tools:text="123456"/>
+
+        <com.emogoth.android.phone.mimi.view.IconTextView
+            style="?postHeaderIcon"
+            android:id="@+id/menu_button"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:text="@string/ic_menu"
+            android:gravity="center"
+            android:layout_gravity="right"
+            android:paddingRight="2dp"
+            android:paddingLeft="2dp"
+            android:layout_marginLeft="2dp"
+            android:textStyle="bold"
+            android:textSize="@dimen/menu_icon_size"
+            android:baselineAlignBottom="false"
+            android:cropToPadding="false"
+            android:background="@drawable/thumbnail_selector"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"/>
+
+        <TextView
+            style="?postHeaderText"
+            android:id="@+id/timestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:paddingLeft="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:layout_toLeftOf="@+id/menu_button"
+            android:textSize="?attr/font_xxsmall"
+            tools:text="the time"/>
+
+        <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
+        <!--android:id="@+id/menu_button"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="@string/ic_menu"-->
+        <!--android:gravity="center"-->
+        <!--android:layout_gravity="center_vertical|right"-->
+        <!--android:paddingRight="8dp"-->
+        <!--android:paddingLeft="8dp"-->
+        <!--android:layout_marginLeft="8dp"-->
+        <!--android:textStyle="bold"-->
+        <!--android:textSize="@dimen/menu_icon_size"-->
+        <!--android:baselineAlignBottom="false"-->
+        <!--android:cropToPadding="false" />-->
+
+    </RelativeLayout>
+
+
+    <LinearLayout
+        android:id="@+id/content_container"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:paddingBottom="10dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_below="@+id/post_header">
+
+
+            <FrameLayout
+                android:id="@+id/thumbnail_container"
+                android:layout_gravity="top"
+                android:layout_width="@dimen/thumbnail_image_medium"
+                android:layout_height="@dimen/thumbnail_image_medium">
+
+                <ImageView
+                    android:id="@+id/thumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:paddingLeft="8dp"
+                    android:visibility="visible" />
+
+                <View
+                    android:id="@+id/thumbnail_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/thumbnail_selector" />
+
+            </FrameLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                style="?postSubjectText"
+                android:id="@+id/subject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="2dp"
+                android:paddingBottom="4dp"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textSize="?attr/font_medium"
+                tools:text="Subject"/>
+
+            <TextView
+                style="?postCommentText"
+                android:id="@+id/comment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:textSize="?attr/font_label_small"
+                tools:text="This is the post body"
+                />
+
+
+                <FrameLayout
+                    android:id="@+id/replies_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:minWidth="50dp"
+                    android:layout_gravity="left"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/thumbnail_selector">
+
+                    <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
+                        <!--style="?postHeaderText"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:gravity="bottom"-->
+                        <!--android:layout_gravity="bottom"-->
+                        <!--android:layout_marginRight="2dp"-->
+                        <!--android:textSize="13sp"-->
+                        <!--android:text="@string/ic_reply"/>-->
+
+                    <TextView
+                        style="?postHeaderText"
+                        android:id="@+id/replies_number"
+                        android:layout_width="wrap_content"
+                        android:layout_height="50dp"
+                        android:textStyle="bold"
+                        android:textSize="?attr/font_xsmall"
+                        android:textAllCaps="true"
+                        android:gravity="bottom"
+                        tools:text="one reply"/>
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+
+                </FrameLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        style="?defaultLayoutBackground"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_below="@id/content_container" />
+
+</RelativeLayout>
+

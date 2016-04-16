@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+    <style name="Theme.Mimi.Light.Toolbar.Default" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_blue_grey_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_blue_grey_700</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Red" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_red_700</item>
+        <item name="mimiPrimaryColorDark">@color/md_red_900</item>
+        <item name="mimiAccentColor">@color/md_blue_grey_500</item>
+        <item name="mimiAccentTextColor">@color/md_red_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Green" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_green_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_green_700</item>
+        <item name="mimiAccentColor">@color/md_blue_700</item>
+        <item name="mimiAccentTextColor">@color/md_green_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Blue" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_blue_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_blue_700</item>
+        <item name="mimiAccentColor">@color/md_green_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Indigo" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_indigo_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_indigo_700</item>
+        <item name="mimiAccentColor">@color/md_pink_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Pink" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_pink_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_pink_700</item>
+        <item name="mimiAccentColor">@color/md_deep_purple_500</item>
+        <item name="mimiAccentTextColor">@color/md_pink_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Purple" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_deep_purple_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_deep_purple_700</item>
+        <item name="mimiAccentColor">@color/md_red_500</item>
+        <item name="mimiAccentTextColor">@color/md_deep_purple_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Orange" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_orange_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_orange_700</item>
+        <item name="mimiAccentColor">@color/md_blue_500</item>
+        <item name="mimiAccentTextColor">@color/md_orange_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.DeepOrange" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_deep_orange_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_deep_orange_700</item>
+        <item name="mimiAccentColor">@color/md_red_500</item>
+        <item name="mimiAccentTextColor">@color/md_deep_orange_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Brown" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_brown_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_brown_700</item>
+        <item name="mimiAccentColor">@color/md_green_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_grey_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.BlueGrey" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_blue_grey_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_blue_grey_700</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_grey_800</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.LightGrey" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_grey_400</item>
+        <item name="mimiPrimaryColorDark">@color/md_grey_600</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Grey" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_grey_500</item>
+        <item name="mimiPrimaryColorDark">@color/md_grey_700</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.DarkGrey" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_grey_700</item>
+        <item name="mimiPrimaryColorDark">@color/md_grey_900</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_900</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Black" parent="Theme.Mimi.Light">
+        <item name="mimiPrimaryColor">@color/md_black_1000</item>
+        <item name="mimiPrimaryColorDark">@color/md_black_1000</item>
+        <item name="mimiAccentColor">@color/md_deep_orange_500</item>
+        <item name="mimiAccentTextColor">@color/md_blue_900</item>
+    </style>
+
+</resources>

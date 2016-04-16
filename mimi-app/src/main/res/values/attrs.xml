@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+    <attr name="toolbarBackground" format="color|reference" />
+    <attr name="galleryToolbarBackground" format="color|reference" />
+    <attr name="defaultLayoutBackground" format="color|reference" />
+    <attr name="defaultListViewStyle" format="color|reference" />
+    <attr name="plainCardBackground" format="color|reference" />
+    <attr name="cardBackground" format="color|reference" />
+    <attr name="cardBackgroundSelector" format="color|reference" />
+    <attr name="gridCardBackgroundSelector" format="color|reference" />
+    <attr name="postBackground" format="color|reference" />
+    <attr name="postHeaderBackground" format="color|reference" />
+    <attr name="dividerColor" format="color|reference" />
+    <attr name="defaultTextColor" format="color|reference" />
+    <attr name="defaultSubtextColor" format="color|reference" />
+    <attr name="rowItemBackground" format="color|reference" />
+    <attr name="postHeaderText" format="color|reference" />
+    <attr name="postReplyButton" format="color|reference" />
+    <attr name="replyFormBackground" format="color|reference" />
+    <attr name="toolbarIcon" format="color|reference" />
+    <attr name="placeholderImage" format="color|reference" />
+    <attr name="postUserName" format="color|reference" />
+    <attr name="postHeaderIcon" format="color|reference" />/>
+    <attr name="postHeaderDecoration" format="color|reference" />
+    <attr name="postModUserName" format="color|reference" />
+    <attr name="favoriteBoardColor" format="color|reference" />
+    <attr name="basicButton" format="color|reference" />
+    <attr name="postSubjectText" format="color|reference" />
+    <attr name="postCommentText" format="color|reference" />
+    <attr name="postHighlight" format="color|reference" />
+    <attr name="boardOrderBackground" format="color|reference" />
+    <attr name="boardOrderItem" format="color|reference" />
+    <attr name="cardViewBackground" format="color|reference" />
+    <attr name="tabHighlightBackground" format="color|reference" />
+    <attr name="scrollerHandleColor" format="color|reference" />
+
+    <!-- Action Bar Colors -->
+    <attr name="mimiPrimaryColor" format="color|reference" />
+    <attr name="mimiPrimaryColorDark" format="color|reference" />
+    <attr name="mimiAccentColor" format="color|reference" />
+
+    <attr name="mimiAccentTextColor" format="color|reference" />
+
+    <declare-styleable name="panel_layout_attributes">
+        <attr name="peekHeight" format="dimension" />
+        <attr name="startOpened" format="boolean" />
+        <attr name="startClosed" format="boolean" />
+        <attr name="enableAnimation" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="FontStyle">
+        <attr name="font_label_xsmall" format="dimension" />
+        <attr name="font_label_small" format="dimension" />
+        <attr name="font_label_medium" format="dimension" />
+        <attr name="font_label_large" format="dimension" />
+        <attr name="font_xxsmall" format="dimension" />
+        <attr name="font_xsmall" format="dimension" />
+        <attr name="font_small" format="dimension" />
+        <attr name="font_medium" format="dimension" />
+        <attr name="font_large" format="dimension" />
+        <attr name="font_xlarge" format="dimension" />
+        <attr name="font_xxlarge" format="dimension" />
+        <attr name="font_icon_size" format="dimension" />
+        <attr name="font_header_icon" format="dimension" />
+
+        <attr name="font_board_height" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="ColorPickerView">
+        <attr name="borderColor" format="integer" />
+        <attr name="borderColorSelected" format="integer" />
+        <attr name="circleSize" format="dimension" />
+        <attr name="entries" format="reference"/>
+    </declare-styleable>
+
+    <declare-styleable name="ColorPickerImageView">
+        <attr name="imageBorderColor" format="integer" />
+        <attr name="imageBorderColorSelected" format="integer" />
+        <attr name="imageBackgroundColor" format="integer"/>
+    </declare-styleable>
+
+
+</resources>

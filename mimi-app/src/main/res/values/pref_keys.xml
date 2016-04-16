@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+    <string-array name="listThemes">
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="listThemeValues">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+
+    <string-array name="list_theme_color_names">
+        <item>@string/set_default</item>
+        <item>@string/red</item>
+        <item>@string/green</item>
+        <item>@string/blue</item>
+        <item>@string/indigo</item>
+        <item>@string/pink</item>
+        <item>@string/purple</item>
+        <item>@string/orange</item>
+        <item>@string/deep_orange</item>
+        <item>@string/brown</item>
+        <item>@string/blue_grey</item>
+        <item>@string/light_grey</item>
+        <item>@string/grey</item>
+        <item>@string/dark_grey</item>
+        <item>@string/black</item>
+    </string-array>
+    <string-array name="list_theme_color_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>13</item>
+        <item>14</item>
+    </string-array>
+
+    <string-array name="layoutTypes">
+        <item>@string/layout_browser</item>
+        <item>@string/layout_tabbed</item>
+        <item>@string/layout_sliding_panel</item>
+    </string-array>
+    <string-array name="layoutTypeValues">
+        <item>@string/layout_default_val</item>
+        <item>@string/layout_tabbed_val</item>
+        <item>@string/layout_panel_val</item>
+    </string-array>
+
+    <string-array name="foregroundRefreshIntervals">
+        <item>@string/auto_refresh_disabled</item>
+        <item>@string/auto_refresh_5_seconds</item>
+        <item>@string/auto_refresh_10_seconds</item>
+        <item>@string/auto_refresh_20_seconds</item>
+        <item>@string/auto_refresh_30_seconds</item>
+        <item>@string/auto_refresh_60_seconds</item>
+        <item>@string/auto_refresh_2_minutes</item>
+        <item>@string/auto_refresh_5_minutes</item>
+    </string-array>
+
+    <string-array name="foregroundRefreshIntervalValues">
+        <item>0</item>
+        <item>5</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>300</item>
+    </string-array>
+
+    <string-array name="backgroundRefreshIntervals">
+        <item>@string/background_auto_refresh_disabled</item>
+        <item>@string/background_auto_refresh_1_minute</item>
+        <item>@string/background_auto_refresh_2_minutes</item>
+        <item>@string/background_auto_refresh_5_minutes</item>
+        <item>@string/background_auto_refresh_10_minutes</item>
+        <item>@string/background_auto_refresh_30_minutes</item>
+        <item>@string/background_auto_refresh_60_minutes</item>
+        <item>@string/background_auto_refresh_90_minutes</item>
+    </string-array>
+
+    <string-array name="backgroundRefreshIntervalValues">
+        <item>0</item>
+        <item>60</item>
+        <item>120</item>
+        <item>300</item>
+        <item>600</item>
+        <item>1800</item>
+        <item>2400</item>
+        <item>5400</item>
+    </string-array>
+
+    <string-array name="fontList">
+        <item>@string/font_small</item>
+        <item>@string/font_medium</item>
+        <item>@string/font_large</item>
+    </string-array>
+
+    <string-array name="fontListValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="notificationOptions">
+        <item>@string/disabled</item>
+        <!--<item>@string/only_replies</item>-->
+        <item>@string/all_new_posts</item>
+    </string-array>
+
+    <string-array name="notificationValues">
+        <item>1</item>
+        <!--<item>2</item>-->
+        <item>3</item>
+    </string-array>
+
+    <string-array name="history_prune_times">
+        <item>@string/history_prune_time_start</item>
+        <item>@string/history_prune_time_1_day</item>
+        <item>@string/history_prune_time_2_days</item>
+        <item>@string/history_prune_time_3_days</item>
+    </string-array>
+
+    <string-array name="history_prune_time_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="nav_drawer_bookmark_list">
+        <item>3</item>
+        <item>5</item>
+        <item>7</item>
+        <item>10</item>
+        <item>12</item>
+        <item>15</item>
+    </string-array>
+
+    <!-- Preference Keys -->
+    <string name="theme_pref">theme_pref</string>
+    <string name="theme_color_pref">theme_color_pref</string>
+    <string name="board_order_pref">board_order_pref</string>
+    <string name="cache_external_pref">cache_external_pref</string>
+    <string name="prevent_screen_rotation_pref">prevent_screen_rotation_pref</string>
+    <string name="use_catalog_pref">use_catalog_pref</string>
+    <string name="use_fast_scroll_pref">use_fast_scroll_pref</string>
+    <string name="use_ssl_pref">use_ssl_pref</string>
+    <string name="app_auto_refresh_time">app_auto_refresh_time</string>
+    <string name="background_auto_refresh_time">background_auto_refresh_time</string>
+    <string name="background_notification_pref">background_notification_pref</string>
+    <string name="enable_app_auto_refresh">enable_app_auto_refresh</string>
+    <string name="enable_widget_auto_refresh">enable_widget_auto_refresh</string>
+    <string name="clear_history_pref">clear_history_pref</string>
+    <string name="save_history_pref">save_history_pref</string>
+    <string name="history_prune_time_pref">history_prune_time_pref</string>
+    <string name="full_board_list_enabled">full_board_list_enabled</string>
+    <string name="about_pref">about_pref</string>
+    <string name="feedback_pref">feedback_pref</string>
+    <string name="rate_pref">rate_pref</string>
+    <string name="website_pref">website_pref</string>
+    <string name="privacy_pref">privacy_pref</string>
+    <string name="licenses_pref">licenses_pref</string>
+    <string name="changelog_pref">changelog_pref</string>
+    <string name="version_pref">version_pref</string>
+    <string name="posting_pref">posting_pref</string>
+    <string name="board_pref">board_pref</string>
+    <string name="show_all_boards">show_all_boards</string>
+    <string name="general_preference_category">general_preference_category</string>
+    <string name="advanced_preference_category">advanced_preference_category</string>
+    <string name="image_file_location_pref">image_file_location_pref</string>
+    <string name="chanpass_login_pref">chanpass_login_pref</string>
+    <string name="use_original_filename_pref">use_original_filename_pref</string>
+    <string name="font_style_pref">font_style_pref</string>
+
+    <string name="debug_preference_category">debug_preference_category</string>
+
+    <string name="user_agent_pref">user_agent_pref</string>
+
+    <string name="remember_thread_position_pref">remember_thread_position_pref</string>
+
+    <string name="layout_default_val">browser</string>
+    <string name="layout_tabbed_val">tabbed</string>
+    <string name="layout_panel_val">sliding_panel</string>
+
+    <string name="show_batch_download_tutorial">pref_show_batch_download_tutorial</string>
+    <string name="show_manage_boards_tutorial">pref_show_manage_boards_tutorial</string>
+
+    <string name="last_version_code_pref">last_version_code_pref</string>
+    <string name="handle_youtube_links_pref">handle_youtube_links_pref</string>
+
+    <string name="scroll_thread_with_gallery_pref">scroll_thread_with_gallery_pref</string>
+    <string name="close_gallery_on_click_pref">close_gallery_on_click_pref</string>
+
+    <string name="quote_color_pref">quote_color_pref</string>
+    <string name="reply_color_pref">reply_color_pref</string>
+    <string name="highlight_color_pref">highlight_color_pref</string>
+    <string name="link_color_pref">link_color_pref</string>
+
+    <string name="nav_drawer_bookmark_count_pref">nav_drawer_bookmark_count_pref</string>
+    <string name="close_all_tabs_prompt_pref">close_all_tabs_prompt_pref</string>
+    <string name="close_tab_on_back_pref">close_tab_on_back_pref</string>
+
+</resources>

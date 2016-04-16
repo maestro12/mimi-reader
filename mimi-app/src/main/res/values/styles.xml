@@ -1,0 +1,146 @@
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+    <style name="Theme.Mimi.Gallery" parent="@style/Theme.AppCompat.NoActionBar">
+        <item name="galleryToolbarBackground">@style/Theme.Mimi.Gallery.ToolbarBackground</item>
+
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!--<item name="android:windowContentOverlay">@null</item>-->
+        <!--<item name="android:windowNoTitle">true</item>-->
+        <!--<item name="android:windowIsFloating">true</item>-->
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="actionBarStyle">@style/ActionBar.Solid.Mimi.Gallery</item>
+
+        <item name="actionModeBackground">@drawable/cab_background_top_thememimidark</item>
+        <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimidark</item>
+        <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Dark</item>
+
+        <item name="elevation">0dp</item>
+        <item name="displayOptions">showHome|homeAsUp|showTitle</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <item name="android:windowAnimationStyle">@null</item>
+
+        <!-- Set AppCompat’s color theming attrs -->
+        <item name="colorPrimary">@color/toolbar_background_dark</item>
+        <!--<item name="colorPrimaryDark">@color/toolbar_highlight_primary_dark</item>-->
+    </style>
+
+    <style name="ActionBar.Solid.Mimi.Gallery" parent="@style/Widget.AppCompat.ActionBar.Solid">
+        <item name="android:background">@android:color/black</item>
+        <!--<item name="windowActionBarOverlay">true</item>-->
+        <!--<item name="android:windowContentOverlay">@null</item>-->
+        <item name="displayOptions">showHome|homeAsUp|showTitle</item>
+        <item name="android:icon">@android:color/transparent</item>
+    </style>
+
+    <style name="ActionBar.Mimi.TitleTextStyle" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="ActionBar.Mimi.SubTitleTextStyle" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
+        <item name="android:textColor">#AAAAAA</item>
+    </style>
+
+    <!-- ActionBar title text -->
+    <style name="Mimi.ActionBar.Title"
+        parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/actionbar_text</item>
+    </style>
+
+    <style name="Theme.Mimi.Gallery.ToolbarBackground">
+        <item name="android:background">#000</item>
+        <item name="android:textColorPrimary">#fff</item>
+    </style>
+
+    <style name="Theme.Mimi.TabLayout" parent="Widget.Design.TabLayout">
+        <item name="tabTextAppearance">@style/Theme.Mimi.TabText</item>
+        <item name="tabSelectedTextColor">#F1F1F1</item>
+    </style>
+
+    <style name="Dialog.Mimi.VideoPlayer" parent="@android:style/Theme.Dialog">
+        <item name="android:windowFrame">@null</item>
+        <item name="android:windowBackground">@color/transparent</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowTitleStyle">@null</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:windowSoftInputMode">stateUnspecified|adjustPan</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="Theme.Mimi.TabText" parent="TextAppearance.AppCompat.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#CCCCCC</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="FontStyle">
+    </style>
+
+    <style name="FontStyle.Small">
+        <item name="font_xxsmall">10sp</item>
+        <item name="font_xsmall">11sp</item>
+        <item name="font_label_xsmall">12sp</item>
+        <item name="font_label_small">13sp</item>
+        <item name="font_small">14sp</item>
+        <item name="font_medium">16sp</item>
+        <item name="font_large">18sp</item>
+        <item name="font_xlarge">20sp</item>
+        <item name="font_xxlarge">23sp</item>
+        <item name="font_icon_size">22sp</item>
+        <item name="font_header_icon">21sp</item>
+
+        <item name="font_board_height">50dp</item>
+    </style>
+
+    <style name="FontStyle.Medium">
+        <item name="font_xxsmall">11sp</item>
+        <item name="font_xsmall">13sp</item>
+        <item name="font_label_xsmall">14sp</item>
+        <item name="font_label_small">15sp</item>
+        <item name="font_small">18sp</item>
+        <item name="font_medium">20sp</item>
+        <item name="font_large">22sp</item>
+        <item name="font_xlarge">24sp</item>
+        <item name="font_xxlarge">28sp</item>
+        <item name="font_icon_size">26sp</item>
+        <item name="font_header_icon">25sp</item>
+
+        <item name="font_board_height">55dp</item>
+    </style>
+
+    <style name="FontStyle.Large">
+        <item name="font_xxsmall">15sp</item>
+        <item name="font_xsmall">18sp</item>
+        <item name="font_label_xsmall">20sp</item>
+        <item name="font_label_small">21sp</item>
+        <item name="font_small">26sp</item>
+        <item name="font_medium">28sp</item>
+        <item name="font_large">30sp</item>
+        <item name="font_xlarge">32sp</item>
+        <item name="font_xxlarge">36sp</item>
+        <item name="font_icon_size">34sp</item>
+        <item name="font_header_icon">33sp</item>
+
+        <item name="font_board_height">65dp</item>
+    </style>
+
+</resources>

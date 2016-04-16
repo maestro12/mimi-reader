@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+
+    <!-- General App Colors -->
+    <color name="background_dark">#121212</color>
+    <color name="background_light">#F4F4F4</color>
+
+    <color name="divider_light">#B6B6B6</color>
+    <color name="divider_dark">#010101</color>
+
+    <color name="text_color_light">#222222</color>
+    <color name="text_color_dark">#ACACAC</color>
+
+    <color name="subtext_color_light">#7C7C7C</color>
+    <color name="subtext_color_dark">#666666</color>
+
+    <color name="row_item_background_light">#FCFFFE</color>
+    <color name="row_item_background_light_focused">#FFFFFF</color>
+    <color name="row_item_background_light_pressed">#FFFFFF</color>
+
+    <color name="row_item_background_dark">#222222</color>
+    <color name="row_item_background_dark_focused">#303030</color>
+    <color name="row_item_background_dark_pressed">#181818</color>
+
+    <color name="row_item_border_light">#AAAAAA</color>
+    <color name="row_item_border_light_focused">#000000</color>
+    <color name="row_item_border_light_pressed">#009900</color>
+
+    <color name="row_item_border_dark">#222222</color>
+    <color name="row_item_border_dark_focused">#121212</color>
+    <color name="row_item_border_dark_pressed">#222222</color>
+
+    <color name="post_highlight_light">#F5F7F6</color>
+    <color name="post_highlight_dark">#101010</color>
+
+    <color name="reply_form_background_light">#EFEFEF</color>
+    <color name="reply_form_background_dark">#101010</color>
+
+    <color name="toolbar_background_dark">#121212</color>
+    <color name="toolbar_highlight_primary_dark">#010101</color>
+
+    <color name="nav_drawer_background">#273238</color>
+
+    <color name="post_reply_button_dark">#388E3C</color>
+    <color name="post_reply_button_light">#448AFF</color>
+
+    <!-- Board List Colors -->
+    <color name="sort_by_row_color">#273238</color>
+    <color name="sort_by_text_color_normal">#788991</color>
+    <color name="sort_by_text_color_pressed">#FFFFFF</color>
+
+    <!-- Post Colors -->
+    <color name="reply">#ff3593B2</color>
+    <color name="reply_highlight">#BF140A</color>
+    <color name="quote">#ff789922</color>
+    <color name="link">#ff557F00</color>
+    <color name="subject_light">#FF1A1A1A</color>
+    <color name="subject_dark">#FFCCCCCC</color>
+    <color name="comment_light">#FF1A1A1A</color>
+    <color name="comment_dark">#FFCCCCCC</color>
+
+    <color name="thumbnail_selected_drawable">#CC33B5E5</color>
+
+    <color name="transparent_button_color">#CC000000</color>
+
+    <color name="toolbar_subtitle_color">#5287A7</color>
+
+    <color name="pink_accent_color">#FF4081</color>
+    <color name="red_accent_color">#FF5252</color>
+    <color name="green_accent_color">#4CAF50</color>
+    <color name="blue_accent_color">#448AFF</color>
+
+    <!-- Sidebar Colors -->
+    <color name="sidebar_background">#212121</color>
+    <color name="sidebar_divider">#212121</color>
+    <color name="sidebar_header_text">#5287A7</color>
+    <color name="sidebar_row_background">#2C2C2C</color>
+    <color name="sidebar_row_background_pressed">#252626</color>
+    <color name="sidebar_row_text">#5287A7</color>
+    <color name="sidebar_row_text_pressed">#5287A7</color>
+    <color name="sidebar_bookmark_row_comment_text">#7C96A2</color>
+    <color name="new_thread_count_text">#FF222222</color>
+    <color name="new_thread_count_background">#FF202020</color>
+    <color name="tab_highlight">#FFAAAAAA</color>
+    <color name="tab_unhighlight">#FF444444</color>
+    <color name="tab_highlight_light">#5287A7</color>
+    <color name="tab_highlight_dark">#FF880000</color>
+    <color name="clear_all_normal">#FF880000</color>
+    <color name="clear_all_pressed">#FFAA0000</color>
+
+    <color name="history_item_badge_text_color">#F5F7F6</color>
+
+    <color name="transparent">#00000000</color>
+
+    <!-- Post Details Toolbar -->
+    <color name="toolbar_icon_color_dark">#FFFFFFFF</color>
+    <color name="toolbar_icon_shadow_color_dark">#FF121212</color>
+    <color name="toolbar_icon_color_light">#FFFFFFFF</color>
+    <color name="toolbar_icon_shadow_color_light">#FF121212</color>
+
+    <color name="toolbar_blue_grey_primary">#324148</color>
+    <color name="toolbar_blue_grey_dark">#212B30</color>
+
+    <color name="toolbar_light_red_primary">#8D1616</color>
+    <color name="toolbar_light_red_dark">#6A1111</color>
+    <color name="toolbar_dark_red_primary">#7C1313</color>
+    <color name="toolbar_dark_red_dark">#580E0E</color>
+
+    <!-- Post Info -->
+    <color name="username_color_dark">#1E75C7</color>
+    <color name="username_color_light">#016BCB</color>
+    <color name="mod_username_color">#BF140A</color>
+    <color name="admin_username_color">#BF140A</color>
+    <color name="post_header_decoration_light">#444444</color>
+    <color name="post_header_decoration_dark">#888888</color>
+
+    <color name="highlight_color_dark">#0388F4</color>
+    <color name="highlight_color_light">#03A9F4</color>
+
+    <!-- Rating Bar -->
+    <color name="rating_background">#448833</color>
+    <color name="rating_text">#121212</color>
+    <color name="rating_button_selected">#66AA55</color>
+    <color name="actionbar_text">#CCCCCC</color>
+
+    <color name="solid_black">#ff000000</color>
+
+    <color name="app_background_normal_light">#273238</color>
+    <color name="app_background_pressed_light">#1E2B31</color>
+
+    <color name="app_background_normal_dark">#FF222222</color>
+    <color name="app_background_pressed_dark">#FF121212</color>
+
+    <!-- Native Ads -->
+    <color name="cta_background_color">#49A836</color>
+    <color name="accent_material_dark">#1976d2</color>
+
+    <color name="border">#CCCCCC</color>
+    <color name="border_selected">#000000</color>
+    <color name="circle">#FFFFFF</color>
+
+    <array name="default_colors">
+        <item>@color/reply</item>
+        <item>@color/reply_highlight</item>
+        <item>@color/quote</item>
+        <item>@color/link</item>
+        <item>@color/md_blue_700</item>
+        <item>@color/md_red_700</item>
+        <item>@color/md_green_700</item>
+        <item>@color/md_yellow_A400</item>
+        <item>@color/md_grey_300</item>
+        <item>@color/md_grey_900</item>
+    </array>
+
+</resources>

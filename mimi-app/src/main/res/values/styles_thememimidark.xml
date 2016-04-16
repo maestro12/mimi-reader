@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2016. Eli Connelly
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<resources>
+
+    <style name="Theme.Mimi.Dark" parent="@style/Theme.AppCompat.NoActionBar">
+        <item name="actionBarItemBackground">@drawable/selectable_background_thememimidark</item>
+        <item name="dropDownListViewStyle">@style/DropDownListView.Mimi.Dark</item>
+        <item name="actionBarTabStyle">@style/ActionBarTabStyle.Mimi.Dark</item>
+        <item name="actionDropDownStyle">@style/DropDownNav.Mimi.Dark</item>
+        <item name="actionBarStyle">@style/ActionBar.Solid.Mimi.Dark</item>
+        <item name="actionModeBackground">@drawable/cab_background_top_thememimidark</item>
+        <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimidark</item>
+        <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Dark</item>
+        <item name="titleTextStyle">@style/Mimi.ActionBar.Title</item>
+        <item name="logo">@drawable/leaf_logo</item>
+        <item name="android:windowActionBarOverlay">true</item>
+        <item name="windowActionBarOverlay">true</item>
+
+        <item name="elevation">0dp</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <item name="defaultLayoutBackground">@style/Theme.Mimi.Dark.DefaultLayoutBackground</item>
+        <item name="defaultListViewStyle">@style/Theme.Mimi.Dark.DefaultListViewStyle</item>
+        <item name="plainCardBackground">@style/Theme.Mimi.Dark.PlainCardBackground</item>
+        <item name="cardBackground">@style/Theme.Mimi.Dark.CardBackground</item>
+        <item name="cardBackgroundSelector">@style/Theme.Mimi.Dark.CardBackgroundSelector</item>
+        <item name="gridCardBackgroundSelector">@style/Theme.Mimi.Dark.GridCardBackgroundSelector</item>
+        <item name="postBackground">@style/Theme.Mimi.Dark.PostBackground</item>
+        <item name="postHeaderBackground">@style/Theme.Mimi.Dark.PostHeaderBackground</item>
+        <item name="dividerColor">@style/Theme.Mimi.Dark.DividerColor</item>
+        <item name="defaultTextColor">@style/Theme.Mimi.Dark.DefaultTextColor</item>
+        <item name="defaultSubtextColor">@style/Theme.Mimi.Dark.DefaultSubtextColor</item>
+        <item name="rowItemBackground">@style/Theme.Mimi.Dark.RowItemBackground</item>
+        <item name="postHeaderText">@style/Theme.Mimi.Dark.PostHeaderText</item>
+        <item name="postHeaderIcon">@style/Theme.Mimi.Dark.PostHeaderIcon</item>
+        <item name="postHeaderDecoration">@style/Theme.Mimi.Dark.PostHeaderDecoration</item>
+        <item name="replyFormBackground">@style/Theme.Mimi.Dark.ReplyFormbackground</item>
+        <item name="toolbarBackground">@style/Theme.Mimi.Dark.ToolbarBackground</item>
+        <item name="toolbarIcon">@style/Theme.Mimi.Dark.ToolbarIcon</item>
+        <item name="placeholderImage">@style/Theme.Mimi.Dark.PlaceholderImageSelector</item>
+        <item name="postUserName">@style/Theme.Mimi.Dark.PostUserName</item>
+        <item name="postModUserName">@style/Theme.Mimi.Dark.PostModUserName</item>
+        <item name="favoriteBoardColor">@style/Theme.Mimi.Dark.FavoriteBoardColor</item>
+        <item name="basicButton">@style/Theme.Mimi.Dark.BasicButton</item>
+        <item name="postSubjectText">@style/Theme.Mimi.Dark.PostSubjectText</item>
+        <item name="postCommentText">@style/Theme.Mimi.Dark.PostCommentText</item>
+        <item name="postHighlight">@style/Theme.Mimi.Dark.PostHighlight</item>
+        <item name="boardOrderBackground">@style/Theme.Mimi.Dark.BoardOrderBackground</item>
+        <item name="boardOrderItem">@style/Theme.Mimi.Dark.BoardOrderItem</item>
+        <item name="postReplyButton">@style/Theme.Mimi.Dark.PostReplyButton</item>
+        <item name="tabHighlightBackground">@style/Theme.Mimi.Dark.TabHighlightBackground</item>
+
+        <item name="cardViewBackground">@color/background_dark</item>
+
+        <!-- Set AppCompat’s color theming attrs -->
+        <item name="colorPrimary">?attr/mimiPrimaryColor</item>
+        <item name="colorPrimaryDark">?attr/mimiPrimaryColorDark</item>
+        <item name="colorAccent">?attr/mimiAccentColor</item>
+
+        <item name="scrollerHandleColor">@color/nav_drawer_background</item>
+    </style>
+
+    <style name="ActionBar.Solid.Mimi.Dark" parent="@style/Widget.AppCompat.ActionBar.Solid">
+        <item name="background">@drawable/ab_stacked_solid_thememimidark</item>
+        <item name="backgroundStacked">@drawable/ab_solid_thememimidark</item>
+        <item name="backgroundSplit">@drawable/ab_stacked_solid_thememimidark</item>
+        <item name="progressBarStyle">@style/ProgressBar.Mimi.Dark</item>
+        <item name="actionButtonStyle">@style/Theme.Mimi.Light.ActionButtonStyle</item>
+        <item name="titleTextStyle">@style/ActionBar.Mimi.TitleTextStyle</item>
+        <item name="subtitleTextStyle">@style/ActionBar.Mimi.SubTitleTextStyle</item>
+        <item name="logo">@drawable/leaf_logo</item>
+    </style>
+
+    <style name="ActionBar.Transparent.Mimi.Dark" parent="@style/Widget.AppCompat.ActionBar">
+        <item name="background">@null</item>
+        <item name="progressBarStyle">@style/ProgressBar.Mimi.Dark</item>
+    </style>
+
+    <style name="DropDownListView.Mimi.Dark" parent="@style/Widget.AppCompat.ListView.DropDown">
+        <item name="android:listSelector">@drawable/selectable_background_thememimidark</item>
+    </style>
+
+    <style name="ActionBarTabStyle.Mimi.Dark" parent="@style/Widget.AppCompat.ActionBar.TabView">
+        <item name="android:background">@drawable/tab_indicator_ab_thememimidark</item>
+    </style>
+
+    <style name="DropDownNav.Mimi.Dark" parent="@style/Widget.AppCompat.Spinner.DropDown.ActionBar">
+        <item name="android:background">@drawable/spinner_background_ab_thememimidark</item>
+        <item name="android:popupBackground">@drawable/menu_dropdown_panel_thememimidark</item>
+        <item name="android:dropDownSelector">@drawable/selectable_background_thememimidark</item>
+    </style>
+
+    <style name="ProgressBar.Mimi.Dark" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/progress_horizontal_thememimidark</item>
+    </style>
+
+    <style name="ActionButton.CloseMode.Mimi.Dark" parent="@style/Widget.AppCompat.ActionButton.CloseMode">
+        <item name="android:background">@drawable/btn_cab_done_thememimidark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.DefaultLayoutBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PlainCardBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/plain_card_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.CardBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/basic_card_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.CardBackgroundSelector" parent="@style/Theme.Mimi.Dark">
+        <item name="cardBackgroundColor">@drawable/dark_item_selector</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.GridCardBackgroundSelector" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/grid_card_selector_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.DividerColor">
+        <item name="android:background">@color/divider_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.DefaultListViewStyle">
+        <item name="android:background">@color/background_dark</item>
+        <item name="android:divider">@color/transparent</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.DefaultTextColor">
+        <item name="android:textColor">@color/text_color_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.DefaultSubtextColor">
+        <item name="android:textColor">@color/subtext_color_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.RowItemBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/row_item_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostHeaderText" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/subtext_color_dark</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostHeaderIcon" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/post_header_decoration_dark</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textSize">21sp</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostHeaderDecoration" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/post_header_decoration_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/basic_post_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostHeaderBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/post_highlight_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostHighlight" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/post_highlight_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.ToolbarBackground" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:background">?attr/mimiPrimaryColor</item>
+        <item name="android:textColorPrimary">#fff</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.ReplyFormbackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/reply_form_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.ToolbarIcon" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/toolbar_button_selector_dark</item>
+        <item name="android:textColor">@color/toolbar_icon_color_dark</item>
+        <item name="android:shadowColor">@color/toolbar_icon_shadow_color_dark</item>
+        <item name="android:shadowDx">1</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">1.5</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PlaceholderImageSelector" parent="@style/Theme.Mimi.Dark">
+        <item name="android:src">@drawable/placeholder_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostUserName" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">?attr/mimiAccentTextColor</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostModUserName" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/mod_username_color</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.FavoriteBoardColor" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/highlight_color_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.BasicButton" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/button_background_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostSubjectText" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/subject_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostCommentText" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/comment_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.BoardOrderBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/board_order_background_selector</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.BoardOrderItem" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@drawable/board_order_item_selector</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.PostReplyButton" parent="@style/Theme.Mimi.Dark">
+        <item name="android:textColor">@color/post_reply_button_dark</item>
+    </style>
+
+    <style name="Theme.Mimi.Dark.TabHighlightBackground" parent="@style/Theme.Mimi.Dark">
+        <item name="android:background">@color/tab_highlight_dark</item>
+    </style>
+
+</resources>
