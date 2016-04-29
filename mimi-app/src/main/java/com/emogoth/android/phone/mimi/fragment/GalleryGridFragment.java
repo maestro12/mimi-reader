@@ -347,33 +347,33 @@ public class GalleryGridFragment extends MimiFragmentBase {
         }
 
         RxUtil.safeUnsubscribe(fetchThreadSubscription);
-        fetchThreadSubscription = chanConnector.fetchThread(getActivity(), boardName, threadId)
-            .subscribe(new Action1<ChanThread>() {
-                @Override
-                public void call(ChanThread thread) {
+        fetchThreadSubscription = chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT)
+                .subscribe(new Action1<ChanThread>() {
+                    @Override
+                    public void call(ChanThread thread) {
 
-                    if (thread != null) {
-                        posts = GalleryPagerAdapter.getPostsWithImages(thread.getPosts());
-                        if (galleryGrid != null) {
-                            galleryAdapter.setPosts(posts);
+                        if (thread != null) {
+                            posts = GalleryPagerAdapter.getPostsWithImages(thread.getPosts());
+                            if (galleryGrid != null) {
+                                galleryAdapter.setPosts(posts);
+                            }
+                        } else if (getActivity() != null) {
+                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
                         }
-                    } else if (getActivity() != null) {
-                        Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
                     }
-                }
-            }, new Action1<Throwable>() {
-                @Override
-                public void call(Throwable throwable) {
-                    if (throwable instanceof HttpException) {
-                        HttpException error = (HttpException) throwable;
-                        Log.i(LOG_TAG, "Error receiving response: " + error.getLocalizedMessage() + ", " + error.code());
-                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        if (throwable instanceof HttpException) {
+                            HttpException error = (HttpException) throwable;
+                            Log.i(LOG_TAG, "Error receiving response: " + error.getLocalizedMessage() + ", " + error.code());
+                        }
 
-                    if(getActivity() != null) {
-                        Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
+                        if(getActivity() != null) {
+                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
+                        }
                     }
-                }
-            });
+                });
 
     }
 

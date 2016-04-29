@@ -431,6 +431,8 @@
     <string name="reply_count">Reply Count</string>
     <string name="history">History</string>
     <string name="invert_sort">Invert Sort</string>
+    <string name="fullscreen">Fullscreen</string>
+    <string name="auto_play_audio">Auto play webm audio</string>
     <string name="youtube_id_not_defined">Youtube ID not defined</string>
 
     <string-array name="youtube_dialog_list">

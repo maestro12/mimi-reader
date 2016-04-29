@@ -130,8 +130,8 @@ public class FourChanConnector extends ChanConnector {
     }
 
     @Override
-    public Observable<ChanThread> fetchThread(final Context context, final String boardName, final int threadId) {
-        return api.fetchThread(boardName, threadId)
+    public Observable<ChanThread> fetchThread(final Context context, final String boardName, final int threadId, final String cacheControl) {
+        return api.fetchThread(boardName, threadId, cacheControl)
                 .subscribeOn(Schedulers.io())
                 .unsubscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -140,14 +140,14 @@ public class FourChanConnector extends ChanConnector {
                     public ChanThread call(FourChanThread fourChanThread) {
                         ChanThread thread = new ChanThread();
 
-                            List<ChanPost> posts = new ArrayList<>();
-                            for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
-                                posts.add(fourChanPost.toPost());
-                            }
+                        List<ChanPost> posts = new ArrayList<>();
+                        for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
+                            posts.add(fourChanPost.toPost());
+                        }
 
-                            thread.setPosts(posts);
-                            thread.setBoardName(boardName);
-                            thread.setThreadId(threadId);
+                        thread.setPosts(posts);
+                        thread.setBoardName(boardName);
+                        thread.setThreadId(threadId);
 
                         return thread;
                     }

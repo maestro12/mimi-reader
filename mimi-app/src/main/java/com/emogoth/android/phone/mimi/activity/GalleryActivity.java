@@ -29,11 +29,13 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.event.FullscreenEvent;
 import com.emogoth.android.phone.mimi.event.GalleryGridButtonEvent;
 import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.fragment.GalleryGridFragment;
 import com.emogoth.android.phone.mimi.fragment.GalleryPagerFragment;
 import com.emogoth.android.phone.mimi.fragment.MimiFragmentBase;
+import com.emogoth.android.phone.mimi.interfaces.AudioSettingsHost;
 import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
@@ -43,7 +45,7 @@ import com.squareup.otto.Subscribe;
 import java.util.List;
 
 
-public class GalleryActivity extends MimiActivity implements OnThumbnailClickListener, View.OnClickListener {
+public class GalleryActivity extends MimiActivity implements OnThumbnailClickListener, View.OnClickListener, AudioSettingsHost {
     private static final String LOG_TAG = GalleryActivity.class.getSimpleName();
     private static final boolean LOG_DEBUG = false;
     private static final String GRID_BACKSTACK_TAG = "gallery_grid";
@@ -63,12 +65,16 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
 
     private MimiFragmentBase currentFragment;
     private int threadId;
+    private boolean audioLock;
 //    private boolean configChange = false;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        audioLock = prefs.getBoolean(getString(R.string.webm_audio_lock_pref), false);
 
         decorView = getWindow().getDecorView();
         defaultSystemUiVisibility = decorView.getSystemUiVisibility();
@@ -208,8 +214,17 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         boolean closeOnClick = prefs.getBoolean(getString(R.string.close_gallery_on_click_pref), true);
 
-        if(closeOnClick) {
+        if (closeOnClick) {
             finish();
+        }
+    }
+
+    @Subscribe
+    public void toggleFullscreenEvent(final FullscreenEvent event) {
+        if (event.isForceVisibility()) {
+            setFullscreen(event.isVisbile());
+        } else {
+            toggleFullscreen();
         }
     }
 
@@ -270,5 +285,15 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
     @Override
     public void onClick(View v) {
         onBackPressed();
+    }
+
+    @Override
+    public boolean isAudioLocked() {
+        return this.audioLock;
+    }
+
+    @Override
+    public void setAudioLock(boolean locked) {
+        this.audioLock = locked;
     }
 }

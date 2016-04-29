@@ -104,10 +104,10 @@ public class UserPost extends BaseModel {
                 cursor.moveToPosition(-1);
                 List<UserPost> userPostList = new ArrayList<>(cursor.getCount());
                 while (cursor.moveToNext()) {
-                    UserPost history = new UserPost();
-                    DatabaseUtils.loadFromCursor(history, cursor);
+                    UserPost userPost = new UserPost();
+                    userPost.loadFromCursor(cursor);
 
-                    userPostList.add(history);
+                    userPostList.add(userPost);
                 }
                 return Observable.just(userPostList);
             }

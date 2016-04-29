@@ -20,6 +20,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="#AA000000">
 
     <LinearLayout
@@ -59,14 +60,16 @@
                 android:textColor="#F0F0F0"/>
         </LinearLayout>
 
-        <ImageView
+        <android.support.v7.widget.AppCompatImageView
             android:id="@+id/grid_button"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_gravity="center"
+            android:padding="10dp"
             android:scaleType="fitXY"
             android:background="@drawable/thumbnail_selector"
-            android:src="@drawable/ic_view_as_grid"/>
+            app:srcCompat="@drawable/ic_view_grid" />
+
     </LinearLayout>
 
     <com.emogoth.android.phone.mimi.view.MimiViewPager
@@ -74,5 +77,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/gallery_toolbar"/>
+
+    <android.support.v7.widget.AppCompatImageView
+        android:id="@+id/exit_fullscreen_button"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:gravity="center"
+        android:padding="10dp"
+        android:layout_margin="2dp"
+        android:background="#88000000"
+        app:srcCompat="@drawable/ic_fullscreen_exit"
+        android:visibility="invisible"/>
 
 </RelativeLayout>

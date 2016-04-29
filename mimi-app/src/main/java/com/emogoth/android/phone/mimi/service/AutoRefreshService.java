@@ -100,7 +100,7 @@ public class AutoRefreshService extends Service {
                     .build();
 
             RxUtil.safeUnsubscribe(fetchThreadSubscription);
-            fetchThreadSubscription = chanConnector.fetchThread(this, threadInfo.boardName, threadInfo.threadId)
+            fetchThreadSubscription = chanConnector.fetchThread(this, threadInfo.boardName, threadInfo.threadId, ChanConnector.CACHE_FORCE_NETWORK)
                     .zipWith(HistoryTableConnection.fetchPost(threadInfo.boardName, threadInfo.threadId), new Func2<ChanThread, History, ChanThread>() {
                         @Override
                         public ChanThread call(ChanThread chanThread, History history) {

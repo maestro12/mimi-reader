@@ -14,28 +14,37 @@
  *    limitations under the License.
  */
 
-package com.emogoth.android.phone.mimi.util;
+package com.emogoth.android.phone.mimi.db;
+
+
+import android.database.sqlite.SQLiteDatabase;
+
+import com.emogoth.android.phone.mimi.db.model.BaseModel;
+import com.squareup.sqlbrite.BriteDatabase;
 
 import rx.Observable;
-import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class RxUtil {
-    public static void safeUnsubscribe(Subscription subscription) {
-        if(subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
-        }
+
+public class DatabaseUtils {
+
+    public static int update(BriteDatabase db, BaseModel baseModel) {
+        return db.update(baseModel.getTableName(), baseModel.toContentValues(), baseModel.whereClause(), baseModel.whereArg());
     }
 
-    public static <T> Observable.Transformer<T, T> applyBackgroundSchedulers() {
+    public static void insert(BriteDatabase db, BaseModel baseModel) {
+        db.insert(baseModel.getTableName(), baseModel.toContentValues(), SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public static <T> Observable.Transformer<T, T> applySchedulers() {
         return new Observable.Transformer<T, T>() {
             @Override
             public Observable<T> call(Observable<T> observable) {
                 return observable.subscribeOn(Schedulers.io())
-                        .unsubscribeOn(Schedulers.computation())
                         .observeOn(AndroidSchedulers.mainThread());
             }
         };
     }
+
 }

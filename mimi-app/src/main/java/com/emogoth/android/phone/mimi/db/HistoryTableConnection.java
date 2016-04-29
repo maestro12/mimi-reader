@@ -18,16 +18,13 @@ package com.emogoth.android.phone.mimi.db;
 
 
 import android.content.ContentValues;
-import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.activeandroid.query.Delete;
 import com.activeandroid.query.From;
 import com.activeandroid.query.Select;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.model.History;
-import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.mimireader.chanlib.models.ChanPost;
 import com.squareup.sqlbrite.BriteDatabase;
 
@@ -39,8 +36,8 @@ import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
 
-import static com.emogoth.android.phone.mimi.db.DatabaseUtils.convertQueryToCursor;
-import static com.emogoth.android.phone.mimi.db.DatabaseUtils.loadFromCursor;
+import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
+
 
 public class HistoryTableConnection {
     public static final String LOG_TAG = HistoryTableConnection.class.getSimpleName();
@@ -58,7 +55,7 @@ public class HistoryTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(History.mapper())
                 .flatMap(new Func1<List<History>, Observable<History>>() {
                     @Override
@@ -110,7 +107,7 @@ public class HistoryTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(History.mapper())
                 .onErrorReturn(new Func1<Throwable, List<History>>() {
                     @Override
@@ -247,14 +244,14 @@ public class HistoryTableConnection {
                 return Observable.just(val > 0);
             }
         })
-        .onErrorReturn(new Func1<Throwable, Boolean>() {
-            @Override
-            public Boolean call(Throwable throwable) {
-                Log.e(LOG_TAG, "Error deleting history: name=" + boardName + ", thread=" + threadId, throwable);
-                return false;
-            }
-        })
-        .compose(DatabaseUtils.<Boolean>applySchedulers());
+                .onErrorReturn(new Func1<Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Throwable throwable) {
+                        Log.e(LOG_TAG, "Error deleting history: name=" + boardName + ", thread=" + threadId, throwable);
+                        return false;
+                    }
+                })
+                .compose(DatabaseUtils.<Boolean>applySchedulers());
     }
 
     public static Observable<Boolean> removeAllHistory(final boolean watched) {

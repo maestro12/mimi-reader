@@ -18,9 +18,17 @@ package com.emogoth.android.phone.mimi.fragment;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.ViewStubCompat;
+import android.view.View;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.emogoth.android.phone.mimi.BuildConfig;
+import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
+import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 
@@ -36,16 +44,32 @@ import rx.schedulers.Schedulers;
 
 public class GalleryImageFragment extends GalleryImageBase {
     private static final String LOG_TAG = GalleryImageFragment.class.getSimpleName();
-    private static final String KEY_FILE_NAME = "FILE_NAME";
-    private static final String KEY_WIDTH = "WIDTH";
-    private static final String KEY_HEIGHT = "HEIGHT";
-    private static final String LOADER_ID = "LOADER_ID";
-    private static final String KEY_LARGE_IMAGE = "LARGE_IMAGE";
 
     private Subscription resizeImageSubscription;
+    private SubsamplingScaleImageView imageViewTouch;
 
     public GalleryImageFragment() {
 
+    }
+
+    @Override
+    public void onViewCreated(View v, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(v, savedInstanceState);
+
+        inflateLayout(R.layout.gallery_image_zoom, new ViewStubCompat.OnInflateListener() {
+            @Override
+            public void onInflate(ViewStubCompat stub, View view) {
+                imageViewTouch = (SubsamplingScaleImageView) view.findViewById(R.id.full_image);
+                if (imageViewTouch != null) {
+                    imageViewTouch.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            BusProvider.getInstance().post(new GalleryImageTouchEvent());
+                        }
+                    });
+                }
+            }
+        });
     }
 
     @Override
@@ -70,7 +94,7 @@ public class GalleryImageFragment extends GalleryImageBase {
         if (getActivity() != null) {
             setOnImageDisplayedListener(listener);
 
-            if(listener != null && getImageViewTouch() != null && getImageFile() != null && getImageFile().exists()) {
+            if (listener != null && imageViewTouch != null && getImageFile() != null && getImageFile().exists()) {
 
                 RxUtil.safeUnsubscribe(resizeImageSubscription);
                 resizeImageSubscription = Observable.just(getImageFile())
@@ -111,9 +135,9 @@ public class GalleryImageFragment extends GalleryImageBase {
     @Override
     public void displayImage(final File imageFileName, final boolean isVisible) {
 
-        if (getActivity() != null && getImageViewTouch() != null && imageFileName != null && imageFileName.exists()) {
-            showScalingImage();
-            getImageViewTouch().setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
+        if (getActivity() != null && imageViewTouch != null && imageFileName != null && imageFileName.exists()) {
+            showContent();
+            imageViewTouch.setOnImageEventListener(new SubsamplingScaleImageView.OnImageEventListener() {
                 @Override
                 public void onReady() {
 
@@ -121,8 +145,8 @@ public class GalleryImageFragment extends GalleryImageBase {
 
                 @Override
                 public void onImageLoaded() {
-                    if(getOnImageDisplayedListener() != null) {
-                        getOnImageDisplayedListener().onImageDisplayed(GalleryImageFragment.this, getImageViewTouch().getDrawingCache(true));
+                    if (getOnImageDisplayedListener() != null) {
+                        getOnImageDisplayedListener().onImageDisplayed(GalleryImageFragment.this, imageViewTouch.getDrawingCache(true));
                     }
                 }
 
@@ -141,10 +165,9 @@ public class GalleryImageFragment extends GalleryImageBase {
 
                 }
             });
-//            if(BuildConfig.DEBUG) {
-//                getImageViewTouch().setDebug(true);
-//            }
-            getImageViewTouch().setImage(ImageSource.uri(imageFileName.getAbsolutePath()));
+
+            imageViewTouch.setDebug(BuildConfig.DEBUG);
+            imageViewTouch.setImage(ImageSource.uri(imageFileName.getAbsolutePath()));
         }
 
     }

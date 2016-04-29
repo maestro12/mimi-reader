@@ -126,7 +126,7 @@ public class History extends BaseModel {
                 List<History> historyList = new ArrayList<>(cursor.getCount());
                 while (cursor.moveToNext()) {
                     History history = new History();
-                    DatabaseUtils.loadFromCursor(history, cursor);
+                    history.loadFromCursor(cursor);
 
                     historyList.add(history);
                 }

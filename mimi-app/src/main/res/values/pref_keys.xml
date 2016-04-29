@@ -198,6 +198,8 @@
     <string name="use_original_filename_pref">use_original_filename_pref</string>
     <string name="font_style_pref">font_style_pref</string>
 
+    <string name="webm_audio_lock_pref">webm_audio_lock_pref</string>
+
     <string name="debug_preference_category">debug_preference_category</string>
 
     <string name="user_agent_pref">user_agent_pref</string>

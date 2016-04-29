@@ -158,7 +158,7 @@ public class Board extends BaseModel {
                 List<Board> boards = new ArrayList<>(cursor.getCount());
                 while (cursor.moveToNext()) {
                     Board board = new Board();
-                    DatabaseUtils.loadFromCursor(board, cursor);
+                    board.loadFromCursor(cursor);
 
                     boards.add(board);
                 }

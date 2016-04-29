@@ -28,18 +28,18 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.ViewStubCompat;
 import android.text.TextUtils;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -48,7 +48,6 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.async.DownloadThread;
 import com.emogoth.android.phone.mimi.event.GalleryGridButtonEvent;
-import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.IOUtils;
@@ -78,9 +77,6 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
     private String boardName;
     private String tim;
 
-    private SubsamplingScaleImageView imageViewTouch;
-    private ImageView gifImageView;
-
     private String imageUrl;
 
     private int maxWidth;
@@ -90,14 +86,16 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
     //    private int fileSize;
     private DownloadThread downloadTask;
     private ImageDisplayedListener imageDisplayedListener;
-    private ImageView playButton;
-    private View openButton;
 
-    private boolean openButtonEnabled = false;
     private boolean defaultLayout = true;
     private boolean updateWhenVisible = false;
     private boolean useOriginalFilename;
-//    private DownloadRequest downloadRequest;
+
+    private int mediaWidth;
+    private int mediaHeight;
+
+    private boolean muted = true;
+    private ViewStubCompat viewStub;
 
     public abstract void scaleBitmap(ImageDisplayedListener listener);
 
@@ -121,6 +119,8 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
             originalFilename = args.getString(Extras.EXTRAS_POST_FILENAME);
             tim = args.getString(Extras.EXTRAS_POST_TIM);
             fileExt = args.getString(Extras.EXTRAS_POST_FILENAME_EXT);
+            mediaWidth = args.getInt(Extras.EXTRAS_WIDTH, 0);
+            mediaHeight = args.getInt(Extras.EXTRAS_HEIGHT, 0);
 //            fileSize = args.getInt(Extras.EXTRAS_POST_SIZE);
         }
 
@@ -147,38 +147,13 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
             return;
         }
 
-        openButton = view.findViewById(R.id.open_button);
-        playButton = (ImageView) view.findViewById(R.id.media_play_button);
+        viewStub = (ViewStubCompat) view.findViewById(R.id.view_stub);
         progressBar = (ProgressBar) view.findViewById(R.id.progress_bar);
 
         final String protocol = MimiUtil.httpOrHttps(getActivity());
         final String baseUrl = getString(R.string.image_link);
         final String basePath = getString(R.string.full_image_path, boardName, tim, fileExt);
         imageUrl = protocol + baseUrl + basePath;
-
-        final DisplayMetrics dm = getResources().getDisplayMetrics();
-        maxWidth = dm.widthPixels;
-        maxHeight = dm.heightPixels;
-
-        imageViewTouch = (SubsamplingScaleImageView) view.findViewById(R.id.full_image);
-        if (imageViewTouch != null) {
-            imageViewTouch.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    BusProvider.getInstance().post(new GalleryImageTouchEvent());
-                }
-            });
-        }
-
-        gifImageView = (ImageView) view.findViewById(R.id.gif_image);
-        if (gifImageView != null) {
-            gifImageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    BusProvider.getInstance().post(new GalleryImageTouchEvent());
-                }
-            });
-        }
 
         downloadTask = new DownloadThread(getImageFileLocation(), imageUrl);
         downloadTask.setProgressListener(new DownloadThread.ProgressListener() {
@@ -191,34 +166,15 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
             public void onComplete(final String filePath) {
                 Log.i(LOG_TAG, "Finished downloading image: location=" + filePath);
                 if (!TextUtils.isEmpty(filePath) && getActivity() != null) {
-                    imageFile = new File(filePath);
-                    displayImage(imageFile, true);
 
-                    if (openButtonEnabled) {
-                        openButton.setVisibility(View.VISIBLE);
-                        openButton.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                final Thread thread = new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        final String fileExt = filePath.substring(filePath.lastIndexOf(".") + 1);
-                                        final String tmpFileName = MimiUtil.getTempPath(getActivity(), fileExt);
-                                        final File tmpFile = new File(tmpFileName);
-                                        final String fileUri = "file://" + tmpFileName;
-                                        if (copyFile(imageFile, tmpFile)) {
-                                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(fileUri));
-                                            intent.setDataAndType(Uri.parse(fileUri), Utils.getMimeType(fileExt));
-                                            startActivity(intent);
-                                        }
-
-
-                                    }
-                                });
-                                thread.start();
-                            }
-                        });
+                    if (progressBar != null) {
+                        progressBar.setVisibility(View.GONE);
                     }
+
+                    imageFile = new File(filePath);
+                    displayImage(imageFile, getUserVisibleHint());
+
+
                 }
             }
         });
@@ -230,6 +186,17 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         });
 
         downloadTask.start();
+    }
+
+    public void inflateLayout(@LayoutRes int res, ViewStubCompat.OnInflateListener listener) {
+        if (viewStub != null) {
+            if(listener != null) {
+                viewStub.setOnInflateListener(listener);
+            }
+
+            viewStub.setLayoutResource(res);
+            viewStub.inflate();
+        }
     }
 
     @Override
@@ -253,6 +220,8 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         outState.putString(Extras.EXTRAS_POST_FILENAME, originalFilename);
         outState.putString(Extras.EXTRAS_POST_TIM, tim);
         outState.putString(Extras.EXTRAS_POST_FILENAME_EXT, fileExt);
+        outState.putInt(Extras.EXTRAS_WIDTH, mediaWidth);
+        outState.putInt(Extras.EXTRAS_HEIGHT, mediaHeight);
 
         if (imageFile != null) {
             outState.putString(Extras.EXTRAS_FILE_PATH, imageFile.getAbsolutePath());
@@ -270,6 +239,8 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
             originalFilename = savedInstanceState.getString(Extras.EXTRAS_POST_FILENAME);
             tim = savedInstanceState.getString(Extras.EXTRAS_POST_TIM);
             fileExt = savedInstanceState.getString(Extras.EXTRAS_POST_FILENAME_EXT);
+            mediaWidth = savedInstanceState.getInt(Extras.EXTRAS_WIDTH, 0);
+            mediaHeight = savedInstanceState.getInt(Extras.EXTRAS_HEIGHT, 0);
 
             if (savedInstanceState.containsKey(Extras.EXTRAS_FILE_PATH)) {
                 imageFile = new File(savedInstanceState.getString(Extras.EXTRAS_FILE_PATH));
@@ -300,10 +271,6 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         }
     }
 
-    public void enableOpenButton(final boolean enabled) {
-        openButtonEnabled = enabled;
-    }
-
     protected void useDefaultLayout(final boolean defaultLayout) {
         this.defaultLayout = defaultLayout;
     }
@@ -322,21 +289,17 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         return imageFileName;
     }
 
-    protected void showBasicImage() {
-        imageViewTouch.setVisibility(View.GONE);
-        gifImageView.setVisibility(View.VISIBLE);
-        progressBar.setVisibility(View.GONE);
+    protected int getMediaWidth() {
+        return this.mediaWidth;
     }
 
-    protected void showScalingImage() {
-        imageViewTouch.setVisibility(View.VISIBLE);
-        gifImageView.setVisibility(View.GONE);
-        progressBar.setVisibility(View.GONE);
+    protected int getMediaHeight() {
+        return this.mediaHeight;
     }
 
-    protected void showProgress() {
-        imageViewTouch.setVisibility(View.GONE);
-        progressBar.setVisibility(View.VISIBLE);
+    protected void showContent() {
+        progressBar.setVisibility(View.GONE);
+        viewStub.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -463,22 +426,16 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
                 final File destPath = writeFile;
                 if (copyFile(imageFile, destPath)) {
                     try {
-
                         invokeMediaScanner(destPath);
 
                         if (showNotification) {
                             scaleBitmap(new ImageDisplayedListener() {
                                 @Override
                                 public void onImageDisplayed(GalleryImageBase imageFragment, Bitmap bmp) {
-
                                     showSaveNotification(bmp, destPath);
-
-
                                 }
                             });
                         }
-
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -561,7 +518,7 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         notificationManager.notify(NOTIFICATION_ID, saveFileNotification);
     }
 
-    private boolean copyFile(final File copyFrom, final File copyTo) {
+    protected boolean copyFile(final File copyFrom, final File copyTo) {
 
         final int IO_BUFFER_SIZE = 1024;
         int i;
@@ -617,34 +574,6 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         } finally {
             IOUtils.closeQuietly(fos);
             IOUtils.closeQuietly(fis);
-        }
-
-        return false;
-    }
-
-    public void setPlayButtonVisibility(final int visible) {
-        if (playButton != null) {
-            playButton.setVisibility(visible);
-        }
-    }
-
-    public void setOnPlayButtonClicked(final View.OnClickListener listener) {
-        if (playButton != null) {
-            playButton.setOnClickListener(listener);
-        }
-    }
-
-    public int getImageSampleSize() {
-        return imageSampleSize;
-    }
-
-    public void setImageSampleSize(final int size) {
-        imageSampleSize = size;
-    }
-
-    public boolean isHighQualityAvailable() {
-        if (imageSampleSize > 1) {
-            return true;
         }
 
         return false;
@@ -723,14 +652,6 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
 
     public void setOriginalFilename(String originalFilename) {
         this.originalFilename = originalFilename;
-    }
-
-    public SubsamplingScaleImageView getImageViewTouch() {
-        return imageViewTouch;
-    }
-
-    public ImageView getGifImageView() {
-        return gifImageView;
     }
 
     public ProgressBar getProgressBar() {

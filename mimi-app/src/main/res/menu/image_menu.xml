@@ -24,11 +24,16 @@
         android:icon="@drawable/ic_share"
         mimi:showAsAction="always" />
 
-
     <item
         android:id="@+id/save_menu"
         android:title="@string/save"
         android:icon="@drawable/ic_save"
         mimi:showAsAction="always"
         />
+
+    <item
+        android:id="@+id/fullscreen_menu"
+        android:title="@string/fullscreen"
+        android:icon="@drawable/ic_fullscreen"
+        mimi:showAsAction="always" />
 </menu>

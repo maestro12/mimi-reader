@@ -28,6 +28,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -38,7 +39,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,8 +46,8 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.adapter.GalleryPagerAdapter;
+import com.emogoth.android.phone.mimi.event.FullscreenEvent;
 import com.emogoth.android.phone.mimi.event.GalleryGridButtonEvent;
-import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.event.GalleryPagerScrolledEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.util.BusProvider;
@@ -58,7 +58,6 @@ import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
-import com.squareup.otto.Subscribe;
 
 import java.io.File;
 import java.util.List;
@@ -95,7 +94,7 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
     private boolean scrollThreadWithGallery;
     private boolean closeOnClick;
     private ViewPager.OnPageChangeListener galleryPageChangeListener;
-
+    private View exitFullscreenButton;
 
     public GalleryPagerFragment() {
         setHasOptionsMenu(true);
@@ -145,7 +144,7 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        final ImageView gridButton = (ImageView) view.findViewById(R.id.grid_button);
+        final AppCompatImageView gridButton = (AppCompatImageView) view.findViewById(R.id.grid_button);
         gridButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
@@ -159,6 +158,16 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
 
         fileNameTextView = (TextView) view.findViewById(R.id.file_name);
         fileSizeTextView = (TextView) view.findViewById(R.id.file_size);
+
+        exitFullscreenButton = view.findViewById(R.id.exit_fullscreen_button);
+        exitFullscreenButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                BusProvider.getInstance().post(new FullscreenEvent(true, true));
+                exitFullscreenButton.setVisibility(View.INVISIBLE);
+                galleryToolbar.setVisibility(View.VISIBLE);
+            }
+        });
 
         updateToolbar(pagerPosition);
 
@@ -264,7 +273,7 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
 
         RxUtil.safeUnsubscribe(fetchPostsSubscription);
         fetchPostsSubscription = chanConnector
-                .fetchThread(getActivity(), boardName, threadId)
+                .fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT)
                 .subscribe(processResponse(), processError());
     }
 
@@ -492,6 +501,10 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
             popupMenu.show();
 
             return true;
+        } else if (item.getItemId() == R.id.fullscreen_menu) {
+            BusProvider.getInstance().post(new FullscreenEvent(true, false));
+            galleryToolbar.setVisibility(View.GONE);
+            exitFullscreenButton.setVisibility(View.VISIBLE);
         }
 
         return false;

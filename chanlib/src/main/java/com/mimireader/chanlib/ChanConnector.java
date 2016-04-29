@@ -42,13 +42,16 @@ import rx.Observable;
 
 public abstract class ChanConnector {
 
+    public static final String CACHE_DEFAULT = null;
+    public static final String CACHE_FORCE_NETWORK = "no-cache";
+
     public abstract Observable<List<ChanBoard>> fetchBoards();
 
     public abstract Observable<ChanCatalog> fetchCatalog(Context context, String boardName, String boardTitle);
 
     public abstract Observable<ChanCatalog> fetchPage(Context context, int page, String boardName, String boardTitle);
 
-    public abstract Observable<ChanThread> fetchThread(Context context, String boardName, int threadId);
+    public abstract Observable<ChanThread> fetchThread(Context context, String boardName, int threadId, String cacheControl);
 
     public abstract Observable<Response<ResponseBody>> post(String boardName, Map<String, Object> params);
 

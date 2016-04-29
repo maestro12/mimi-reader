@@ -41,7 +41,7 @@ import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func1;
 
-import static com.emogoth.android.phone.mimi.db.DatabaseUtils.convertQueryToCursor;
+import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
 
 public class BoardTableConnection {
     public static final String LOG_TAG = BoardTableConnection.class.getSimpleName();
@@ -62,7 +62,7 @@ public class BoardTableConnection {
 
         return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(Board.mapper())
                 .compose(DatabaseUtils.<List<Board>>applySchedulers())
                 .onErrorReturn(new Func1<Throwable, List<Board>>() {
@@ -85,14 +85,14 @@ public class BoardTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(new Func1<Cursor, Observable<ChanBoard>>() {
                     @Override
                     public Observable<ChanBoard> call(Cursor cursor) {
                         ChanBoard chanBoard = null;
                         while (cursor.moveToNext()) {
                             Board board = new Board();
-                            DatabaseUtils.loadFromCursor(board, cursor);
+                            board.loadFromCursor(cursor);
 
                             chanBoard = convertBoardDbModelToBoard(board);
                         }
@@ -158,13 +158,13 @@ public class BoardTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(new Func1<Cursor, Observable<Board>>() {
                     @Override
                     public Observable<Board> call(Cursor cursor) {
                         Board board = new Board();
                         while (cursor.moveToNext()) {
-                            DatabaseUtils.loadFromCursor(board, cursor);
+                            board.loadFromCursor(cursor);
                         }
 
                         return Observable.just(board);
@@ -184,11 +184,11 @@ public class BoardTableConnection {
                                 values = updateLastAccessed();
                             } else if (type == 1) {
                                 values = updatePostCount(board);
-                            } else if(type == 2) {
+                            } else if (type == 2) {
                                 values = updateAccessCount(board);
                             }
 
-                            if(values != null) {
+                            if (values != null) {
                                 val = db.update(Board.TABLE_NAME, values, board.whereClause(), board.whereArg());
                             }
                             transaction.markSuccessful();

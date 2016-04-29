@@ -81,6 +81,7 @@ import com.mimireader.chanlib.models.ChanThread;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
+import java.net.CacheRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -354,7 +355,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                                             showLoadingLayout();
                                         }
                                     });
-                                    return chanConnector.fetchThread(getActivity(), boardName, threadId);
+                                    return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT);
                                 }
                             } else {
                                 if (currentThread == null || currentThread.getPosts() == null || currentThread.getPosts().size() == 0) {
@@ -365,7 +366,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                                         }
                                     });
                                 }
-                                return chanConnector.fetchThread(getActivity(), boardName, threadId);
+                                return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT);
                             }
                         }
                     })
@@ -705,7 +706,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     private Observable<ChanThread> refreshObservable() {
-        return chanConnector.fetchThread(getActivity(), boardName, threadId)
+        return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_FORCE_NETWORK)
                 .map(ProcessThreadTask.processThread(getActivity(), boardName, threadId))
                 .zipWith(HistoryTableConnection.fetchPost(boardName, threadId), threadLookupZipper(boardName, threadId))
                 .compose(DatabaseUtils.<ChanThread>applySchedulers());

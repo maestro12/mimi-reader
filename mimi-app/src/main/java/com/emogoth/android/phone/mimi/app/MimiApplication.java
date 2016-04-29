@@ -25,6 +25,7 @@ import com.activeandroid.ActiveAndroid;
 import com.activeandroid.Configuration;
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
@@ -135,7 +136,7 @@ public class MimiApplication extends Application {
 
     public BriteDatabase getBriteDatabase() {
         if (briteDatabase == null) {
-            briteDatabase = DatabaseUtils.createBriteDatabase();
+            briteDatabase = ActiveAndroidSqlBriteBridge.getBriteDatabase();
 
             if (briteDatabase != null && BuildConfig.DEBUG) {
                 briteDatabase.setLoggingEnabled(true);

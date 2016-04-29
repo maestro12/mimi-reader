@@ -32,7 +32,7 @@ import rx.Observable;
 import rx.functions.Func0;
 import rx.functions.Func1;
 
-import static com.emogoth.android.phone.mimi.db.DatabaseUtils.convertQueryToCursor;
+import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
 
 public class UserPostTableConnection {
     public static final String LOG_TAG = UserPostTableConnection.class.getSimpleName();
@@ -46,7 +46,7 @@ public class UserPostTableConnection {
 
         return db.createQuery(UserPost.TABLE_NAME, query.toSql(), query.getArguments())
                 .take(1)
-                .map(convertQueryToCursor())
+                .map(runQuery())
                 .flatMap(UserPost.mapper())
                 .compose(DatabaseUtils.<List<UserPost>>applySchedulers());
     }

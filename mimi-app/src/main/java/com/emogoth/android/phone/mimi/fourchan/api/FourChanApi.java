@@ -25,6 +25,7 @@ import com.emogoth.android.phone.mimi.fourchan.models.FourChanThreads;
 import java.util.List;
 
 import retrofit2.http.GET;
+import retrofit2.http.Header;
 import retrofit2.http.Path;
 import rx.Observable;
 
@@ -40,5 +41,5 @@ public interface FourChanApi {
     Observable<List<FourChanThreadPage>> fetchCatalog(@Path("boardName") String boardName);
 
     @GET("{boardName}/thread/{threadId}.json")
-    Observable<FourChanThread> fetchThread(@Path("boardName") String boardName, @Path("threadId") int threadId);
+    Observable<FourChanThread> fetchThread(@Path("boardName") String boardName, @Path("threadId") int threadId, @Header("Cache-Control") String cacheControl);
 }
