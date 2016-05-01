@@ -25,18 +25,18 @@
         android:id="@+id/gallery_thumbnail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scaleType="centerCrop"
-        android:background="#121212"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
         />
-    
-    
+
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="horizontal"
         android:background="#88000000" >
-        
+
         <TextView
             android:id="@+id/file_size"
             android:layout_width="wrap_content"
@@ -52,7 +52,7 @@
             android:layout_marginRight="4dp"
             android:textColor="@color/text_color_dark"
             android:gravity="right"/>
-        
+
     </LinearLayout>
 
     <com.emogoth.android.phone.mimi.view.IconTextView

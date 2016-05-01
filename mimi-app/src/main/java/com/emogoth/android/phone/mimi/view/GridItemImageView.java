@@ -3,20 +3,25 @@ package com.emogoth.android.phone.mimi.view;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Color;
+import android.graphics.Rect;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 
 import com.emogoth.android.phone.mimi.R;
 
-/** Maintains an aspect ratio based on either width or height. Disabled by default.
- *  Found at: https://gist.github.com/JakeWharton/2856179 */
+/**
+ * Maintains an aspect ratio based on either width or height. Disabled by default.
+ * Found at: https://gist.github.com/JakeWharton/2856179
+ */
 public class GridItemImageView extends AppCompatImageView {
     // NOTE: These must be kept in sync with the AspectRatioImageView attributes in attrs.xml.
     public static final int MEASUREMENT_WIDTH = 0;
     public static final int MEASUREMENT_HEIGHT = 1;
 
     private static final float DEFAULT_ASPECT_RATIO = 1f;
-    private static final boolean DEFAULT_ASPECT_RATIO_ENABLED = false;
+    private static final boolean DEFAULT_ASPECT_RATIO_ENABLED = true;
     private static final int DEFAULT_DOMINANT_MEASUREMENT = MEASUREMENT_WIDTH;
 
     private float aspectRatio;
@@ -39,7 +44,32 @@ public class GridItemImageView extends AppCompatImageView {
         a.recycle();
     }
 
-    @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        if (isClickable()) {
+            Rect rect = null;
+
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                setColorFilter(Color.argb(50, 0, 0, 0));
+                rect = new Rect(getLeft(), getTop(), getRight(), getBottom());
+            }
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                setColorFilter(Color.argb(0, 0, 0, 0));
+            }
+            if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                if (rect != null && !rect.contains(getLeft() + (int) event.getX(), getTop() + (int) event.getY())) {
+                    setColorFilter(Color.argb(0, 0, 0, 0));
+                }
+            }
+        }
+
+        return super.onTouchEvent(event);
+
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (!aspectRatioEnabled) return;
 
@@ -63,12 +93,16 @@ public class GridItemImageView extends AppCompatImageView {
         setMeasuredDimension(newWidth, newHeight);
     }
 
-    /** Get the aspect ratio for this image view. */
+    /**
+     * Get the aspect ratio for this image view.
+     */
     public float getAspectRatio() {
         return aspectRatio;
     }
 
-    /** Set the aspect ratio for this image view. This will update the view instantly. */
+    /**
+     * Set the aspect ratio for this image view. This will update the view instantly.
+     */
     public void setAspectRatio(float aspectRatio) {
         this.aspectRatio = aspectRatio;
         if (aspectRatioEnabled) {
@@ -77,21 +111,27 @@ public class GridItemImageView extends AppCompatImageView {
     }
 
     public void setAspectRatio(int width, int height) {
-        setAspectRatio((float) width / (float) height);
+        setAspectRatio((float) height / (float) width);
     }
 
-    /** Get whether or not forcing the aspect ratio is enabled. */
+    /**
+     * Get whether or not forcing the aspect ratio is enabled.
+     */
     public boolean getAspectRatioEnabled() {
         return aspectRatioEnabled;
     }
 
-    /** set whether or not forcing the aspect ratio is enabled. This will re-layout the view. */
+    /**
+     * set whether or not forcing the aspect ratio is enabled. This will re-layout the view.
+     */
     public void setAspectRatioEnabled(boolean aspectRatioEnabled) {
         this.aspectRatioEnabled = aspectRatioEnabled;
         requestLayout();
     }
 
-    /** Get the dominant measurement for the aspect ratio. */
+    /**
+     * Get the dominant measurement for the aspect ratio.
+     */
     public int getDominantMeasurement() {
         return dominantMeasurement;
     }

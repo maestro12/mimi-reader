@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools">
+    android:layout_height="match_parent">
 
     <android.support.v7.widget.AppCompatImageView
         android:id="@+id/preview_image"
@@ -55,18 +55,17 @@
             android:padding="10dp"
             app:srcCompat="@drawable/ic_audio_off" />
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <TextView
-                android:id="@+id/webm_time"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:background="#88000000"
-                tools:text="test:test"/>
-        </FrameLayout>
+        <TextView
+            android:id="@+id/webm_time"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:background="#88000000"
+            android:gravity="center"
+            android:padding="4dp"
+            android:textColor="@color/md_white_1000"
+            android:textSize="?attr/font_label_small"
+            tools:text="test:test" />
 
     </LinearLayout>
 

@@ -23,6 +23,7 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.Drawable;
+import android.media.MediaCodec;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
@@ -37,10 +38,12 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.interfaces.AudioSettingsHost;
 import com.emogoth.android.phone.mimi.util.BusProvider;
@@ -51,21 +54,29 @@ import com.emogoth.android.phone.mimi.util.Utils;
 import com.emogoth.android.phone.mimi.util.WebmRendererBuilder;
 import com.google.android.exoplayer.AspectRatioFrameLayout;
 import com.google.android.exoplayer.ExoPlayer;
+import com.google.android.exoplayer.MediaCodecTrackRenderer;
+import com.google.android.exoplayer.MediaFormat;
+import com.google.android.exoplayer.TimeRange;
+import com.google.android.exoplayer.audio.AudioTrack;
+import com.google.android.exoplayer.chunk.Format;
 import com.google.android.exoplayer.util.PlayerControl;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.TimeInterval;
 
 
 public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHelper.Listener {
     private static final String LOG_TAG = GalleryWebmFragment.class.getSimpleName();
-    public static final String DIALOG_TAG = "video_dialog";
 
     private final Point mScreenSize = new Point();
     private final Point mVideoSize = new Point();
@@ -80,6 +91,9 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
     private View webmBar;
     private View openButton;
     private AppCompatImageView muteButton;
+    private TextView webmTime;
+
+    private Subscription videoTimer;
 
     public GalleryWebmFragment() {
     }
@@ -92,7 +106,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         inflateLayout(R.layout.gallery_image_webm, new ViewStubCompat.OnInflateListener() {
             @Override
             public void onInflate(ViewStubCompat stub, View inflated) {
-                if(getActivity() == null) {
+                if (getActivity() == null) {
                     return;
                 }
 
@@ -102,6 +116,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
                 webmBar = inflated.findViewById(R.id.webm_bar);
                 openButton = inflated.findViewById(R.id.open_button);
+                webmTime = (TextView) inflated.findViewById(R.id.webm_time);
                 muteButton = (AppCompatImageView) inflated.findViewById(R.id.mute_button);
                 if (muted) {
                     muteButton.setImageResource(R.drawable.ic_audio_off);
@@ -123,6 +138,9 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                         }
                     });
                 }
+
+                stopTimer();
+
             }
         });
 
@@ -293,12 +311,23 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         }
     }
 
+    private void updateDisplayTime() {
+        if (player != null && webmTime != null) {
+            long position = player.getCurrentPosition();
+            long duration = player.getDuration();
+            String display = String.format(Locale.getDefault(), "%02d:%02d / %02d:%02d",
+                    TimeUnit.MINUTES.convert(position, TimeUnit.MILLISECONDS),
+                    TimeUnit.MILLISECONDS.toSeconds(position) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(position)),
+                    TimeUnit.MINUTES.convert(duration, TimeUnit.MILLISECONDS),
+                    TimeUnit.MILLISECONDS.toSeconds(duration) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duration)));
+            webmTime.setText(display);
+        }
+    }
+
     private void startVideoPlayback(SurfaceTexture surfaceTexture) {
         final Surface surface = new Surface(surfaceTexture);
         player.setSurface(surface);
         player.setPlayWhenReady(true);
-
-//        playerControl.start();
     }
 
     @Override
@@ -310,6 +339,8 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
             showPreviewImage();
         }
+
+        stopTimer();
     }
 
     private void showPreviewImage() {
@@ -359,7 +390,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
             muted = !((AudioSettingsHost) getActivity()).isAudioLocked();
         }
 
-        if(muteButton != null) {
+        if (muteButton != null) {
             if (muted) {
                 muteButton.setImageResource(R.drawable.ic_audio_off);
             } else {
@@ -440,6 +471,31 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         return null;
     }
 
+    private void startTimer() {
+        updateDisplayTime();
+        videoTimer = Observable.interval(1, TimeUnit.SECONDS).timeInterval()
+                .compose(DatabaseUtils.<TimeInterval<Long>>applySchedulers())
+                .subscribe(new Action1<TimeInterval<Long>>() {
+                    @Override
+                    public void call(TimeInterval<Long> longTimeInterval) {
+                        updateDisplayTime();
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.e(LOG_TAG, "Timer error", throwable);
+                    }
+                });
+    }
+
+    private void stopTimer() {
+        if (webmTime != null) {
+            webmTime.setText("00:00 / 00:00");
+        }
+
+        RxUtil.safeUnsubscribe(videoTimer);
+    }
+
     private void setupVideo() {
         Uri uri = Uri.fromFile(getImageFileLocation());
         ExoPlayerHelper.RendererBuilder rendererBuilder = new WebmRendererBuilder(getActivity(), uri);
@@ -448,6 +504,49 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         player.prepare();
         player.setPlayWhenReady(false);
         player.addListener(this);
+
+        player.setInternalErrorListener(new ExoPlayerHelper.InternalErrorListener() {
+            @Override
+            public void onRendererInitializationError(Exception e) {
+                Log.e(LOG_TAG, "onRendererInitializationError", e);
+            }
+
+            @Override
+            public void onAudioTrackInitializationError(AudioTrack.InitializationException e) {
+                Log.e(LOG_TAG, "onAudioTrackInitializationError", e);
+            }
+
+            @Override
+            public void onAudioTrackWriteError(AudioTrack.WriteException e) {
+                Log.e(LOG_TAG, "onAudioTrackWriteError", e);
+            }
+
+            @Override
+            public void onAudioTrackUnderrun(int bufferSize, long bufferSizeMs, long elapsedSinceLastFeedMs) {
+                Log.e(LOG_TAG, "onAudioTrackUnderrun: buffersize=" + bufferSize + ", bufferSizeMs=" + bufferSize + ", elapsedSinceLastFeedMs=" + elapsedSinceLastFeedMs);
+            }
+
+            @Override
+            public void onDecoderInitializationError(MediaCodecTrackRenderer.DecoderInitializationException e) {
+                Log.e(LOG_TAG, "onRendererInitializationError", e);
+            }
+
+            @Override
+            public void onCryptoError(MediaCodec.CryptoException e) {
+                Log.e(LOG_TAG, "onRendererInitializationError", e);
+            }
+
+            @Override
+            public void onLoadError(int sourceId, IOException e) {
+                Log.e(LOG_TAG, "onRendererInitializationError", e);
+            }
+
+            @Override
+            public void onDrmSessionManagerError(Exception e) {
+                Log.e(LOG_TAG, "onRendererInitializationError", e);
+            }
+        });
+
         playerControl = player.getPlayerControl();
     }
 
@@ -473,9 +572,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
     @Override
     public void onStateChanged(boolean playWhenReady, int playbackState) {
-        if (player != null && playbackState == ExoPlayer.STATE_ENDED) {
-            player.seekTo(0);
-        }
+        // no op
     }
 
     @Override
@@ -504,5 +601,21 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         if (videoSurface != null && videoSurface.getVisibility() != View.VISIBLE) {
             showVideoSurface(false);
         }
+
+        if(player.getTrackCount(ExoPlayerHelper.TYPE_AUDIO) == 0) {
+            int color = ResourcesCompat.getColor(getResources(), R.color.md_grey_700, getActivity().getTheme());
+            Drawable normalDrawable = VectorDrawableCompat.create(getResources(), R.drawable.ic_audio_off, getActivity().getTheme());
+
+            if (normalDrawable != null) {
+                Drawable wrapDrawable = DrawableCompat.wrap(normalDrawable);
+                DrawableCompat.setTint(wrapDrawable, color);
+                muteButton.setImageDrawable(normalDrawable);
+            }
+
+            muteButton.setEnabled(false);
+            muteButton.setClickable(false);
+        }
+
+        startTimer();
     }
 }

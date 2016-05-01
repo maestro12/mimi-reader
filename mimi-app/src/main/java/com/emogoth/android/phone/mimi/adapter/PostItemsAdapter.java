@@ -328,7 +328,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 if (managerType == ManagerType.GRID || managerType == ManagerType.STAGGERED_GRID) {
                     viewHolder.thumbUrl.setAspectRatio(threadItem.getThumbnailWidth(), threadItem.getThumbnailHeight());
                 } else {
-                    viewHolder.thumbUrl.setAspectRatio(0, 0);
+                    viewHolder.thumbUrl.setAspectRatioEnabled(false);
                 }
                 viewHolder.thumbUrl.setVisibility(View.VISIBLE);
                 viewHolder.thumbUrl.setOnClickListener(new View.OnClickListener() {
