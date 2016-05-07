@@ -28,6 +28,11 @@
         android:defaultValue="true" />
 
     <SwitchPreference
+        android:title="@string/auto_play_audio"
+        android:key="@string/webm_audio_lock_pref"
+        android:defaultValue="false" />
+
+    <SwitchPreference
         android:title="@string/use_original_filename_title"
         android:summary="@string/use_original_filename_summary"
         android:key="@string/use_original_filename_pref" />
