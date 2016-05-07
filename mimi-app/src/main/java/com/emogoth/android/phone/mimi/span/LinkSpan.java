@@ -30,7 +30,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.util.MimiUtil;
 
 
 public class LinkSpan extends LongClickableSpan {
@@ -86,7 +85,7 @@ public class LinkSpan extends LongClickableSpan {
                         })
                         .setCancelable(true)
                         .show()
-                .setCanceledOnTouchOutside(true);
+                        .setCanceledOnTouchOutside(true);
             }
         });
     }

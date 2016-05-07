@@ -23,23 +23,23 @@ import android.os.Parcelable;
 public class ChanBoard implements Parcelable {
     private String name;
     private String title;
-    private Integer wsBoard;
-    private Integer perPage;
-    private Integer pages;
-    private Integer maxFilesize;
-    private Integer maxWebmFilesize;
-    private Integer maxCommentChars;
-    private Integer bumpLimit;
-    private Integer imageLimit;
+    private int wsBoard;
+    private int perPage;
+    private int pages;
+    private int maxFilesize;
+    private int maxWebmFilesize;
+    private int maxCommentChars;
+    private int bumpLimit;
+    private int imageLimit;
     private String metaDescription;
-    private Integer isArchived;
-    private Integer spoilers;
-    private Integer customSpoilers;
-    private Integer userIds;
-    private Integer codeTags;
-    private Integer countryFlags;
-    private Integer sjisTags;
-    private Integer mathTags;
+    private int isArchived;
+    private int spoilers;
+    private int customSpoilers;
+    private int userIds;
+    private int codeTags;
+    private int countryFlags;
+    private int sjisTags;
+    private int mathTags;
     private boolean favorite;
 
     public String getName() {
@@ -58,67 +58,67 @@ public class ChanBoard implements Parcelable {
         this.title = title;
     }
 
-    public Integer getWsBoard() {
+    public int getWsBoard() {
         return wsBoard;
     }
 
-    public void setWsBoard(Integer wsBoard) {
+    public void setWsBoard(int wsBoard) {
         this.wsBoard = wsBoard;
     }
 
-    public Integer getPerPage() {
+    public int getPerPage() {
         return perPage;
     }
 
-    public void setPerPage(Integer perPage) {
+    public void setPerPage(int perPage) {
         this.perPage = perPage;
     }
 
-    public Integer getPages() {
+    public int getPages() {
         return pages;
     }
 
-    public void setPages(Integer pages) {
+    public void setPages(int pages) {
         this.pages = pages;
     }
 
-    public Integer getMaxFilesize() {
+    public int getMaxFilesize() {
         return maxFilesize;
     }
 
-    public void setMaxFilesize(Integer maxFilesize) {
+    public void setMaxFilesize(int maxFilesize) {
         this.maxFilesize = maxFilesize;
     }
 
-    public Integer getMaxWebmFilesize() {
+    public int getMaxWebmFilesize() {
         return maxWebmFilesize;
     }
 
-    public void setMaxWebmFilesize(Integer maxWebmFilesize) {
+    public void setMaxWebmFilesize(int maxWebmFilesize) {
         this.maxWebmFilesize = maxWebmFilesize;
     }
 
-    public Integer getMaxCommentChars() {
+    public int getMaxCommentChars() {
         return maxCommentChars;
     }
 
-    public void setMaxCommentChars(Integer maxCommentChars) {
+    public void setMaxCommentChars(int maxCommentChars) {
         this.maxCommentChars = maxCommentChars;
     }
 
-    public Integer getBumpLimit() {
+    public int getBumpLimit() {
         return bumpLimit;
     }
 
-    public void setBumpLimit(Integer bumpLimit) {
+    public void setBumpLimit(int bumpLimit) {
         this.bumpLimit = bumpLimit;
     }
 
-    public Integer getImageLimit() {
+    public int getImageLimit() {
         return imageLimit;
     }
 
-    public void setImageLimit(Integer imageLimit) {
+    public void setImageLimit(int imageLimit) {
         this.imageLimit = imageLimit;
     }
 
@@ -130,67 +130,67 @@ public class ChanBoard implements Parcelable {
         this.metaDescription = metaDescription;
     }
 
-    public Integer getIsArchived() {
+    public int getIsArchived() {
         return isArchived;
     }
 
-    public void setIsArchived(Integer isArchived) {
+    public void setIsArchived(int isArchived) {
         this.isArchived = isArchived;
     }
 
-    public Integer getSpoilers() {
+    public int getSpoilers() {
         return spoilers;
     }
 
-    public void setSpoilers(Integer spoilers) {
+    public void setSpoilers(int spoilers) {
         this.spoilers = spoilers;
     }
 
-    public Integer getCustomSpoilers() {
+    public int getCustomSpoilers() {
         return customSpoilers;
     }
 
-    public void setCustomSpoilers(Integer customSpoilers) {
+    public void setCustomSpoilers(int customSpoilers) {
         this.customSpoilers = customSpoilers;
     }
 
-    public Integer getUserIds() {
+    public int getUserIds() {
         return userIds;
     }
 
-    public void setUserIds(Integer userIds) {
+    public void setUserIds(int userIds) {
         this.userIds = userIds;
     }
 
-    public Integer getCodeTags() {
+    public int getCodeTags() {
         return codeTags;
     }
 
-    public void setCodeTags(Integer codeTags) {
+    public void setCodeTags(int codeTags) {
         this.codeTags = codeTags;
     }
 
-    public Integer getCountryFlags() {
+    public int getCountryFlags() {
         return countryFlags;
     }
 
-    public void setCountryFlags(Integer countryFlags) {
+    public void setCountryFlags(int countryFlags) {
         this.countryFlags = countryFlags;
     }
 
-    public Integer getSjisTags() {
+    public int getSjisTags() {
         return sjisTags;
     }
 
-    public void setSjisTags(Integer sjisTags) {
+    public void setSjisTags(int sjisTags) {
         this.sjisTags = sjisTags;
     }
 
-    public Integer getMathTags() {
+    public int getMathTags() {
         return mathTags;
     }
 
-    public void setMathTags(Integer mathTags) {
+    public void setMathTags(int mathTags) {
         this.mathTags = mathTags;
     }
 
@@ -237,23 +237,23 @@ public class ChanBoard implements Parcelable {
     protected ChanBoard(Parcel in) {
         this.name = in.readString();
         this.title = in.readString();
-        this.wsBoard = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.perPage = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.pages = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.maxFilesize = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.maxWebmFilesize = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.maxCommentChars = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.bumpLimit = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.imageLimit = (Integer) in.readValue(Integer.class.getClassLoader());
+        this.wsBoard = (int) in.readValue(int.class.getClassLoader());
+        this.perPage = (int) in.readValue(int.class.getClassLoader());
+        this.pages = (int) in.readValue(int.class.getClassLoader());
+        this.maxFilesize = (int) in.readValue(int.class.getClassLoader());
+        this.maxWebmFilesize = (int) in.readValue(int.class.getClassLoader());
+        this.maxCommentChars = (int) in.readValue(int.class.getClassLoader());
+        this.bumpLimit = (int) in.readValue(int.class.getClassLoader());
+        this.imageLimit = (int) in.readValue(int.class.getClassLoader());
         this.metaDescription = in.readString();
-        this.isArchived = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.spoilers = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.customSpoilers = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.userIds = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.codeTags = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.countryFlags = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.sjisTags = (Integer) in.readValue(Integer.class.getClassLoader());
-        this.mathTags = (Integer) in.readValue(Integer.class.getClassLoader());
+        this.isArchived = (int) in.readValue(int.class.getClassLoader());
+        this.spoilers = (int) in.readValue(int.class.getClassLoader());
+        this.customSpoilers = (int) in.readValue(int.class.getClassLoader());
+        this.userIds = (int) in.readValue(int.class.getClassLoader());
+        this.codeTags = (int) in.readValue(int.class.getClassLoader());
+        this.countryFlags = (int) in.readValue(int.class.getClassLoader());
+        this.sjisTags = (int) in.readValue(int.class.getClassLoader());
+        this.mathTags = (int) in.readValue(int.class.getClassLoader());
         this.favorite = in.readByte() != 0;
     }
 

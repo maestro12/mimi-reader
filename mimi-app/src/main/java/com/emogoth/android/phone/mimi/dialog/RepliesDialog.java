@@ -20,6 +20,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,8 +54,8 @@ public class RepliesDialog extends DialogFragment {
     public static final String DIALOG_TAG = "reply_dialog_tag";
 
     private String boardName;
-    private ArrayList<ChanPost> replies;
-    private ArrayList<OutsideLink> outsideLinks;
+    private List<ChanPost> replies;
+    private List<OutsideLink> outsideLinks;
     private ChanThread thread;
     private int id;
     private Subscription repliesSubscription;
@@ -81,6 +82,31 @@ public class RepliesDialog extends DialogFragment {
         args.putParcelable(Extras.EXTRAS_SINGLE_THREAD, thread);
         dialog.setArguments(args);
         return dialog;
+    }
+
+    public static RepliesDialog newInstance(@Nullable  ChanThread thread, String id) {
+
+        if(thread != null && thread.getPosts() != null && thread.getPosts().size() > 0 && !TextUtils.isEmpty(id)) {
+            final String boardName = thread.getBoardName();
+            final RepliesDialog dialog = new RepliesDialog();
+            final Bundle args = new Bundle();
+            final ArrayList<ChanPost> posts = new ArrayList<>();
+
+            for (ChanPost post : thread.getPosts()) {
+                if(id.equals(post.getId())) {
+                    posts.add(post);
+                }
+            }
+
+            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+            args.putInt(Extras.EXTRAS_POST_ID, thread.getThreadId());
+            args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, posts);
+            args.putParcelable(Extras.EXTRAS_SINGLE_THREAD, thread);
+            dialog.setArguments(args);
+            return dialog;
+        }
+
+        return null;
     }
 
 
@@ -120,16 +146,16 @@ public class RepliesDialog extends DialogFragment {
 
         RxUtil.safeUnsubscribe(repliesSubscription);
         repliesSubscription = Observable.just(replies)
-            .subscribeOn(Schedulers.computation())
-            .observeOn(AndroidSchedulers.mainThread())
-            .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
-            .subscribe(new Action1<List<ChanPost>>() {
-                @Override
-                public void call(List<ChanPost> posts) {
-                    final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
-                    listView.setAdapter(adapter);
-                }
-            });
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
+                .subscribe(new Action1<List<ChanPost>>() {
+                    @Override
+                    public void call(List<ChanPost> posts) {
+                        final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
+                        listView.setAdapter(adapter);
+                    }
+                });
     }
 
     private void extractExtras(final Bundle bundle) {

@@ -62,7 +62,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
     }
 
     public TabItem getTab(int position) {
-        if(position >= 0 && position < tabItems.size()) {
+        if (position >= 0 && position < tabItems.size()) {
             return tabItems.get(position);
         }
 
@@ -72,7 +72,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
     @Override
     public Fragment getItem(int position) {
         final TabItem item = tabItems.get(position);
-        switch(item.getTabType()) {
+        switch (item.getTabType()) {
             case BOARDS:
                 return new BoardItemListFragment();
             case POSTS:
@@ -112,16 +112,15 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
         boolean done = false;
         int i = 0;
         int val = -1;
-        while(!done) {
-            if(tabItems.get(i).getId() == threadId) {
+        while (!done) {
+            if (tabItems.get(i).getId() == threadId) {
                 val = i;
                 done = true;
-            }
-            else {
+            } else {
                 i++;
             }
 
-            if(i >= tabItems.size()) {
+            if (i >= tabItems.size()) {
                 done = true;
             }
         }
@@ -149,7 +148,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
     public TabItem getTabItem(int pos) {
         TabItem item = null;
-        if(tabItems != null && pos >= 0 && pos < tabItems.size() - 1) {
+        if (tabItems != null && pos >= 0 && pos < tabItems.size() - 1) {
             item = tabItems.get(pos);
         }
 
@@ -169,7 +168,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
     public int getPositionById(int id) {
         int index = -1;
         for (int i = 0; i < tabItems.size(); i++) {
-            if(tabItems.get(i).getId() == id) {
+            if (tabItems.get(i).getId() == id) {
                 index = i;
             }
         }
@@ -179,7 +178,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
     public void removeItemById(int id) {
         int i = getPositionById(id);
-        if(i < 0) {
+        if (i < 0) {
             return;
         }
 
@@ -187,7 +186,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
         final List<Fragment> fragments = fm.getFragments();
         for (Fragment fragment : fragments) {
-            if(fragment instanceof TabInterface && ((TabInterface) fragment).getTabId() == id) {
+            if (fragment instanceof TabInterface && ((TabInterface) fragment).getTabId() == id) {
                 Log.d(LOG_TAG, "Removing fragment: id=" + id);
                 fm.beginTransaction().remove(fragment).commitAllowingStateLoss();
             }
@@ -263,31 +262,29 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
         }
 
         public static boolean equalBundles(Bundle one, Bundle two) {
-            if((one == null && two != null) || (one != null && two == null))
+            if ((one == null && two != null) || (one != null && two == null))
                 return false;
 
-            if(one == null && two == null)
+            if (one == null && two == null)
                 return true;
 
-            if(one.size() != two.size())
+            if (one.size() != two.size())
                 return false;
 
             Set<String> setOne = one.keySet();
             Object valueOne;
             Object valueTwo;
 
-            for(String key : setOne) {
+            for (String key : setOne) {
                 valueOne = one.get(key);
                 valueTwo = two.get(key);
-                if(valueOne instanceof Bundle && valueTwo instanceof Bundle &&
+                if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
                         !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
                     return false;
-                }
-                else if(valueOne == null) {
-                    if(valueTwo != null || !two.containsKey(key))
+                } else if (valueOne == null) {
+                    if (valueTwo != null || !two.containsKey(key))
                         return false;
-                }
-                else if(!valueOne.equals(valueTwo))
+                } else if (!valueOne.equals(valueTwo))
                     return false;
             }
 

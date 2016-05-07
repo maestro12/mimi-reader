@@ -91,7 +91,7 @@ public class YoutubeLinkSpan extends LongClickableSpan {
                         })
                         .setCancelable(true)
                         .show()
-                .setCanceledOnTouchOutside(true);
+                        .setCanceledOnTouchOutside(true);
             }
         });
     }

@@ -175,7 +175,7 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
                     if (fullBoardEnabled) {
                         Toast.makeText(getActivity(), "Full board list is already active", Toast.LENGTH_SHORT).show();
                     } else {
-                        BoardTableConnection.fetchBoards(0, true)
+                        BoardTableConnection.fetchBoards(0)
                                 .compose(DatabaseUtils.<List<Board>>applySchedulers())
                                 .flatMapIterable(new Func1<List<Board>, Iterable<Board>>() {
                                     @Override

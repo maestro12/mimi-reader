@@ -134,7 +134,7 @@ public class DownloadService extends IntentService {
         boolean is_err = false;
         final Bundle serviceData = intent.getExtras();
 
-        if(serviceData == null) {
+        if (serviceData == null) {
             return;
         }
 

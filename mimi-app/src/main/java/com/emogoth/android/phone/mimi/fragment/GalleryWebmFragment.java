@@ -27,6 +27,8 @@ import android.media.MediaCodec;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.ColorRes;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.support.graphics.drawable.VectorDrawableCompat;
 import android.support.v4.content.res.ResourcesCompat;
@@ -53,12 +55,8 @@ import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.Utils;
 import com.emogoth.android.phone.mimi.util.WebmRendererBuilder;
 import com.google.android.exoplayer.AspectRatioFrameLayout;
-import com.google.android.exoplayer.ExoPlayer;
 import com.google.android.exoplayer.MediaCodecTrackRenderer;
-import com.google.android.exoplayer.MediaFormat;
-import com.google.android.exoplayer.TimeRange;
 import com.google.android.exoplayer.audio.AudioTrack;
-import com.google.android.exoplayer.chunk.Format;
 import com.google.android.exoplayer.util.PlayerControl;
 
 import java.io.File;
@@ -226,7 +224,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
             @Override
             public void onClick(View v) {
                 if (muted) {
-                    muteButton.setImageResource(R.drawable.ic_audio_on);
+                    updateMuteButton(R.color.md_white_1000, R.drawable.ic_audio_on);
                     muted = false;
                 } else {
                     muteButton.setImageResource(R.drawable.ic_audio_off);
@@ -266,8 +264,12 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         ((AudioSettingsHost) getActivity()).setAudioLock(true);
 
         muted = false;
-        int color = ResourcesCompat.getColor(getResources(), R.color.md_green_400, getActivity().getTheme());
-        Drawable normalDrawable = VectorDrawableCompat.create(getResources(), R.drawable.ic_audio_on, getActivity().getTheme());
+        return updateMuteButton(R.color.md_green_400, R.drawable.ic_audio_on);
+    }
+
+    private boolean updateMuteButton(@ColorRes int colorRes, @DrawableRes int iconRes) {
+        int color = ResourcesCompat.getColor(getResources(), colorRes, getActivity().getTheme());
+        Drawable normalDrawable = VectorDrawableCompat.create(getResources(), iconRes, getActivity().getTheme());
 
         if (normalDrawable != null) {
             Drawable wrapDrawable = DrawableCompat.wrap(normalDrawable);
@@ -328,6 +330,8 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         final Surface surface = new Surface(surfaceTexture);
         player.setSurface(surface);
         player.setPlayWhenReady(true);
+
+        startTimer();
     }
 
     @Override
@@ -398,6 +402,10 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                 if (getActivity() instanceof AudioSettingsHost && ((AudioSettingsHost) getActivity()).isAudioLocked()) {
                     lockAudio();
                 }
+            }
+
+            if(player != null && player.isMuted() != muted) {
+                player.mute(muted);
             }
         }
     }
@@ -601,21 +609,5 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         if (videoSurface != null && videoSurface.getVisibility() != View.VISIBLE) {
             showVideoSurface(false);
         }
-
-        if(player.getTrackCount(ExoPlayerHelper.TYPE_AUDIO) == 0) {
-            int color = ResourcesCompat.getColor(getResources(), R.color.md_grey_700, getActivity().getTheme());
-            Drawable normalDrawable = VectorDrawableCompat.create(getResources(), R.drawable.ic_audio_off, getActivity().getTheme());
-
-            if (normalDrawable != null) {
-                Drawable wrapDrawable = DrawableCompat.wrap(normalDrawable);
-                DrawableCompat.setTint(wrapDrawable, color);
-                muteButton.setImageDrawable(normalDrawable);
-            }
-
-            muteButton.setEnabled(false);
-            muteButton.setClickable(false);
-        }
-
-        startTimer();
     }
 }

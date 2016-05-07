@@ -18,10 +18,8 @@ package com.emogoth.android.phone.mimi.fourchan.models;
 
 import android.content.Context;
 import android.text.Spannable;
-import android.text.Spanned;
 
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
-import com.emogoth.android.phone.mimi.util.ChanUtil;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -51,7 +49,7 @@ public class FourChanPost implements PostConverter {
     @SerializedName("sub")
     @Expose
     private String sub;
-//    private Spanned subject;
+    //    private Spanned subject;
     @SerializedName("filename")
     @Expose
     private String filename;

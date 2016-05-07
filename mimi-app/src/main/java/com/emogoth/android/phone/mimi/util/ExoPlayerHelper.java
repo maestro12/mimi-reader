@@ -17,11 +17,6 @@
  */
 package com.emogoth.android.phone.mimi.util;
 
-import android.media.MediaCodec.CryptoException;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.Surface;
-
 import com.google.android.exoplayer.CodecCounters;
 import com.google.android.exoplayer.DummyTrackRenderer;
 import com.google.android.exoplayer.ExoPlaybackException;
@@ -46,6 +41,11 @@ import com.google.android.exoplayer.upstream.BandwidthMeter;
 import com.google.android.exoplayer.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer.util.DebugTextViewHelper;
 import com.google.android.exoplayer.util.PlayerControl;
+
+import android.media.MediaCodec.CryptoException;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Surface;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -309,6 +309,10 @@ public class ExoPlayerHelper implements ExoPlayer.Listener, ChunkSampleSource.Ev
         } else if (audioTrackToRestore >= 0){
             setSelectedTrack(TYPE_AUDIO, audioTrackToRestore);
         }
+    }
+
+    public boolean isMuted() {
+        return getSelectedTrack(TYPE_AUDIO) == TRACK_DISABLED;
     }
 
     public void prepare() {

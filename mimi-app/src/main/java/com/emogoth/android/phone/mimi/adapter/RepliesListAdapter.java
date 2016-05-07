@@ -75,19 +75,14 @@ public class RepliesListAdapter extends BaseAdapter {
 
         this.thumbUrlMap = new HashMap<>();
 
-        if(boardName.equals("pol")) {
-            this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_pol_link);
-        }
-        else {
-            this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_int_link);
-        }
+        this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_int_link);
 
         setupReplies();
     }
 
     private void setupReplies() {
         this.timeMap = new CharSequence[replies.size() + 1];
-        for(int i = 0; i < replies.size(); i++) {
+        for (int i = 0; i < replies.size(); i++) {
             final ChanPost post = replies.get(i);
 
             final CharSequence dateString = DateUtils.getRelativeTimeSpanString(
@@ -96,7 +91,7 @@ public class RepliesListAdapter extends BaseAdapter {
                     DateUtils.MINUTE_IN_MILLIS,
                     DateUtils.FORMAT_ABBREV_RELATIVE);
 
-            if(post.getFilename() != null && !"".equals(post.getFilename())) {
+            if (post.getFilename() != null && !"".equals(post.getFilename())) {
                 thumbUrlMap.put(post.getNo(), MimiUtil.httpOrHttps(activity) + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, boardName, post.getTim()));
             }
 
@@ -123,7 +118,7 @@ public class RepliesListAdapter extends BaseAdapter {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
 
-        if(replies.size() > position) {
+        if (replies.size() > position) {
             final ViewHolderItem viewHolder;
             final ChanPost postItem = replies.get(position);
 
@@ -131,25 +126,23 @@ public class RepliesListAdapter extends BaseAdapter {
                 return null;
             }
 
-            if(convertView == null) {
+            if (convertView == null) {
                 convertView = inflater.inflate(R.layout.reply_post_item, parent, false);
 
                 viewHolder = new ViewHolderItem(convertView);
                 convertView.setTag(viewHolder);
-            }
-            else {
-                if(convertView.getTag() == null) {
+            } else {
+                if (convertView.getTag() == null) {
                     convertView = inflater.inflate(R.layout.reply_post_item, parent, false);
 
                     viewHolder = new ViewHolderItem(convertView);
                     convertView.setTag(viewHolder);
-                }
-                else {
+                } else {
                     viewHolder = (ViewHolderItem) convertView.getTag();
                 }
             }
 
-            if(viewHolder.flagIcon != null) {
+            if (viewHolder.flagIcon != null) {
                 if (postItem.getCountry() != null && !"".equals(postItem.getCountry())) {
                     final String url = flagUrl + postItem.getCountry().toLowerCase() + ".gif";
                     Log.i(LOG_TAG, "flag url=" + url);
@@ -175,11 +168,11 @@ public class RepliesListAdapter extends BaseAdapter {
 
             viewHolder.threadId.setText(String.valueOf(postItem.getNo()));
 
-            if(viewHolder.userName != null) {
+            if (viewHolder.userName != null) {
                 viewHolder.userName.setText(postItem.getDisplayedName());
             }
 
-            if(viewHolder.postTime != null && timeMap.length > position) {
+            if (viewHolder.postTime != null && timeMap.length > position) {
                 viewHolder.postTime.setText(timeMap[position]);
             }
 
@@ -188,7 +181,7 @@ public class RepliesListAdapter extends BaseAdapter {
                 @Override
                 public void onClick(View v) {
 
-                    if(postItem.getRepliesFrom().size() > 0) {
+                    if (postItem.getRepliesFrom().size() > 0) {
                         if (thread != null) {
                             RepliesDialog.newInstance(thread, postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
                         } else {
@@ -205,7 +198,7 @@ public class RepliesListAdapter extends BaseAdapter {
             }
 
             final String url = thumbUrlMap.get(postItem.getNo());
-            if(url != null) {
+            if (url != null) {
                 viewHolder.thumbnailContainer.setVisibility(View.VISIBLE);
                 Glide.with(activity)
                         .load(url)
@@ -238,18 +231,16 @@ public class RepliesListAdapter extends BaseAdapter {
             }
 
             return convertView;
-        }
-        else {
+        } else {
             final int pos = position - replies.size();
             final OutsideLink link = links.get(pos);
             final View v = inflater.inflate(R.layout.reply_link_item, parent, false);
 
             final TextView linkText = (TextView) v.findViewById(R.id.link_text);
 
-            if(!TextUtils.isEmpty(link.getThreadId())) {
+            if (!TextUtils.isEmpty(link.getThreadId())) {
                 linkText.setText("/" + link.getBoardName() + "/" + link.getThreadId());
-            }
-            else {
+            } else {
                 linkText.setText("/" + link.getBoardName() + "/");
             }
             linkText.setOnClickListener(new View.OnClickListener() {

@@ -28,16 +28,15 @@ import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.activeandroid.query.Select;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.BookmarkClickedEvent;
 import com.emogoth.android.phone.mimi.event.HomeButtonPressedEvent;
+import com.emogoth.android.phone.mimi.event.HttpErrorEvent;
 import com.emogoth.android.phone.mimi.event.OpenHistoryEvent;
 import com.emogoth.android.phone.mimi.event.SelectThreadEvent;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
-import com.emogoth.android.phone.mimi.event.HttpErrorEvent;
 import com.emogoth.android.phone.mimi.fragment.MimiFragmentBase;
 import com.emogoth.android.phone.mimi.fragment.ThreadDetailFragment;
 import com.emogoth.android.phone.mimi.fragment.ThreadPagerFragment;
@@ -62,7 +61,7 @@ import rx.functions.Action1;
  * activity is only used on handset devices. On tablet-size devices,
  * item details are presented side-by-side with a list of items
  * in a {@link PostItemListActivity}.
- * <p>
+ * <p/>
  * This activity is mostly just a 'shell' activity containing nothing
  * more than a {@link com.emogoth.android.phone.mimi.fragment.ThreadPagerFragment}.
  */
@@ -91,10 +90,10 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         setContentView(R.layout.activity_postitem_detail);
 
         final Toolbar toolbar = (Toolbar) findViewById(R.id.mimi_toolbar);
-        if(toolbar != null) {
+        if (toolbar != null) {
             toolbar.setNavigationOnClickListener(this);
 //            toolbar.setSubtitleTextColor(getResources().getColor(R.color.toolbar_subtitle_color));
-            
+
             setToolbar(toolbar);
         }
 
@@ -103,7 +102,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         addContentFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(threadFragment instanceof ContentInterface) {
+                if (threadFragment instanceof ContentInterface) {
                     ((ContentInterface) threadFragment).addContent();
                 }
             }
@@ -111,7 +110,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
 
         final Bundle extras = getIntent().getExtras();
 
-        if(extras != null) {
+        if (extras != null) {
             if (extras.containsKey(Extras.EXTRAS_BOARD_NAME)) {
                 boardName = extras.getString(Extras.EXTRAS_BOARD_NAME);
             }
@@ -161,10 +160,9 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
             // using a fragment transaction.
             final Bundle arguments = getIntent().getExtras();
 
-            if(singleThread) {
+            if (singleThread) {
                 threadFragment = new ThreadDetailFragment();
-            }
-            else {
+            } else {
                 threadFragment = new ThreadPagerFragment();
             }
 
@@ -173,15 +171,14 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
                     .add(R.id.postitem_detail_container, threadFragment, POST_DETAIL_FRAGMENT_TAG)
                     .commit();
 
-        }
-        else {
+        } else {
             threadFragment = (MimiFragmentBase) getSupportFragmentManager().findFragmentByTag(POST_DETAIL_FRAGMENT_TAG);
         }
     }
 
     @Override
     public void setExpandedToolbar(boolean expanded, boolean animate) {
-        if(appBarLayout != null) {
+        if (appBarLayout != null) {
             appBarLayout.setExpanded(expanded, animate);
         }
     }
@@ -201,14 +198,13 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     @Override
     public void onBackPressed() {
         final boolean handled;
-        if(threadFragment != null) {
+        if (threadFragment != null) {
             handled = threadFragment.onBackPressed();
-        }
-        else {
+        } else {
             handled = false;
         }
 
-        if(!handled) {
+        if (!handled) {
             super.onBackPressed();
             supportInvalidateOptionsMenu();
         }
@@ -243,9 +239,9 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
 
     @Subscribe
     public void openBookmark(final BookmarkClickedEvent event) {
-        if(threadFragment instanceof ThreadPagerFragment && threadFragment.isAdded()) {
+        if (threadFragment instanceof ThreadPagerFragment && threadFragment.isAdded()) {
             SelectThreadEvent selectThreadEvent = new SelectThreadEvent(event.getBoardName(), event.getThreadId(), event.getPosition());
-            ((ThreadPagerFragment)threadFragment).onThreadSelected(selectThreadEvent);
+            ((ThreadPagerFragment) threadFragment).onThreadSelected(selectThreadEvent);
         } else {
             RxUtil.safeUnsubscribe(fetchHistorySubscription);
             fetchHistorySubscription = HistoryTableConnection.fetchHistory(true)
@@ -310,12 +306,11 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         // http://developer.android.com/design/patterns/navigation.html#up-vs-back
         //
         final Intent listIntent = new Intent(this, PostItemListActivity.class);
-        if(NavUtils.shouldUpRecreateTask(this, listIntent)) {
+        if (NavUtils.shouldUpRecreateTask(this, listIntent)) {
             final TaskStackBuilder taskStack = TaskStackBuilder.create(this);
             taskStack.addNextIntent(listIntent);
             taskStack.startActivities();
-        }
-        else {
+        } else {
             NavUtils.navigateUpTo(this, listIntent);
         }
     }
@@ -328,7 +323,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     @Subscribe
     public void openHistory(OpenHistoryEvent event) {
         final int bookmarkId;
-        if(event.watched) {
+        if (event.watched) {
             bookmarkId = PostItemListActivity.BOOKMARKS_ID;
         } else {
             bookmarkId = PostItemListActivity.HISTORY_ID;
@@ -341,31 +336,5 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         intent.putExtras(args);
         startActivity(intent);
     }
-
-//    @Override
-//    public void onOffsetChanged(AppBarLayout appBarLayout, int i) {
-//        threadFragment.setSwipeRefreshEnabled(false);
-//        offsetIndex = i;
-//    }
-
-//    @Override
-//    public boolean dispatchTouchEvent(MotionEvent ev) {
-//        final int action = MotionEventCompat.getActionMasked(ev);
-//        switch (action) {
-//            case MotionEvent.ACTION_DOWN:
-//            case MotionEvent.ACTION_UP:
-//            case MotionEvent.ACTION_CANCEL:
-//
-//                if (threadFragment != null) {
-//                    if (offsetIndex == 0) {
-//                        threadFragment.setSwipeRefreshEnabled(true);
-//                    } else {
-//                        threadFragment.setSwipeRefreshEnabled(false);
-//                    }
-//                }
-//                break;
-//        }
-//        return super.dispatchTouchEvent(ev);
-//    }
 
 }

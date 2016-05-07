@@ -17,12 +17,10 @@
 package com.emogoth.android.phone.mimi.span;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.text.TextPaint;
 import android.util.Log;
 import android.view.View;
 
-import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.event.ShowRepliesEvent;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 
@@ -44,7 +42,7 @@ public final class ReplySpan extends LongClickableSpan {
         this.context = context;
         this.boardName = boardName;
         this.threadId = threadId;
-        if(replies == null) {
+        if (replies == null) {
             this.replies = new ConcurrentSkipListSet<>();
         } else {
             this.replies = new ConcurrentSkipListSet<>(replies);

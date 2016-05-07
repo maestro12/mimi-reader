@@ -46,6 +46,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.dialog.CaptchaDialog;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
@@ -506,6 +507,7 @@ public class PostFragment extends DialogFragment {
                         return chanConnector.post(boardName, params);
                     }
                 })
+                .compose(DatabaseUtils.<Response<ResponseBody>>applySchedulers())
                 .subscribe(success, fail);
     }
 

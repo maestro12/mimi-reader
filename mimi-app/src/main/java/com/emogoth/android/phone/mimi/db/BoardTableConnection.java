@@ -24,7 +24,6 @@ import android.util.Log;
 
 import com.activeandroid.query.From;
 import com.activeandroid.query.Select;
-import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.model.BaseModel;
@@ -33,6 +32,7 @@ import com.mimireader.chanlib.models.ChanBoard;
 import com.squareup.sqlbrite.BriteDatabase;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,15 +46,12 @@ import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQ
 public class BoardTableConnection {
     public static final String LOG_TAG = BoardTableConnection.class.getSimpleName();
 
-    public static Observable<List<Board>> fetchBoards(int orderBy, boolean showAllBoards) {
+    public static Observable<List<Board>> fetchBoards(int orderBy) {
         From query = new Select()
                 .all()
                 .from(Board.class)
-                .orderBy(Board.sortOrder(orderBy));
-
-        if (!showAllBoards) {
-            query = query.and(Board.KEY_VISIBLE + "=?", true);
-        }
+                .orderBy(Board.sortOrder(orderBy))
+                .and(Board.KEY_VISIBLE + "=?", true);
 
         Log.d(LOG_TAG, "SQL=" + query.toSql());
 
@@ -64,7 +61,6 @@ public class BoardTableConnection {
                 .take(1)
                 .map(runQuery())
                 .flatMap(Board.mapper())
-                .compose(DatabaseUtils.<List<Board>>applySchedulers())
                 .onErrorReturn(new Func1<Throwable, List<Board>>() {
                     @Override
                     public List<Board> call(Throwable throwable) {
@@ -106,8 +102,7 @@ public class BoardTableConnection {
                         Log.e(LOG_TAG, "Error getting board info", throwable);
                         return null;
                     }
-                })
-                .compose(DatabaseUtils.<ChanBoard>applySchedulers());
+                });
     }
 
     public static Observable<Boolean> setBoardFavorite(final String boardName, final boolean favorite) {
@@ -131,8 +126,7 @@ public class BoardTableConnection {
 
                 return Observable.just(val > 0);
             }
-        })
-                .compose(DatabaseUtils.<Boolean>applySchedulers());
+        });
     }
 
     public static Observable<Boolean> incrementAccessCount(final String boardName) {
@@ -219,7 +213,7 @@ public class BoardTableConnection {
     }
 
     private static ContentValues updatePostCount(Board board) {
-        int count = board.postCount == null ? 1 : board.postCount + 1;
+        int count = board.postCount == 0 ? 1 : board.postCount + 1;
 
         ContentValues values = new ContentValues();
         values.put(Board.KEY_POST_COUNT, count);
@@ -228,7 +222,7 @@ public class BoardTableConnection {
     }
 
     private static ContentValues updateAccessCount(Board board) {
-        int count = board.accessCount == null ? 1 : board.accessCount + 1;
+        int count = board.accessCount == 0 ? 1 : board.accessCount + 1;
 
         ContentValues values = new ContentValues();
         values.put(Board.KEY_ACCESS_COUNT, count);
@@ -310,30 +304,7 @@ public class BoardTableConnection {
         return chanBoards;
     }
 
-    public static List<Board> convertChanBoardsToDbModels(Context context, List<ChanBoard> chanBoards) {
-        final ArrayList<String> visibleBoardNames = new ArrayList<>();
-        final String[] boardsArray = context.getResources().getStringArray(R.array.boards);
-
-        for (int i = 0; i < boardsArray.length; i++) {
-            visibleBoardNames.add(boardsArray[i].replaceAll("/", ""));
-        }
-
-        List<Board> filteredBoards = new ArrayList<>(chanBoards.size());
-        for (ChanBoard chanBoard : chanBoards) {
-            final boolean visible;
-            if (visibleBoardNames.indexOf(chanBoard.getName()) >= 0) {
-                visible = true;
-            } else {
-                visible = false;
-            }
-
-            filteredBoards.add(convertChanBoardToDbModel(chanBoard, visible));
-        }
-
-        return filteredBoards;
-    }
-
-    public static Board convertChanBoardToDbModel(ChanBoard chanBoard, Boolean visible) {
+    public static Board convertChanBoardToDbModel(ChanBoard chanBoard) {
         Board board = new Board();
         board.title = chanBoard.getTitle();
         board.name = chanBoard.getName();
@@ -342,7 +313,6 @@ public class BoardTableConnection {
         board.pages = chanBoard.getPages();
         board.perPage = chanBoard.getPerPage();
         board.maxFileSize = chanBoard.getMaxFilesize();
-        board.visible = visible;
 
         return board;
     }
@@ -363,11 +333,35 @@ public class BoardTableConnection {
                 }
             }
 
+
             return filteredBoards;
 
         }
 
-        return Collections.<ChanBoard>emptyList();
+        return Collections.emptyList();
+    }
+
+    public static Observable<List<Boolean>> initDefaultBoards(final Context context) {
+        return Observable
+                .defer(new Func0<Observable<String[]>>() {
+                    @Override
+                    public Observable<String[]> call() {
+                        return Observable.just(context.getResources().getStringArray(R.array.boards));
+                    }
+                })
+                .flatMapIterable(new Func1<String[], Iterable<String>>() {
+                    @Override
+                    public Iterable<String> call(String[] strings) {
+                        return Arrays.asList(strings);
+                    }
+                })
+                .flatMap(new Func1<String, Observable<Boolean>>() {
+                    @Override
+                    public Observable<Boolean> call(String s) {
+                        return setBoardVisibility(s, true);
+                    }
+                })
+                .toList();
     }
 
     public static Action1<? extends BaseModel> saveToDatabase() {
@@ -388,28 +382,26 @@ public class BoardTableConnection {
         };
     }
 
-    public static Action1<List<ChanBoard>> saveBoards(final List<String> visibleBoards) {
+    public static Action1<List<ChanBoard>> saveBoards() {
         return new Action1<List<ChanBoard>>() {
             @Override
             public void call(List<ChanBoard> chanBoards) {
-                saveBoards(chanBoards, visibleBoards);
+                saveBoards(chanBoards);
             }
         };
     }
 
-    public static void saveBoards(List<ChanBoard> chanBoards, List<String> visibleBoards) {
+    public static void saveBoards(List<ChanBoard> chanBoards) {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         BriteDatabase.Transaction transaction = db.newTransaction();
 
         try {
             for (ChanBoard board : chanBoards) {
-                boolean visible = visibleBoards.contains(board.getName());
-
-                int updateVal = DatabaseUtils.update(db, convertChanBoardToDbModel(board, visible));
+                int updateVal = DatabaseUtils.update(db, convertChanBoardToDbModel(board));
                 Log.d(LOG_TAG, "Update return value: " + updateVal);
 
                 if (updateVal == 0) {
-                    DatabaseUtils.insert(db, convertChanBoardToDbModel(board, visible));
+                    DatabaseUtils.insert(db, convertChanBoardToDbModel(board));
                 }
             }
             transaction.markSuccessful();
@@ -433,14 +425,17 @@ public class BoardTableConnection {
                     ContentValues contentValues = new ContentValues();
                     contentValues.put(Board.KEY_VISIBLE, visible);
 
-                    val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", boardPath);
+                    String name = boardPath.replaceAll("/", "");
+
+                    val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", name);
                     transaction.markSuccessful();
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Database update failed", e);
                 } finally {
                     transaction.end();
-                    return Observable.just(val > 0);
                 }
+
+                return Observable.just(val > 0);
             }
         })
                 .compose(DatabaseUtils.<Boolean>applySchedulers());

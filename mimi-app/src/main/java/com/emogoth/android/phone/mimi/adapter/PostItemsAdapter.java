@@ -44,7 +44,6 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
@@ -58,7 +57,6 @@ import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 

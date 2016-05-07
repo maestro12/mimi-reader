@@ -26,7 +26,7 @@ import java.util.List;
 public class FourChanThreadPage {
     @SerializedName("page")
     @Expose
-    private Integer page;
+    private int page;
     @SerializedName("threads")
     @Expose
     private List<FourChanPost> threads = new ArrayList<>();
@@ -36,7 +36,7 @@ public class FourChanThreadPage {
      * @return
      * The page
      */
-    public Integer getPage() {
+    public int getPage() {
         return page;
     }
 
@@ -45,7 +45,7 @@ public class FourChanThreadPage {
      * @param page
      * The page
      */
-    public void setPage(Integer page) {
+    public void setPage(int page) {
         this.page = page;
     }
 

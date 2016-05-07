@@ -33,55 +33,55 @@ public class FourChanBoard implements BoardConverter{
     private String title;
     @SerializedName("ws_board")
     @Expose
-    private Integer wsBoard;
+    private int wsBoard;
     @SerializedName("per_page")
     @Expose
-    private Integer perPage;
+    private int perPage;
     @SerializedName("pages")
     @Expose
-    private Integer pages;
+    private int pages;
     @SerializedName("max_filesize")
     @Expose
-    private Integer maxFilesize;
+    private int maxFilesize;
     @SerializedName("max_webm_filesize")
     @Expose
-    private Integer maxWebmFilesize;
+    private int maxWebmFilesize;
     @SerializedName("max_comment_chars")
     @Expose
-    private Integer maxCommentChars;
+    private int maxCommentChars;
     @SerializedName("bump_limit")
     @Expose
-    private Integer bumpLimit;
+    private int bumpLimit;
     @SerializedName("image_limit")
     @Expose
-    private Integer imageLimit;
+    private int imageLimit;
     @SerializedName("meta_description")
     @Expose
     private String metaDescription;
     @SerializedName("is_archived")
     @Expose
-    private Integer isArchived;
+    private int isArchived;
     @SerializedName("spoilers")
     @Expose
-    private Integer spoilers;
+    private int spoilers;
     @SerializedName("custom_spoilers")
     @Expose
-    private Integer customSpoilers;
+    private int customSpoilers;
     @SerializedName("user_ids")
     @Expose
-    private Integer userIds;
+    private int userIds;
     @SerializedName("code_tags")
     @Expose
-    private Integer codeTags;
+    private int codeTags;
     @SerializedName("country_flags")
     @Expose
-    private Integer countryFlags;
+    private int countryFlags;
     @SerializedName("sjis_tags")
     @Expose
-    private Integer sjisTags;
+    private int sjisTags;
     @SerializedName("math_tags")
     @Expose
-    private Integer mathTags;
+    private int mathTags;
 
     /**
      *
@@ -124,7 +124,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The wsBoard
      */
-    public Integer getWsBoard() {
+    public int getWsBoard() {
         return wsBoard;
     }
 
@@ -133,7 +133,7 @@ public class FourChanBoard implements BoardConverter{
      * @param wsBoard
      * The ws_board
      */
-    public void setWsBoard(Integer wsBoard) {
+    public void setWsBoard(int wsBoard) {
         this.wsBoard = wsBoard;
     }
 
@@ -142,7 +142,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The perPage
      */
-    public Integer getPerPage() {
+    public int getPerPage() {
         return perPage;
     }
 
@@ -151,7 +151,7 @@ public class FourChanBoard implements BoardConverter{
      * @param perPage
      * The per_page
      */
-    public void setPerPage(Integer perPage) {
+    public void setPerPage(int perPage) {
         this.perPage = perPage;
     }
 
@@ -160,7 +160,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The pages
      */
-    public Integer getPages() {
+    public int getPages() {
         return pages;
     }
 
@@ -169,7 +169,7 @@ public class FourChanBoard implements BoardConverter{
      * @param pages
      * The pages
      */
-    public void setPages(Integer pages) {
+    public void setPages(int pages) {
         this.pages = pages;
     }
 
@@ -178,7 +178,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The maxFilesize
      */
-    public Integer getMaxFilesize() {
+    public int getMaxFilesize() {
         return maxFilesize;
     }
 
@@ -187,7 +187,7 @@ public class FourChanBoard implements BoardConverter{
      * @param maxFilesize
      * The max_filesize
      */
-    public void setMaxFilesize(Integer maxFilesize) {
+    public void setMaxFilesize(int maxFilesize) {
         this.maxFilesize = maxFilesize;
     }
 
@@ -196,7 +196,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The maxWebmFilesize
      */
-    public Integer getMaxWebmFilesize() {
+    public int getMaxWebmFilesize() {
         return maxWebmFilesize;
     }
 
@@ -205,7 +205,7 @@ public class FourChanBoard implements BoardConverter{
      * @param maxWebmFilesize
      * The max_webm_filesize
      */
-    public void setMaxWebmFilesize(Integer maxWebmFilesize) {
+    public void setMaxWebmFilesize(int maxWebmFilesize) {
         this.maxWebmFilesize = maxWebmFilesize;
     }
 
@@ -214,7 +214,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The maxCommentChars
      */
-    public Integer getMaxCommentChars() {
+    public int getMaxCommentChars() {
         return maxCommentChars;
     }
 
@@ -223,7 +223,7 @@ public class FourChanBoard implements BoardConverter{
      * @param maxCommentChars
      * The max_comment_chars
      */
-    public void setMaxCommentChars(Integer maxCommentChars) {
+    public void setMaxCommentChars(int maxCommentChars) {
         this.maxCommentChars = maxCommentChars;
     }
 
@@ -232,7 +232,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The bumpLimit
      */
-    public Integer getBumpLimit() {
+    public int getBumpLimit() {
         return bumpLimit;
     }
 
@@ -241,7 +241,7 @@ public class FourChanBoard implements BoardConverter{
      * @param bumpLimit
      * The bump_limit
      */
-    public void setBumpLimit(Integer bumpLimit) {
+    public void setBumpLimit(int bumpLimit) {
         this.bumpLimit = bumpLimit;
     }
 
@@ -250,7 +250,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The imageLimit
      */
-    public Integer getImageLimit() {
+    public int getImageLimit() {
         return imageLimit;
     }
 
@@ -259,7 +259,7 @@ public class FourChanBoard implements BoardConverter{
      * @param imageLimit
      * The image_limit
      */
-    public void setImageLimit(Integer imageLimit) {
+    public void setImageLimit(int imageLimit) {
         this.imageLimit = imageLimit;
     }
 
@@ -286,7 +286,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The isArchived
      */
-    public Integer getIsArchived() {
+    public int getIsArchived() {
         return isArchived;
     }
 
@@ -295,7 +295,7 @@ public class FourChanBoard implements BoardConverter{
      * @param isArchived
      * The is_archived
      */
-    public void setIsArchived(Integer isArchived) {
+    public void setIsArchived(int isArchived) {
         this.isArchived = isArchived;
     }
 
@@ -304,7 +304,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The spoilers
      */
-    public Integer getSpoilers() {
+    public int getSpoilers() {
         return spoilers;
     }
 
@@ -313,7 +313,7 @@ public class FourChanBoard implements BoardConverter{
      * @param spoilers
      * The spoilers
      */
-    public void setSpoilers(Integer spoilers) {
+    public void setSpoilers(int spoilers) {
         this.spoilers = spoilers;
     }
 
@@ -322,7 +322,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The customSpoilers
      */
-    public Integer getCustomSpoilers() {
+    public int getCustomSpoilers() {
         return customSpoilers;
     }
 
@@ -331,7 +331,7 @@ public class FourChanBoard implements BoardConverter{
      * @param customSpoilers
      * The custom_spoilers
      */
-    public void setCustomSpoilers(Integer customSpoilers) {
+    public void setCustomSpoilers(int customSpoilers) {
         this.customSpoilers = customSpoilers;
     }
 
@@ -340,7 +340,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The userIds
      */
-    public Integer getUserIds() {
+    public int getUserIds() {
         return userIds;
     }
 
@@ -349,7 +349,7 @@ public class FourChanBoard implements BoardConverter{
      * @param userIds
      * The user_ids
      */
-    public void setUserIds(Integer userIds) {
+    public void setUserIds(int userIds) {
         this.userIds = userIds;
     }
 
@@ -358,7 +358,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The codeTags
      */
-    public Integer getCodeTags() {
+    public int getCodeTags() {
         return codeTags;
     }
 
@@ -367,7 +367,7 @@ public class FourChanBoard implements BoardConverter{
      * @param codeTags
      * The code_tags
      */
-    public void setCodeTags(Integer codeTags) {
+    public void setCodeTags(int codeTags) {
         this.codeTags = codeTags;
     }
 
@@ -376,7 +376,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The countryFlags
      */
-    public Integer getCountryFlags() {
+    public int getCountryFlags() {
         return countryFlags;
     }
 
@@ -385,7 +385,7 @@ public class FourChanBoard implements BoardConverter{
      * @param countryFlags
      * The country_flags
      */
-    public void setCountryFlags(Integer countryFlags) {
+    public void setCountryFlags(int countryFlags) {
         this.countryFlags = countryFlags;
     }
 
@@ -394,7 +394,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The sjisTags
      */
-    public Integer getSjisTags() {
+    public int getSjisTags() {
         return sjisTags;
     }
 
@@ -403,7 +403,7 @@ public class FourChanBoard implements BoardConverter{
      * @param sjisTags
      * The sjis_tags
      */
-    public void setSjisTags(Integer sjisTags) {
+    public void setSjisTags(int sjisTags) {
         this.sjisTags = sjisTags;
     }
 
@@ -412,7 +412,7 @@ public class FourChanBoard implements BoardConverter{
      * @return
      * The mathTags
      */
-    public Integer getMathTags() {
+    public int getMathTags() {
         return mathTags;
     }
 
@@ -421,7 +421,7 @@ public class FourChanBoard implements BoardConverter{
      * @param mathTags
      * The math_tags
      */
-    public void setMathTags(Integer mathTags) {
+    public void setMathTags(int mathTags) {
         this.mathTags = mathTags;
     }
 

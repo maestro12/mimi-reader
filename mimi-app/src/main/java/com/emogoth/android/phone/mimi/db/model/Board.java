@@ -21,7 +21,6 @@ import android.database.Cursor;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
-import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +59,7 @@ public class Board extends BaseModel {
 
 
     @Column(name = KEY_ID, index = true)
-    public Integer id;
+    public int id = -1;
 
     @Column(name = KEY_TITLE, notNull = true)
     public String title; // title
@@ -69,67 +68,53 @@ public class Board extends BaseModel {
     public String name; // name
 
     @Column(name = KEY_ACCESS_COUNT)
-    public Integer accessCount;
+    public int accessCount = 0;
 
     @Column(name = KEY_POST_COUNT)
-    public Integer postCount;
+    public int postCount = 0;
 
     @Column(name = KEY_CATEGORY)
-    public Integer category;
+    public int category;
 
     @Column(name = KEY_LAST_ACCESSED)
-    public Long lastAccessed;
+    public long lastAccessed;
 
     @Column(name = KEY_FAVORITE)
-    public Boolean favorite;
+    public boolean favorite;
 
     @Column(name = KEY_NSFW)
-    public Boolean nsfw; // This value is the opposite of nsfw, but requires a schema change
+    public boolean nsfw; // This value is the opposite of nsfw, but requires a schema change
 
     @Column(name = KEY_POSTS_PER_PAGE)
-    public Integer perPage;
+    public int perPage;
 
     @Column(name = KEY_NUMBER_OF_PAGES)
-    public Integer pages;
+    public int pages;
 
     @Column(name = KEY_VISIBLE)
-    public Boolean visible;
+    public boolean visible = false;
 
     @Column(name = KEY_ORDER_INDEX)
-    public Integer orderIndex;
+    public int orderIndex;
 
     @Column(name = KEY_MAX_FILESIZE)
-    public Integer maxFileSize;
+    public int maxFileSize;
 
     public ContentValues toContentValues() {
         ContentValues values = new ContentValues();
 
-        if (id != null) {
+        if (id != -1) {
             values.put(Board.KEY_ID, id);
         }
 
         values.put(Board.KEY_NAME, name);
         values.put(Board.KEY_TITLE, title);
 
-        if (accessCount != null) {
-            values.put(Board.KEY_ACCESS_COUNT, accessCount);
-        }
-
-        if (postCount != null) {
-            values.put(Board.KEY_POST_COUNT, postCount);
-        }
-
         values.put(Board.KEY_CATEGORY, category);
-        values.put(Board.KEY_LAST_ACCESSED, lastAccessed);
-        values.put(Board.KEY_FAVORITE, favorite);
         values.put(Board.KEY_NSFW, !nsfw); // the api reports safe for work
         values.put(Board.KEY_POSTS_PER_PAGE, perPage);
         values.put(Board.KEY_NUMBER_OF_PAGES, pages);
 
-        if (visible != null) {
-            values.put(Board.KEY_VISIBLE, visible);
-        }
-        values.put(Board.KEY_ORDER_INDEX, orderIndex);
         values.put(Board.KEY_MAX_FILESIZE, maxFileSize);
 
         return values;
@@ -189,7 +174,7 @@ public class Board extends BaseModel {
                 value = Board.KEY_LAST_ACCESSED;
                 break;
             case 6:
-                value = Board.KEY_FAVORITE;
+                value = Board.KEY_FAVORITE + " DESC";
                 break;
             case 7:
                 value = Board.KEY_ORDER_INDEX + " ASC";
@@ -208,7 +193,7 @@ public class Board extends BaseModel {
         public Builder() {
         }
 
-        public Builder id(Integer val) {
+        public Builder id(int val) {
             values.put(Board.KEY_ID, val);
             return this;
         }
@@ -223,57 +208,57 @@ public class Board extends BaseModel {
             return this;
         }
 
-        public Builder accessCount(Integer val) {
+        public Builder accessCount(int val) {
             values.put(Board.KEY_ACCESS_COUNT, val);
             return this;
         }
 
-        public Builder postCount(Integer val) {
+        public Builder postCount(int val) {
             values.put(Board.KEY_POST_COUNT, val);
             return this;
         }
 
-        public Builder boardCategory(Integer val) {
+        public Builder boardCategory(int val) {
             values.put(Board.KEY_CATEGORY, val);
             return this;
         }
 
-        public Builder lastAccessed(Long val) {
+        public Builder lastAccessed(long val) {
             values.put(Board.KEY_LAST_ACCESSED, val);
             return this;
         }
 
-        public Builder favorite(Boolean val) {
+        public Builder favorite(boolean val) {
             values.put(Board.KEY_FAVORITE, val);
             return this;
         }
 
-        public Builder nsfw(Boolean val) {
+        public Builder nsfw(boolean val) {
             values.put(Board.KEY_NSFW, val);
             return this;
         }
 
-        public Builder perPage(Integer val) {
+        public Builder perPage(int val) {
             values.put(Board.KEY_POSTS_PER_PAGE, val);
             return this;
         }
 
-        public Builder pages(Integer val) {
+        public Builder pages(int val) {
             values.put(Board.KEY_NUMBER_OF_PAGES, val);
             return this;
         }
 
-        public Builder visible(Boolean val) {
+        public Builder visible(boolean val) {
             values.put(Board.KEY_VISIBLE, val);
             return this;
         }
 
-        public Builder orderIndex(Integer val) {
+        public Builder orderIndex(int val) {
             values.put(Board.KEY_ORDER_INDEX, val);
             return this;
         }
 
-        public Builder maxFileSize(Integer val) {
+        public Builder maxFileSize(int val) {
             values.put(Board.KEY_MAX_FILESIZE, val);
             return this;
         }

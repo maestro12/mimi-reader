@@ -18,7 +18,6 @@ package com.emogoth.android.phone.mimi.adapter;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
 
@@ -27,7 +26,7 @@ public class NavigationPagerAdapter extends FragmentStatePagerAdapter {
     public static final int DETAIL_PANE = 1;
 
     private FragmentManager fragmentManager;
-    private Fragment [] panes;
+    private Fragment[] panes;
 
     public NavigationPagerAdapter(final FragmentManager fm) {
         super(fm);
@@ -43,14 +42,14 @@ public class NavigationPagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getItemPosition(Object object) {
-        if(object instanceof Fragment) {
+        if (object instanceof Fragment) {
             final Fragment fragment = (Fragment) object;
 
-            if(panes[LIST_PANE] == fragment) {
+            if (panes[LIST_PANE] == fragment) {
                 return LIST_PANE;
             }
 
-            if(panes[DETAIL_PANE] == fragment) {
+            if (panes[DETAIL_PANE] == fragment) {
                 return DETAIL_PANE;
             }
         }
@@ -62,7 +61,7 @@ public class NavigationPagerAdapter extends FragmentStatePagerAdapter {
     public int getCount() {
 
         // There should always be at least 1 fragment in the viewpager
-        if(panes[1] == null) {
+        if (panes[1] == null) {
             return 1;
         }
 
@@ -77,7 +76,7 @@ public class NavigationPagerAdapter extends FragmentStatePagerAdapter {
 //                    .commit();
 //        }
 
-        if(panes[paneIndex] != fragment) {
+        if (panes[paneIndex] != fragment) {
             panes[paneIndex] = fragment;
             notifyDataSetChanged();
         }

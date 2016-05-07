@@ -110,7 +110,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
     }
 
     @Override
-    public void onBindViewHolder(final BoardViewHolder holder, final int position) {
+    public void onBindViewHolder(final BoardViewHolder holder, int position) {
         final ChanBoard board = boards.get(position);
         if (holder.boardName != null) {
             holder.boardName.setVisibility(View.GONE);
@@ -168,6 +168,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
                                     return false;
                                 }
                             })
+                            .compose(DatabaseUtils.<Boolean>applySchedulers())
                             .subscribe(new Action1<Boolean>() {
                                 @Override
                                 public void call(Boolean success) {
@@ -200,7 +201,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
                     @Override
                     public void onClick(View v) {
                         if (!editMode) {
-                            itemClickListener.onItemClick(null, holder.root, position, 0);
+                            itemClickListener.onItemClick(null, holder.root, holder.getAdapterPosition(), 0);
                         }
                     }
                 });
@@ -215,7 +216,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
                     @Override
                     public boolean onLongClick(View v) {
                         if (!editMode) {
-                            itemLongClickListener.onItemLongClick(null, holder.root, position, 0);
+                            itemLongClickListener.onItemLongClick(null, holder.root, holder.getAdapterPosition(), 0);
                         }
                         return true;
                     }
@@ -248,6 +249,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
         RxUtil.safeUnsubscribe(updateBoardsSubscription);
         updateBoardsSubscription = BoardTableConnection.updateBoardOrder(boards)
                 .delay(500, TimeUnit.MILLISECONDS)
+                .compose(DatabaseUtils.<Boolean>applySchedulers())
                 .subscribe(new Action1<Boolean>() {
                     @Override
                     public void call(Boolean success) {

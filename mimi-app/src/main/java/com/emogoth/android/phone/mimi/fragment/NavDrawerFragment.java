@@ -40,6 +40,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.BookmarkClickedEvent;
@@ -247,6 +248,7 @@ public class NavDrawerFragment extends Fragment {
     private void sendBookmarkClickedEvent(final History bookmark) {
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(bookmark.boardName)
+                .compose(DatabaseUtils.<ChanBoard>applySchedulers())
                 .subscribe(new Action1<ChanBoard>() {
                     @Override
                     public void call(ChanBoard chanBoard) {

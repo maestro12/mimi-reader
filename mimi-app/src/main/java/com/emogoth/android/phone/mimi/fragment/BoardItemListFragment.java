@@ -289,7 +289,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
                 @Override
                 public void onDestroyActionMode(ActionMode mode) {
-//                            ((MimiActivity) getActivity()).getToolbar().setVisibility(View.VISIBLE);
                     if (getActivity() == null || !(getActivity() instanceof MimiActivity)) {
                         return;
                     }
@@ -302,8 +301,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
                     toolbar.setVisibility(View.VISIBLE);
 
                     boardListAdapter.editMode(false);
-//                            boardsList.disableDragAndDrop();
-//                            boardsList.disableSwipeToDismiss();
                     boardsList.setClickable(true);
                     boardListAdapter.setOnItemClickListener(BoardItemListFragment.this);
 
@@ -388,7 +385,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
                         if (success) {
                             final int orderId = MimiUtil.getBoardOrder(getActivity());
-                            return BoardTableConnection.fetchBoards(orderId, false);
+                            return BoardTableConnection.fetchBoards(orderId);
                         }
 
                         return Observable.just(Collections.<Board>emptyList());
@@ -444,7 +441,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
         boardListAdapter.setOnItemClickListener(this);
 
-        loadBoards(false);
+        loadBoards();
 
 
         // Restore the previously serialized activated item position.
@@ -455,42 +452,54 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
     }
 
-    private void loadBoards(final boolean allBoards) {
+    private void loadBoards() {
         RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-        fetchBoardsSubscription = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()), allBoards)
+        fetchBoardsSubscription = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()))
                 .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
                     @Override
                     public Observable<List<ChanBoard>> call(List<Board> dbBoards) {
-                        Observable<List<ChanBoard>> mappedObservable = chanConnector.fetchBoards();
+                        Observable<List<ChanBoard>> mappedObservable;
 
                         if (dbBoards.size() > 0) {
                             List<ChanBoard> chanBoards = new ArrayList<>(dbBoards.size());
-                            List<String> visibleBoardNames = new ArrayList<>(dbBoards.size());
                             for (Board board : dbBoards) {
-                                if (board.visible != null && board.visible) {
-                                    chanBoards.add(BoardTableConnection.convertBoardDbModelToBoard(board));
-                                    visibleBoardNames.add(board.name);
-                                }
+                                chanBoards.add(BoardTableConnection.convertBoardDbModelToBoard(board));
                             }
 
                             boards = chanBoards;
-                            mappedObservable = mappedObservable.doOnNext(BoardTableConnection.saveBoards(visibleBoardNames));
+                            mappedObservable = chanConnector.fetchBoards().doOnNext(BoardTableConnection.saveBoards());
                         } else {
-                            mappedObservable = mappedObservable.flatMap(new Func1<List<ChanBoard>, Observable<List<ChanBoard>>>() {
-                                @Override
-                                public Observable<List<ChanBoard>> call(List<ChanBoard> chanBoards) {
-                                    List<ChanBoard> filteredBoards = BoardTableConnection.filterVisibleBoards(getActivity(), chanBoards);
-                                    Observable<List<ChanBoard>> saveBoardsObservable = Observable.just(filteredBoards);
+                            mappedObservable = chanConnector.fetchBoards()
+                                    .map(new Func1<List<ChanBoard>, List<ChanBoard>>() {
+                                        @Override
+                                        public List<ChanBoard> call(List<ChanBoard> chanBoards) {
+                                            BoardTableConnection.saveBoards(chanBoards);
+                                            return chanBoards;
+                                        }
+                                    })
+                                    .flatMap(new Func1<List<ChanBoard>, Observable<List<Boolean>>>() {
+                                        @Override
+                                        public Observable<List<Boolean>> call(List<ChanBoard> chanBoards) {
+                                            return BoardTableConnection.initDefaultBoards(getActivity());
+                                        }
+                                    })
+                                    .flatMap(new Func1<List<Boolean>, Observable<List<Board>>>() {
+                                        @Override
+                                        public Observable<List<Board>> call(List<Boolean> booleen) {
+                                            return BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()));
+                                        }
+                                    })
+                                    .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
+                                        @Override
+                                        public Observable<List<ChanBoard>> call(List<Board> boards) {
+                                            List<ChanBoard> chanBoards = new ArrayList<>(boards.size());
+                                            for (Board board : boards) {
+                                                chanBoards.add(BoardTableConnection.convertBoardDbModelToBoard(board));
+                                            }
 
-                                    List<String> filteredBoardNames = new ArrayList<>();
-                                    for (ChanBoard filteredBoard : filteredBoards) {
-                                        filteredBoardNames.add(filteredBoard.getName());
-                                    }
-
-                                    BoardTableConnection.saveBoards(chanBoards, filteredBoardNames);
-                                    return saveBoardsObservable;
-                                }
-                            });
+                                            return Observable.just(chanBoards);
+                                        }
+                                    });
                         }
 
                         return mappedObservable;
@@ -616,7 +625,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
             boolean showAllBoards = prefs.getBoolean(getString(R.string.show_all_boards), false);
 
             if (showAllBoards) {
-                loadBoards(false);
+                loadBoards();
                 prefs.edit().putBoolean(getString(R.string.show_all_boards), false).apply();
             }
         }
@@ -850,7 +859,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
             MimiUtil.setBoardOrder(getActivity(), orderType);
 
             RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-            fetchBoardsSubscription = BoardTableConnection.fetchBoards(orderType, false)
+            fetchBoardsSubscription = BoardTableConnection.fetchBoards(orderType)
                     .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
                         @Override
                         public Observable<List<ChanBoard>> call(List<Board> boards) {

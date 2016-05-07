@@ -30,8 +30,6 @@ import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
-import android.text.method.LinkMovementMethod;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -55,6 +53,7 @@ import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.LongClickLinkMovementMethod;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
+import com.mimireader.chanlib.util.ChanUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -95,6 +94,8 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private List<String> repliesText = new ArrayList<>();
     private List<String> imagesText = new ArrayList<>();
 
+    private int[] colorList;
+
     private final Map<Integer, String> thumbUrlMap = new HashMap<>();
     private final Map<Integer, String> fullImageUrlMap = new HashMap<>();
 
@@ -122,7 +123,9 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private void setupThread() {
         this.timeMap = new CharSequence[thread.getPosts().size()];
+        this.colorList = new int[thread.getPosts().size()];
         this.userPostList = ThreadRegistry.getInstance().getUserPosts(boardName, thread.getThreadId());
+
         for (int i = 0; i < thread.getPosts().size(); i++) {
             final ChanPost post = thread.getPosts().get(i);
             final CharSequence dateString = DateUtils.getRelativeTimeSpanString(
@@ -141,10 +144,15 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             timeMap[i] = dateString;
 
+            if (!TextUtils.isEmpty(post.getId())) {
+                colorList[i] = ChanUtil.calculateColorBase(post.getId());
+            }
+
             if (post.getFsize() > 0) {
                 post.setHumanReadableFileSize(MimiUtil.humanReadableByteCount(post.getFsize(), true) + " " + post.getExt().substring(1).toUpperCase());
             }
         }
+
     }
 
     private boolean isHeader(int position) {
@@ -330,7 +338,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         if (country != null && !"".equals(country)) {
             final String url = flagUrl + country.toLowerCase() + ".gif";
-            Log.i(LOG_TAG, "flag url=" + url);
+
             viewHolder.flagIcon.setVisibility(View.VISIBLE);
             viewHolder.flagIcon.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -339,7 +347,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     builder.setMessage(postItem.getCountryName())
                             .setCancelable(true)
                             .show()
-                    .setCanceledOnTouchOutside(true);
+                            .setCanceledOnTouchOutside(true);
                 }
             });
             Glide.with(activity)
@@ -450,8 +458,15 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
 
         if (!TextUtils.isEmpty(postItem.getId())) {
+            viewHolder.userId.setBackgroundColor(colorList[position]);
             viewHolder.userId.setText(postItem.getId());
             viewHolder.userId.setVisibility(View.VISIBLE);
+            viewHolder.userId.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    RepliesDialog.newInstance(thread, postItem.getId()).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
+                }
+            });
         } else {
             viewHolder.userId.setVisibility(View.GONE);
         }

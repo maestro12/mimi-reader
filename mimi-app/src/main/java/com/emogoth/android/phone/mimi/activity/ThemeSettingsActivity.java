@@ -18,7 +18,6 @@ package com.emogoth.android.phone.mimi.activity;
 
 
 import android.content.DialogInterface;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
@@ -57,7 +56,7 @@ public class ThemeSettingsActivity extends MimiActivity {
 
     private int selectedItem = 0;
     private int currentColor = 0;
-//    private ColorPickerView colorPickerView;
+    //    private ColorPickerView colorPickerView;
     private GridLayout pickerContainer;
     private Subscription demoViewSubscription;
 
@@ -85,29 +84,31 @@ public class ThemeSettingsActivity extends MimiActivity {
         final View postView = LayoutInflater.from(this).inflate(R.layout.thread_post_item, container, false);
 
         final ColorImageView selectedColorView = (ColorImageView) findViewById(R.id.current_color);
-        selectedColorView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final ColorPickerView pickerView = new ColorPickerView(ThemeSettingsActivity.this);
-                pickerView.setColor(currentColor);
-                pickerView.showAlpha(false);
+        if (selectedColorView != null) {
+            selectedColorView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    final ColorPickerView pickerView = new ColorPickerView(ThemeSettingsActivity.this);
+                    pickerView.setColor(currentColor);
+                    pickerView.showAlpha(false);
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(ThemeSettingsActivity.this);
-                builder.setView(pickerView)
-                        .setCancelable(true)
-                        .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                currentColor = pickerView.getColor();
-                                selectedColorView.setBackgroundColor(currentColor);
-                                setSelectedColor(selectedItem, currentColor);
-                                updateDemoView(postView);
-                            }
-                        })
-                        .setNegativeButton(R.string.cancel, null)
-                        .show();
-            }
-        });
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ThemeSettingsActivity.this);
+                    builder.setView(pickerView)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    currentColor = pickerView.getColor();
+                                    selectedColorView.setBackgroundColor(currentColor);
+                                    setSelectedColor(selectedItem, currentColor);
+                                    updateDemoView(postView);
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, null)
+                            .show();
+                }
+            });
+        }
 
         initColors(selectedColorView, postView);
         currentColor = getSelectedColor(0);
@@ -140,16 +141,16 @@ public class ThemeSettingsActivity extends MimiActivity {
     private void initColors(ColorImageView selectedColorView, View postView) {
         final List<ColorImageView> views = new ArrayList<>(10);
 
-        views.add((ColorImageView)findViewById( R.id.default_reply ));
-        views.add((ColorImageView)findViewById( R.id.default_highlight ));
-        views.add((ColorImageView)findViewById( R.id.default_quote ));
-        views.add((ColorImageView)findViewById( R.id.default_link ));
-        views.add((ColorImageView)findViewById( R.id.material_blue ));
-        views.add((ColorImageView)findViewById( R.id.material_red ));
-        views.add((ColorImageView)findViewById( R.id.material_green ));
-        views.add((ColorImageView)findViewById( R.id.material_yellow ));
-        views.add((ColorImageView)findViewById( R.id.material_light_grey ));
-        views.add((ColorImageView)findViewById( R.id.material_dark_grey ));
+        views.add((ColorImageView) findViewById(R.id.default_reply));
+        views.add((ColorImageView) findViewById(R.id.default_highlight));
+        views.add((ColorImageView) findViewById(R.id.default_quote));
+        views.add((ColorImageView) findViewById(R.id.default_link));
+        views.add((ColorImageView) findViewById(R.id.material_blue));
+        views.add((ColorImageView) findViewById(R.id.material_red));
+        views.add((ColorImageView) findViewById(R.id.material_green));
+        views.add((ColorImageView) findViewById(R.id.material_yellow));
+        views.add((ColorImageView) findViewById(R.id.material_light_grey));
+        views.add((ColorImageView) findViewById(R.id.material_dark_grey));
 
         for (ColorImageView view : views) {
             view.setOnClickListener(setupClickListener(selectedColorView, postView));
@@ -161,7 +162,7 @@ public class ThemeSettingsActivity extends MimiActivity {
         return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(v instanceof ColorImageView) {
+                if (v instanceof ColorImageView) {
                     final ColorImageView view = (ColorImageView) v;
                     currentColor = view.getBackgroundColor();
 
@@ -242,13 +243,13 @@ public class ThemeSettingsActivity extends MimiActivity {
                 break;
             case 1:
                 MimiUtil.getInstance().setReplyColor(color);
-            break;
+                break;
             case 2:
                 MimiUtil.getInstance().setHighlightColor(color);
-            break;
+                break;
             case 3:
                 MimiUtil.getInstance().setLinkColor(color);
-            break;
+                break;
         }
     }
 

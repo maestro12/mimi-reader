@@ -66,7 +66,7 @@ import com.emogoth.android.phone.mimi.interfaces.EndlessRecyclerOnScrollListener
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
 import com.emogoth.android.phone.mimi.util.BusProvider;
-import com.emogoth.android.phone.mimi.util.ChanUtil;
+import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
@@ -699,7 +699,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 }
 
                 if (posts.get(i).getName() != null) {
-                    final Spannable nameSpan = ChanUtil.getUserName(getActivity(), posts.get(i).getName(), posts.get(i).getCapcode());
+                    final Spannable nameSpan = FourChanUtil.getUserName(getActivity(), posts.get(i).getName(), posts.get(i).getCapcode());
                     posts.get(i)
                             .setDisplayedName(nameSpan);
                 }
@@ -990,7 +990,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                     final int boardOrder = MimiUtil.getBoardOrder(getActivity());
 
                     RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-                    fetchBoardsSubscription = BoardTableConnection.fetchBoards(boardOrder, showAllBoards)
+                    fetchBoardsSubscription = BoardTableConnection.fetchBoards(boardOrder)
                             .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
                                 @Override
                                 public Observable<List<ChanBoard>> call(List<Board> boards) {

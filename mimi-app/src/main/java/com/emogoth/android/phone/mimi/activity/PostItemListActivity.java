@@ -567,7 +567,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
     @Subscribe
     public void openHistory(OpenHistoryEvent event) {
         final int bookmarkId;
-        if(event.watched) {
+        if (event.watched) {
             bookmarkId = PostItemListActivity.BOOKMARKS_ID;
         } else {
             bookmarkId = PostItemListActivity.HISTORY_ID;

@@ -22,7 +22,7 @@ import android.text.Html;
 import android.text.Spannable;
 
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
-import com.emogoth.android.phone.mimi.util.ChanUtil;
+import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
@@ -133,7 +133,7 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
 
         for (int i = 0; i < posts.size(); i++) {
             final ChanPost post = new ChanPost(posts.get(i));
-            final Spannable nameSpan = ChanUtil.getUserName(
+            final Spannable nameSpan = FourChanUtil.getUserName(
                     context,
                     post.getName(),
                     post.getCapcode()

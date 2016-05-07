@@ -40,10 +40,9 @@ public class BookmarksDrawerAdapter extends FragmentStatePagerAdapter {
     public BookmarksDrawerAdapter(final FragmentManager fm, final Context context, final int viewType) {
         super(fm);
 
-        if(MimiUtil.historyEnabled(context)) {
+        if (MimiUtil.historyEnabled(context)) {
             pagerTabs = new Fragment[2];
-        }
-        else {
+        } else {
             pagerTabs = new Fragment[1];
         }
 
@@ -54,7 +53,7 @@ public class BookmarksDrawerAdapter extends FragmentStatePagerAdapter {
         Log.i(LOG_TAG, "Bookmark type=" + viewType);
         pagerTabs[0].setArguments(bookmarkBundle);
 
-        if(MimiUtil.historyEnabled(context)) {
+        if (MimiUtil.historyEnabled(context)) {
             pagerTabs[1] = new HistoryFragment();
             final Bundle historyBundle = new Bundle();
             historyBundle.putInt(Extras.EXTRAS_HISTORY_QUERY_TYPE, HistoryTableConnection.HISTORY);
@@ -79,8 +78,8 @@ public class BookmarksDrawerAdapter extends FragmentStatePagerAdapter {
     }
 
     @Override
-    public CharSequence getPageTitle (int position) {
-        switch(position) {
+    public CharSequence getPageTitle(int position) {
+        switch (position) {
             case 0:
                 return bookmarkTabName;
             case 1:

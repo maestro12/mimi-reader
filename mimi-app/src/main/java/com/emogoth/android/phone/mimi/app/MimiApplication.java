@@ -55,15 +55,11 @@ public class MimiApplication extends Application {
 
     @Override
     public void onCreate() {
-//        setTheme(MimiUtil.getInstance().getThemeResourceId());
-//        MultiDex.install(this);
         super.onCreate();
         app = this;
 
         MimiUtil.getInstance().init(this);
         HttpClientFactory.getInstance().init();
-
-//        Stetho.initializeWithDefaults(this);
 
         Configuration.Builder configurationBuilder = new Configuration.Builder(this)
                 .addModelClasses(

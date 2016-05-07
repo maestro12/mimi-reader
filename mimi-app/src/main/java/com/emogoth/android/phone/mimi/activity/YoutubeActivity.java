@@ -47,15 +47,15 @@ public class YoutubeActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_youtube);
 
-        if(bundle == null) {
+        if (bundle == null) {
             final Bundle extras = getIntent().getExtras();
-            if(extras == null) {
+            if (extras == null) {
                 Toast.makeText(this, R.string.youtube_generic_error, Toast.LENGTH_SHORT).show();
                 finish();
                 return;
             }
 
-            if(extras.containsKey(Extras.EXTRAS_YOUTUBE_ID)) {
+            if (extras.containsKey(Extras.EXTRAS_YOUTUBE_ID)) {
                 youtubeId = extras.getString(Extras.EXTRAS_YOUTUBE_ID);
             }
 
@@ -64,8 +64,7 @@ public class YoutubeActivity extends AppCompatActivity {
             ft.add(R.id.youtube_container, youtubeFragment, FRAGMENT_TAG);
             ft.commit();
 
-        }
-        else {
+        } else {
             final FragmentManager fm = getSupportFragmentManager();
             youtubeId = bundle.getString(Extras.EXTRAS_YOUTUBE_ID);
             startTime = bundle.getInt(Extras.EXTRAS_YOUTUBE_START_TIME, 0);
@@ -93,10 +92,9 @@ public class YoutubeActivity extends AppCompatActivity {
             public void onInitializationSuccess(YouTubePlayer.Provider provider, YouTubePlayer youTubePlayer, boolean b) {
                 player = youTubePlayer;
 
-                if(startTime == 0) {
+                if (startTime == 0) {
                     player.loadVideo(youtubeId);
-                }
-                else {
+                } else {
                     player.loadVideo(youtubeId, startTime);
                 }
             }
@@ -117,7 +115,7 @@ public class YoutubeActivity extends AppCompatActivity {
 
         outState.putString(Extras.EXTRAS_YOUTUBE_ID, youtubeId);
 
-        if(player != null) {
+        if (player != null) {
             outState.putInt(Extras.EXTRAS_YOUTUBE_START_TIME, player.getCurrentTimeMillis());
         }
     }
