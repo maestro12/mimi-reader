@@ -171,7 +171,7 @@ public class Board extends BaseModel {
                 value = Board.KEY_POST_COUNT;
                 break;
             case 5:
-                value = Board.KEY_LAST_ACCESSED;
+                value = Board.KEY_LAST_ACCESSED + " DESC";
                 break;
             case 6:
                 value = Board.KEY_FAVORITE + " DESC";

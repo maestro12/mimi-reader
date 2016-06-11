@@ -36,6 +36,7 @@ public class UrlRouter extends AppCompatActivity {
         setTheme(MimiUtil.getInstance().getThemeResourceId());
         super.onCreate(savedInstanceState);
 
+//        Crashlytics.start(this);
         try {
             if (getIntent() != null && getIntent().getAction() != null) {
                 Log.i(LOG_TAG, "Host=" + getIntent().getData().getHost() + ", Intent Action=" + getIntent().getAction());

@@ -146,16 +146,16 @@ public class RepliesDialog extends DialogFragment {
 
         RxUtil.safeUnsubscribe(repliesSubscription);
         repliesSubscription = Observable.just(replies)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
-                .subscribe(new Action1<List<ChanPost>>() {
-                    @Override
-                    public void call(List<ChanPost> posts) {
-                        final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
-                        listView.setAdapter(adapter);
-                    }
-                });
+            .subscribeOn(Schedulers.computation())
+            .observeOn(AndroidSchedulers.mainThread())
+            .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
+            .subscribe(new Action1<List<ChanPost>>() {
+                @Override
+                public void call(List<ChanPost> posts) {
+                    final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
+                    listView.setAdapter(adapter);
+                }
+            });
     }
 
     private void extractExtras(final Bundle bundle) {

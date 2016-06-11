@@ -38,6 +38,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
 
 import java.io.File;
@@ -45,6 +46,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +59,8 @@ import okhttp3.Response;
 public class DownloadService extends IntentService {
     public static final String LOG_TAG = DownloadService.class.getSimpleName();
     public static final int IO_BUFFER_SIZE = 1024;
+
+    public static final int REGISTRY_ID = 1001;
 
     // keys
     public static final String CONTEXT_KEY = "context"; // The context we will be running in. Usually the application context.
@@ -179,8 +183,15 @@ public class DownloadService extends IntentService {
                 break;
             case DownloadService.DOWNLOAD_BATCH:
                 serviceData.setClassLoader(ChanPost.class.getClassLoader());
-                final ArrayList<ChanPost> batchData = serviceData.getParcelableArrayList(DATA_KEY);
+                final List<ChanPost> batchData;
                 final ArrayList<String> files = new ArrayList<>();
+
+                if(serviceData.containsKey(DATA_KEY)) {
+                    batchData = serviceData.getParcelableArrayList(DATA_KEY);
+                } else {
+                    batchData = ThreadRegistry.getInstance().getPosts(REGISTRY_ID);
+                    ThreadRegistry.getInstance().clearPosts(REGISTRY_ID);
+                }
 
 //			final int [] items = serviceData.getIntArray(ITEMS_KEY);
                 final String board = serviceData.getString(BOARD_KEY);

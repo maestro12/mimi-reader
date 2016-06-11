@@ -41,10 +41,10 @@
             android:layout_alignParentTop="true"
             android:layout_weight="1"
             android:gravity="left|center_vertical"
+            android:maxLines="1"
             android:paddingBottom="4dp"
             android:paddingLeft="4dp"
             android:paddingTop="4dp"
-            android:singleLine="true"
             android:textSize="?attr/font_xsmall"
             tools:text="123455689" />
 

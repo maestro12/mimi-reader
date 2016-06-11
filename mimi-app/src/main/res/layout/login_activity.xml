@@ -26,21 +26,21 @@
         android:layout_height="match_parent"
         android:gravity="center">
 
-        <EditText
+        <android.support.v7.widget.AppCompatEditText
             android:id="@+id/token_text"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:inputType="textCapCharacters"
             android:hint="@string/token_hint"/>
 
-        <EditText
+        <android.support.v7.widget.AppCompatEditText
             android:id="@+id/pin_text"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:inputType="number"
             android:hint="@string/pin_hint"/>
 
-        <TextView
+        <android.support.v7.widget.AppCompatEditText
             style="?basicButton"
             android:id="@+id/login_button"
             android:layout_width="wrap_content"

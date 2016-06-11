@@ -64,18 +64,23 @@ public class UserPostTableConnection {
                     userPost.boardName = boardName;
                     userPost.threadId = threadId;
                     userPost.postId = postId;
+                    userPost.postTime = System.currentTimeMillis();
 
-                    val = db.update(UserPost.TABLE_NAME, userPost.toContentValues(), userPost.whereClause(), userPost.whereArg());
+                    val = DatabaseUtils.update(db, userPost);
                     if (val <= 0) {
-                        val = db.insert(UserPost.TABLE_NAME, userPost.toContentValues());
+                        val = DatabaseUtils.insert(db, userPost);
                     }
+
+                    transaction.markSuccessful();
+
                 } catch (Exception e) {
                     val = 0;
                     Log.e(LOG_TAG, "Error adding user post data", e);
                 } finally {
                     transaction.end();
-                    return Observable.just(val > 0);
                 }
+
+                return Observable.just(val > 0);
             }
         });
     }

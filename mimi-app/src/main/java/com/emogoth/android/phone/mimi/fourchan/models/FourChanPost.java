@@ -49,7 +49,7 @@ public class FourChanPost implements PostConverter {
     @SerializedName("sub")
     @Expose
     private String sub;
-    //    private Spanned subject;
+//    private Spanned subject;
     @SerializedName("filename")
     @Expose
     private String filename;

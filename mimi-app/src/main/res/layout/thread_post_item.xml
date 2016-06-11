@@ -181,27 +181,27 @@
         android:layout_below="@+id/post_header">
 
 
-        <FrameLayout
-            android:id="@+id/thumbnail_container"
-            android:layout_gravity="top"
-            android:layout_width="@dimen/thumbnail_image_medium"
-            android:layout_height="@dimen/thumbnail_image_medium">
+            <FrameLayout
+                android:id="@+id/thumbnail_container"
+                android:layout_gravity="top"
+                android:layout_width="@dimen/thumbnail_image_medium"
+                android:layout_height="@dimen/thumbnail_image_medium">
 
-            <ImageView
-                android:id="@+id/thumbnail"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:paddingLeft="8dp"
-                android:visibility="visible" />
+                <ImageView
+                    android:id="@+id/thumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:paddingLeft="8dp"
+                    android:visibility="visible" />
 
-            <View
-                android:id="@+id/thumbnail_overlay"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/thumbnail_selector" />
+                <View
+                    android:id="@+id/thumbnail_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/thumbnail_selector" />
 
-        </FrameLayout>
+            </FrameLayout>
 
 
         <LinearLayout
@@ -234,34 +234,44 @@
                 />
 
 
-            <FrameLayout
-                android:id="@+id/replies_row"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:minWidth="50dp"
-                android:layout_gravity="left"
-                android:paddingLeft="8dp"
-                android:paddingRight="8dp"
-                android:background="@drawable/thumbnail_selector">
-
-                <TextView
-                    style="?postHeaderText"
-                    android:id="@+id/replies_number"
+                <FrameLayout
+                    android:id="@+id/replies_row"
                     android:layout_width="wrap_content"
-                    android:layout_height="50dp"
-                    android:textStyle="bold"
-                    android:textSize="?attr/font_xsmall"
-                    android:textAllCaps="true"
-                    android:gravity="bottom"
-                    tools:text="one reply"/>
-
-                <View
-                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"/>
+                    android:orientation="horizontal"
+                    android:minWidth="50dp"
+                    android:layout_gravity="left"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:background="@drawable/thumbnail_selector">
 
-            </FrameLayout>
+                    <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
+                        <!--style="?postHeaderText"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:gravity="bottom"-->
+                        <!--android:layout_gravity="bottom"-->
+                        <!--android:layout_marginRight="2dp"-->
+                        <!--android:textSize="13sp"-->
+                        <!--android:text="@string/ic_reply"/>-->
+
+                    <TextView
+                        style="?postHeaderText"
+                        android:id="@+id/replies_number"
+                        android:layout_width="wrap_content"
+                        android:layout_height="50dp"
+                        android:textStyle="bold"
+                        android:textSize="?attr/font_xsmall"
+                        android:textAllCaps="true"
+                        android:gravity="bottom"
+                        tools:text="one reply"/>
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+
+                </FrameLayout>
 
         </LinearLayout>
 

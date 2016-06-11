@@ -42,6 +42,7 @@ import com.emogoth.android.phone.mimi.model.OutsideLink;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.LongClickLinkMovementMethod;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
@@ -180,12 +181,13 @@ public class RepliesListAdapter extends BaseAdapter {
             viewHolder.repliesText.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
-                    if (postItem.getRepliesFrom().size() > 0) {
-                        if (thread != null) {
-                            RepliesDialog.newInstance(thread, postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
-                        } else {
-                            Toast.makeText(activity, R.string.error_opening_replies, Toast.LENGTH_SHORT).show();
+                    if(v.getContext() != null) {
+                        if (postItem.getRepliesFrom().size() > 0) {
+                            if (thread != null) {
+                                RepliesDialog.newInstance(thread, postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
+                            } else {
+                                Toast.makeText(v.getContext(), R.string.error_opening_replies, Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 }
@@ -214,9 +216,11 @@ public class RepliesListAdapter extends BaseAdapter {
                         final Bundle args = new Bundle();
                         args.putInt(Extras.EXTRAS_GALLERY_TYPE, GalleryActivity.GALLERY_TYPE_PAGER);
                         args.putInt(Extras.EXTRAS_THREAD_ID, postItem.getNo());
-                        args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, postsWithImages);
+//                        args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, postsWithImages);
                         args.putInt(Extras.EXTRAS_POSITION, index);
                         args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+
+                        ThreadRegistry.getInstance().setPosts(postItem.getNo(), postsWithImages);
 
                         final Intent galleryIntent = new Intent(activity, GalleryActivity.class);
                         galleryIntent.putExtras(args);

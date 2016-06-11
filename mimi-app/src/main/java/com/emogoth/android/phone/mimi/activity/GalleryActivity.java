@@ -64,6 +64,7 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
     private Handler advertHideHandler;
 
     private MimiFragmentBase currentFragment;
+
     private int threadId;
     private boolean audioLock;
 //    private boolean configChange = false;
@@ -158,8 +159,6 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
 
     // This snippet hides the system bars.
     private void hideSystemUI() {
-
-
         getToolbar().setVisibility(View.GONE);
     }
 

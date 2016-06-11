@@ -45,7 +45,7 @@
         tools:replace="android:theme, icon, label">
 
         <meta-data android:name="AA_DB_NAME" android:value="mimi.db" />
-        <meta-data android:name="AA_DB_VERSION" android:value="8" />
+        <meta-data android:name="AA_DB_VERSION" android:value="10" />
         <meta-data
             android:name="AA_MODELS"
             android:value="com.emogoth.android.phone.mimi.db.model.Board" />

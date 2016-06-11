@@ -337,4 +337,30 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         startActivity(intent);
     }
 
+//    @Override
+//    public void onOffsetChanged(AppBarLayout appBarLayout, int i) {
+//        threadFragment.setSwipeRefreshEnabled(false);
+//        offsetIndex = i;
+//    }
+
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent ev) {
+//        final int action = MotionEventCompat.getActionMasked(ev);
+//        switch (action) {
+//            case MotionEvent.ACTION_DOWN:
+//            case MotionEvent.ACTION_UP:
+//            case MotionEvent.ACTION_CANCEL:
+//
+//                if (threadFragment != null) {
+//                    if (offsetIndex == 0) {
+//                        threadFragment.setSwipeRefreshEnabled(true);
+//                    } else {
+//                        threadFragment.setSwipeRefreshEnabled(false);
+//                    }
+//                }
+//                break;
+//        }
+//        return super.dispatchTouchEvent(ev);
+//    }
+
 }

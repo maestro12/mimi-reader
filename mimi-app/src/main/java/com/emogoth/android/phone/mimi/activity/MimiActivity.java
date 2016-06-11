@@ -400,6 +400,7 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         RxUtil.safeUnsubscribe(fetchPostSubscription);
         fetchPostSubscription = HistoryTableConnection.fetchPost(event.getThreadInfo().boardName, event.getThreadInfo().threadId)
+                .compose(DatabaseUtils.<History>applySchedulers())
                 .subscribe(new Action1<History>() {
                     @Override
                     public void call(History history) {

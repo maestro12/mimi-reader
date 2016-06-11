@@ -74,12 +74,14 @@ public class YoutubeActivity extends AppCompatActivity {
         getTheme().applyStyle(MimiUtil.getFontStyle(this), true);
 
         View background = findViewById(R.id.youtube_background);
-        background.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        if (background != null) {
+            background.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    finish();
+                }
+            });
+        }
 
         String id = getString(R.string.google_youtube_id);
         if("stub".equals(id)) {

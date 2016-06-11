@@ -38,6 +38,8 @@ import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import rx.Observable;
@@ -177,16 +179,10 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
                     } else {
                         BoardTableConnection.fetchBoards(0)
                                 .compose(DatabaseUtils.<List<Board>>applySchedulers())
-                                .flatMapIterable(new Func1<List<Board>, Iterable<Board>>() {
+                                .flatMap(new Func1<List<Board>, Observable<Boolean>>() {
                                     @Override
-                                    public Iterable<Board> call(List<Board> boards) {
-                                        return boards;
-                                    }
-                                })
-                                .flatMap(new Func1<Board, Observable<Boolean>>() {
-                                    @Override
-                                    public Observable<Boolean> call(Board board) {
-                                        return BoardTableConnection.setBoardVisibility(board.name, true);
+                                    public Observable<Boolean> call(List<Board> boards) {
+                                        return BoardTableConnection.setBoardVisibility(null, true);
                                     }
                                 })
                                 .onErrorResumeNext(new Func1<Throwable, Observable<Boolean>>() {

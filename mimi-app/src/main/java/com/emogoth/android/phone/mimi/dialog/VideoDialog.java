@@ -16,6 +16,7 @@
 
 package com.emogoth.android.phone.mimi.dialog;
 
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -42,9 +43,6 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
     private static final String LOG_TAG = VideoDialog.class.getSimpleName();
 
     public MediaPlayer mediaPlayer = null;
-    private int videoWidth;
-    private int videoHeight;
-    private float videoScale;
     private TextureView textureView;
 
     @Override
@@ -59,35 +57,27 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
         final View v = inflater.inflate(R.layout.dialog_video_player, container, false);
 
         final Bundle args = getArguments();
-        if(args == null) {
+        if (args == null) {
             throw new IllegalArgumentException("Arguments bundle cannot be null");
         }
 
-        videoWidth = args.getInt(Extras.EXTRAS_WIDTH);
-        videoHeight = args.getInt(Extras.EXTRAS_HEIGHT);
-        videoScale = args.getFloat(Extras.EXTRAS_SCALE);
-
         final String videoFileName;
-        if(args.containsKey(Extras.EXTRAS_VIDEO_FILENAME)) {
+        if (args.containsKey(Extras.EXTRAS_VIDEO_FILENAME)) {
             try {
                 videoFileName = args.getString(Extras.EXTRAS_VIDEO_FILENAME);
                 final File videoFile = new File(videoFileName);
 
-                if(videoFile.exists()) {
+                if (videoFile.exists()) {
                     final FileInputStream fis = new FileInputStream(videoFile);
                     mediaPlayer = new MediaPlayer();
                     mediaPlayer.setDataSource(fis.getFD());
                     mediaPlayer.setLooping(true);
                 }
 
-//                MediaController mediaController = new MediaController(getActivity());
-//                mediaController.setMediaPlayer(mediaPlayer);
-
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        else {
+        } else {
             videoFileName = null;
         }
 
@@ -107,14 +97,38 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
         });
 
         textureView = (TextureView) view.findViewById(R.id.video_surface);
-        final ViewGroup.LayoutParams params = textureView.getLayoutParams();
-
-        params.width = videoWidth;
-        params.height = videoHeight;
-
-        textureView.setLayoutParams(params);
         textureView.setSurfaceTextureListener(this);
 
+    }
+
+    private void adjustAspectRatio(int videoWidth, int videoHeight) {
+        int viewWidth = textureView.getWidth();
+        int viewHeight = textureView.getHeight();
+        double aspectRatio = (double) videoHeight / videoWidth;
+
+        int newWidth, newHeight;
+        if (viewHeight > (int) (viewWidth * aspectRatio)) {
+            // limited by narrow width; restrict height
+            newWidth = viewWidth;
+            newHeight = (int) (viewWidth * aspectRatio);
+        } else {
+            // limited by short height; restrict width
+            newWidth = (int) (viewHeight / aspectRatio);
+            newHeight = viewHeight;
+        }
+        int xoff = (viewWidth - newWidth) / 2;
+        int yoff = (viewHeight - newHeight) / 2;
+        Log.v(LOG_TAG, "video=" + videoWidth + "x" + videoHeight +
+                " view=" + viewWidth + "x" + viewHeight +
+                " newView=" + newWidth + "x" + newHeight +
+                " off=" + xoff + "," + yoff);
+
+        Matrix txform = new Matrix();
+        textureView.getTransform(txform);
+        txform.setScale((float) newWidth / viewWidth, (float) newHeight / viewHeight);
+        //txform.postRotate(10);          // just for fun
+        txform.postTranslate(xoff, yoff);
+        textureView.setTransform(txform);
     }
 
     @Override
@@ -131,16 +145,6 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-
-//        if(mediaPlayer != null) {
-//            mediaPlayer.start();
-//        }
-//
-    }
-
-    @Override
     public void onStop() {
         super.onStop();
         try {
@@ -153,7 +157,7 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        if(mediaPlayer != null) {
+        if (mediaPlayer != null) {
             try {
                 final Surface videoSurface = new Surface(surface);
                 mediaPlayer.setSurface(videoSurface);
@@ -162,35 +166,13 @@ public class VideoDialog extends DialogFragment implements TextureView.SurfaceTe
                 mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                     @Override
                     public void onPrepared(MediaPlayer mp) {
-                        if(videoWidth <= 0 || videoHeight <= 0) {
-                            final int viewWidth = textureView.getWidth();
-                            final int viewHeight = textureView.getHeight();
-                            final ViewGroup.LayoutParams params = textureView.getLayoutParams();
-                            final float scale;
-
-                            if(mediaPlayer.getVideoWidth() >= mediaPlayer.getVideoHeight()) {
-                                scale = (float)videoWidth / (float)viewWidth;
-                            }
-                            else {
-                                scale = (float)videoHeight / (float)viewHeight;
-                            }
-
-                            videoWidth = Math.round(mediaPlayer.getVideoWidth() * scale);
-                            videoHeight = Math.round(mediaPlayer.getVideoHeight() * scale);
-
-                            params.width = videoWidth;
-                            params.height = videoHeight;
-
-                            textureView.setLayoutParams(params);
-                        }
+                        adjustAspectRatio(mediaPlayer.getVideoWidth(), mediaPlayer.getVideoHeight());
 
                         mediaPlayer.start();
-
                         Log.i(LOG_TAG, "Video dimension: width=" + mediaPlayer.getVideoWidth() + ", height=" + mediaPlayer.getVideoHeight());
                     }
                 });
-            }
-            catch(final IllegalStateException e) {
+            } catch(final IllegalStateException e) {
                 Log.e(LOG_TAG, "Could not play video", e);
                 if(getActivity() != null) {
                     Toast.makeText(getActivity(), R.string.could_not_play_video, Toast.LENGTH_SHORT).show();

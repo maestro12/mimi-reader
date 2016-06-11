@@ -37,6 +37,10 @@
         android:summary="@string/use_original_filename_summary"
         android:key="@string/use_original_filename_pref" />
 
+    <SwitchPreference
+        android:title="@string/use_old_video_player_title"
+        android:key="@string/use_crappy_video_player" />
+
     <Preference
         android:title="@string/image_file_location"
         android:defaultValue=""

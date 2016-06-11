@@ -176,7 +176,7 @@ public final class FourChanCommentParser extends CommentParser {
                         final URL url = new URL(item);
                         urlList.add(item);
 
-                        final int urlStart = postWithoutHtml.indexOf(item);
+                        final int urlStart = postWithoutHtml.contains(item) ? postWithoutHtml.indexOf(item) : 0;
                         final int urlEnd;
                         final int endPos = urlStart + item.length();
 

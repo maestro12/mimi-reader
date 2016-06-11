@@ -95,7 +95,7 @@
                         android:textColor="?colorAccent"
                         android:text="@string/ic_send"/>
 
-                    <EditText
+                    <android.support.v7.widget.AppCompatEditText
                         android:id="@+id/comment_input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -188,20 +188,20 @@
                     android:text="@string/done_info" />
             </LinearLayout>
 
-            <EditText
+            <android.support.v7.widget.AppCompatEditText
                 android:id="@+id/name_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/name" />
 
-            <EditText
+            <android.support.v7.widget.AppCompatEditText
                 android:id="@+id/options_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:hint="@string/options"/>
 
-            <EditText
+            <android.support.v7.widget.AppCompatEditText
                 android:id="@+id/subject_input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

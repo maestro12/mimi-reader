@@ -108,6 +108,8 @@ public class GalleryPagerAdapter extends FragmentStatePagerAdapter {
         args.putString(Extras.EXTRAS_POST_FILENAME_EXT, post.getExt());
         args.putString(Extras.EXTRAS_POST_TIM, post.getTim());
         args.putString(Extras.EXTRAS_POST_FILENAME, post.getFilename());
+        args.putInt(Extras.EXTRAS_WIDTH, post.getWidth());
+        args.putInt(Extras.EXTRAS_HEIGHT, post.getHeight());
         args.putInt(Extras.EXTRAS_POST_SIZE, post.getFsize());
 
         return args;

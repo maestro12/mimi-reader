@@ -16,5 +16,6 @@
   -->
 
 <resources>
+    <!--<string name="google_youtube_id">AIzaSyDOktsD1j4ha4xftJZcLuWMYvkTsmu21BM</string>-->
     <string name="google_youtube_id">stub</string>
 </resources>

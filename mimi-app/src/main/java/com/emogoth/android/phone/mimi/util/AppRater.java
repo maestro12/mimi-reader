@@ -47,9 +47,9 @@ public class AppRater {
         }
 
         if(currentVersion > storedVersion) {
-            editor.putInt("currentversion", currentVersion);
-            editor.putBoolean("dontshowagain", false);
-            editor.commit();
+            editor.putInt("currentversion", currentVersion).apply();
+//            editor.putBoolean("dontshowagain", false);
+//            editor.commit();
         }
 
         if (prefs.getBoolean("dontshowagain", false)) { return ; }
@@ -94,8 +94,7 @@ public class AppRater {
     public static void dontShowAgain(final Context context) {
         final SharedPreferences.Editor editor = context.getSharedPreferences("apprater", 0).edit();
         if (editor != null) {
-            editor.putBoolean("dontshowagain", true);
-            editor.commit();
+            editor.putBoolean("dontshowagain", true).apply();
         }
     }
 }

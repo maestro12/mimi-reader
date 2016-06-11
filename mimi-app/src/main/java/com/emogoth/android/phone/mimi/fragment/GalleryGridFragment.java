@@ -304,7 +304,9 @@ public class GalleryGridFragment extends MimiFragmentBase {
                 final Intent downloadIntent = new Intent(getActivity(), DownloadService.class);
                 final Bundle extras = new Bundle();
 
-                extras.putParcelableArrayList(DownloadService.DATA_KEY, selectedPosts);
+                ThreadRegistry.getInstance().setPosts(DownloadService.REGISTRY_ID, selectedPosts);
+
+//                extras.putParcelableArrayList(DownloadService.DATA_KEY, selectedPosts);
                 extras.putString(DownloadService.COMMAND_SAVE, MimiUtil.getSaveDir(getActivity()).getAbsolutePath());
                 extras.putString(DownloadService.BOARD_KEY, boardName);
                 extras.putInt(DownloadService.THREAD_KEY, threadId);
@@ -348,32 +350,32 @@ public class GalleryGridFragment extends MimiFragmentBase {
 
         RxUtil.safeUnsubscribe(fetchThreadSubscription);
         fetchThreadSubscription = chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT)
-                .subscribe(new Action1<ChanThread>() {
-                    @Override
-                    public void call(ChanThread thread) {
+            .subscribe(new Action1<ChanThread>() {
+                @Override
+                public void call(ChanThread thread) {
 
-                        if (thread != null) {
-                            posts = GalleryPagerAdapter.getPostsWithImages(thread.getPosts());
-                            if (galleryGrid != null) {
-                                galleryAdapter.setPosts(posts);
-                            }
-                        } else if (getActivity() != null) {
-                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
+                    if (thread != null) {
+                        posts = GalleryPagerAdapter.getPostsWithImages(thread.getPosts());
+                        if (galleryGrid != null) {
+                            galleryAdapter.setPosts(posts);
                         }
+                    } else if (getActivity() != null) {
+                        Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
                     }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        if (throwable instanceof HttpException) {
-                            HttpException error = (HttpException) throwable;
-                            Log.i(LOG_TAG, "Error receiving response: " + error.getLocalizedMessage() + ", " + error.code());
-                        }
+                }
+            }, new Action1<Throwable>() {
+                @Override
+                public void call(Throwable throwable) {
+                    if (throwable instanceof HttpException) {
+                        HttpException error = (HttpException) throwable;
+                        Log.i(LOG_TAG, "Error receiving response: " + error.getLocalizedMessage() + ", " + error.code());
+                    }
 
-                        if(getActivity() != null) {
-                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
-                        }
+                    if(getActivity() != null) {
+                        Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
                     }
-                });
+                }
+            });
 
     }
 

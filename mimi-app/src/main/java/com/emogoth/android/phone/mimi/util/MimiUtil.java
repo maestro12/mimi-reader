@@ -40,6 +40,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
+import com.google.android.exoplayer.util.Util;
 import com.mimireader.chanlib.models.ChanThread;
 
 import java.io.BufferedOutputStream;
@@ -692,6 +693,14 @@ public class MimiUtil {
 
     public static int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+    public static boolean isCrappySamsung() {
+        if (Util.SDK_INT <= 19 && "samsung".equals(Util.MANUFACTURER)) {
+            return true;
+        }
+
+        return false;
     }
 
     public interface OperationCompleteListener {

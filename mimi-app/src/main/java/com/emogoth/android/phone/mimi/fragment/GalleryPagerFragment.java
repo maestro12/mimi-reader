@@ -327,6 +327,7 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
             posts = bundle.getParcelableArrayList(Extras.EXTRAS_POST_LIST);
         } else {
             posts = ThreadRegistry.getInstance().getPosts(threadId);
+            ThreadRegistry.getInstance().clearPosts(threadId);
         }
 
     }

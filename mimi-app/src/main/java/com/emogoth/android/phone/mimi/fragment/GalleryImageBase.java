@@ -43,7 +43,6 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.async.DownloadThread;
@@ -190,7 +189,7 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
 
     public void inflateLayout(@LayoutRes int res, ViewStubCompat.OnInflateListener listener) {
         if (viewStub != null) {
-            if(listener != null) {
+            if (listener != null) {
                 viewStub.setOnInflateListener(listener);
             }
 
@@ -532,18 +531,15 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
 
                 final File destDir = new File(copyTo.getParent());
                 if (!destDir.exists()) {
-                    destDir.mkdir();
+                    if (!destDir.mkdir()) {
+                        Toast.makeText(getActivity(), R.string.error_copying_file, Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
                 }
 
                 fis = new FileInputStream(copyFrom);
                 fos = new FileOutputStream(copyTo);
-
                 IOUtils.copy(fis, fos);
-
-//                byte[] bytes = new byte[IO_BUFFER_SIZE];
-//                while ((i = fis.read(bytes)) > 0) {
-//                    fos.write(bytes, 0, i);
-//                }
 
                 return true;
             }
@@ -560,14 +556,13 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
             });
 
         } catch (Exception e) {
-            Log.e(LOG_TAG, "Error copying file [" + e.getClass().toString() + "]");
+            Log.e(LOG_TAG, "Error copying file", e);
 
             getActivity().runOnUiThread(new Runnable() {
 
                 @Override
                 public void run() {
-                    Toast.makeText(getActivity(), "Error copying file", Toast.LENGTH_SHORT).show();
-
+                    Toast.makeText(getActivity(), R.string.error_copying_file, Toast.LENGTH_SHORT).show();
                 }
 
             });

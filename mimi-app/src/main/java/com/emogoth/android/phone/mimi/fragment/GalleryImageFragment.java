@@ -21,6 +21,7 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.ViewStubCompat;
+import android.util.Log;
 import android.view.View;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
@@ -107,7 +108,7 @@ public class GalleryImageFragment extends GalleryImageBase {
 
                                 options.inJustDecodeBounds = true;
                                 BitmapFactory.decodeFile(getImageFile().getAbsolutePath(), options);
-                                options.inSampleSize = MimiUtil.calculateInSampleSize(options, getMaxWidth(), getMaxHeight());
+                                options.inSampleSize = MimiUtil.calculateInSampleSize(options, 500, 500);
                                 options.inJustDecodeBounds = false;
 
                                 weakBitmap = new WeakReference<>(BitmapFactory.decodeFile(getImageFile().getAbsolutePath(), options));
@@ -119,6 +120,7 @@ public class GalleryImageFragment extends GalleryImageBase {
                         .onErrorReturn(new Func1<Throwable, Bitmap>() {
                             @Override
                             public Bitmap call(Throwable throwable) {
+                                Log.e(LOG_TAG, "Error scaling bitmap", throwable);
                                 return null;
                             }
                         })

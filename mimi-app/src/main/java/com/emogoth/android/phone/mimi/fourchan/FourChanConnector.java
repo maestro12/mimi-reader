@@ -140,14 +140,14 @@ public class FourChanConnector extends ChanConnector {
                     public ChanThread call(FourChanThread fourChanThread) {
                         ChanThread thread = new ChanThread();
 
-                        List<ChanPost> posts = new ArrayList<>();
-                        for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
-                            posts.add(fourChanPost.toPost());
-                        }
+                            List<ChanPost> posts = new ArrayList<>();
+                            for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
+                                posts.add(fourChanPost.toPost());
+                            }
 
-                        thread.setPosts(posts);
-                        thread.setBoardName(boardName);
-                        thread.setThreadId(threadId);
+                            thread.setPosts(posts);
+                            thread.setBoardName(boardName);
+                            thread.setThreadId(threadId);
 
                         return thread;
                     }

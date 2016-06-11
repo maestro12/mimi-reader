@@ -25,7 +25,7 @@ import com.emogoth.android.phone.mimi.R;
 
 public class DrawerViewHolder {
 
-    public final ImageView image;
+    public final CircularImageView image;
     public final TextView boardName;
     public final TextView threadId;
     public final TextView lastviewed;
@@ -35,7 +35,7 @@ public class DrawerViewHolder {
     public final View root;
 
     public DrawerViewHolder(View root) {
-        image = (ImageView) root.findViewById(R.id.image);
+        image = (CircularImageView) root.findViewById(R.id.image);
         boardName = (TextView) root.findViewById(R.id.board_name);
         threadId = (TextView) root.findViewById(R.id.thread_id);
         lastviewed = (TextView) root.findViewById(R.id.last_viewed);

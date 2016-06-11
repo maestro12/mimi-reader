@@ -306,7 +306,7 @@
     <string name="image_info">Image Info</string>
     <string name="ok">OK</string>
 
-    <string name="percent_complete">%s%% complete</string>
+    <string name="percent_complete">%d%% complete</string>
     <string name="download_complete">Download Complete</string>
     <string name="batch_download">Batch Download</string>
     <string name="long_press_to_batch_download">Long press a thumbnail to start batch download mode</string>
@@ -434,6 +434,8 @@
     <string name="fullscreen">Fullscreen</string>
     <string name="auto_play_audio">Auto play webm audio</string>
     <string name="youtube_id_not_defined">Youtube ID not defined</string>
+    <string name="error_copying_file">Error copying file</string>
+    <string name="use_old_video_player_title">Use old video player</string>
 
     <string-array name="youtube_dialog_list">
         <item>Open in browser</item>

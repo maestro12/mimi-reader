@@ -21,6 +21,7 @@ import android.database.Cursor;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,19 +29,14 @@ import java.util.List;
 import rx.Observable;
 import rx.functions.Func1;
 
-@Table(name = "user_posts")
+@Table(name = UserPost.TABLE_NAME)
 public class UserPost extends BaseModel {
-    public static final String TABLE_NAME = "user_posts";
+    public static final String TABLE_NAME = "posts";
 
-    public static final String KEY_ID = "_id";
     public static final String KEY_THREAD_ID = "thread_id";
     public static final String KEY_POST_ID = "post_id";
     public static final String KEY_PATH = "board_path";
     public static final String KEY_POST_TIME = "post_time";
-
-
-    @Column(name = KEY_ID, index = true)
-    public Integer id;
 
     @Column(name = KEY_THREAD_ID)
     public Integer threadId;
@@ -57,10 +53,6 @@ public class UserPost extends BaseModel {
     @Override
     public ContentValues toContentValues() {
         ContentValues values = new ContentValues();
-
-        if (id != null) {
-            values.put(KEY_ID, id);
-        }
 
         if (threadId != null) {
             values.put(KEY_THREAD_ID, threadId);

@@ -37,6 +37,7 @@ import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.google.android.exoplayer.util.Util;
 import com.squareup.sqlbrite.BriteDatabase;
 
 import java.io.File;
@@ -79,6 +80,15 @@ public class MimiApplication extends Application {
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         final int notificationLevel = Integer.valueOf(preferences.getString(getString(R.string.background_notification_pref), "0"));
+        final boolean defaultSet = preferences.getBoolean(getString(R.string.crappy_samsung_default_set), false);
+
+        if (!defaultSet) {
+            boolean useCrappyVideoPlayer = MimiUtil.isCrappySamsung();
+            preferences.edit()
+                    .putBoolean(getString(R.string.crappy_samsung_default_set), true)
+                    .putBoolean(getString(R.string.use_crappy_video_player), useCrappyVideoPlayer)
+                    .apply();
+        }
 
         if (notificationLevel == 0) {
             preferences.edit().putString(getString(R.string.background_notification_pref), "3").apply();

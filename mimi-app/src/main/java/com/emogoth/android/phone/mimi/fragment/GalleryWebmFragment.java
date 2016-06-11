@@ -17,7 +17,11 @@
 package com.emogoth.android.phone.mimi.fragment;
 
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -26,11 +30,16 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaCodec;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.ColorRes;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.graphics.drawable.VectorDrawableCompat;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.widget.AppCompatImageView;
@@ -46,10 +55,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.dialog.VideoDialog;
 import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.interfaces.AudioSettingsHost;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.ExoPlayerHelper;
+import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.Utils;
@@ -62,6 +73,7 @@ import com.google.android.exoplayer.util.PlayerControl;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -72,9 +84,13 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.TimeInterval;
 
+import static com.emogoth.android.phone.mimi.dialog.RepliesDialog.DIALOG_TAG;
+
 
 public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHelper.Listener {
     private static final String LOG_TAG = GalleryWebmFragment.class.getSimpleName();
+
+    public static final int PERMISSIONS_CODE = 1;
 
     private final Point mScreenSize = new Point();
     private final Point mVideoSize = new Point();
@@ -88,10 +104,14 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
     private boolean muted;
     private View webmBar;
     private View openButton;
+    private View playButton;
     private AppCompatImageView muteButton;
     private TextView webmTime;
 
-    private Subscription videoTimer;
+    private Subscription videoTimerSubscription;
+    private Subscription bitmapFromVideoSubscription;
+
+    private boolean useCrappyPlayer;
 
     public GalleryWebmFragment() {
     }
@@ -114,6 +134,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
                 webmBar = inflated.findViewById(R.id.webm_bar);
                 openButton = inflated.findViewById(R.id.open_button);
+                playButton = inflated.findViewById(R.id.play_button);
                 webmTime = (TextView) inflated.findViewById(R.id.webm_time);
                 muteButton = (AppCompatImageView) inflated.findViewById(R.id.mute_button);
                 if (muted) {
@@ -139,10 +160,64 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
                 stopTimer();
 
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                useCrappyPlayer = prefs.getBoolean(getString(R.string.use_crappy_video_player), MimiUtil.isCrappySamsung());
+
+                if (useCrappyPlayer) {
+                    if (muteButton != null) {
+                        muteButton.setVisibility(View.GONE);
+                    }
+
+                    if (webmTime != null) {
+                        webmTime.setVisibility(View.GONE);
+                    }
+
+                    if (videoSurface != null) {
+                        videoSurface.setVisibility(View.GONE);
+                    }
+
+                }
+
             }
         });
 
         getActivity().getWindowManager().getDefaultDisplay().getSize(mScreenSize);
+    }
+
+    private void setupPlayButton(final int width, final int height) {
+
+        if (playButton != null) {
+            playButton.setVisibility(View.VISIBLE);
+            playButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (Build.VERSION.SDK_INT >= 14) {
+                        final Fragment frag = getChildFragmentManager().findFragmentByTag(DIALOG_TAG);
+
+                        if (frag == null) {
+                            final VideoDialog dialog = new VideoDialog();
+                            final Bundle args = new Bundle();
+
+                            args.putString(Extras.EXTRAS_VIDEO_FILENAME, getImageFile().getAbsolutePath());
+
+                            dialog.setArguments(args);
+                            dialog.show(getChildFragmentManager(), DIALOG_TAG);
+                        }
+                    } else {
+                        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getImageFile().getAbsolutePath()));
+                        intent.setDataAndType(Uri.parse(getImageFile().getAbsolutePath()), "video/*");
+
+                        List<ResolveInfo> activities = getActivity().getPackageManager().queryIntentActivities(intent, 0);
+                        if (activities != null && activities.size() > 0) {
+                            startActivity(intent);
+                        } else {
+                            final Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.mxtech.videoplayer.ad"));
+                            startActivity(marketIntent);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     @Override
@@ -155,7 +230,22 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         setOnImageDisplayedListener(listener);
 
         if (getActivity() != null) {
-            loadBitmapFromVideo(getImageFile().getAbsolutePath(), getMaxWidth(), getMaxHeight());
+            RxUtil.safeUnsubscribe(bitmapFromVideoSubscription);
+            bitmapFromVideoSubscription = loadBitmapFromVideo(getImageFile().getAbsolutePath(), getMaxWidth(), getMaxHeight())
+                    .compose(RxUtil.<Bitmap>applyBackgroundSchedulers())
+                    .subscribe(new Action1<Bitmap>() {
+                        @Override
+                        public void call(Bitmap bitmap) {
+                            if (getOnImageDisplayedListener() != null) {
+                                getOnImageDisplayedListener().onImageDisplayed(GalleryWebmFragment.this, bitmap);
+                            }
+                        }
+                    }, new Action1<Throwable>() {
+                        @Override
+                        public void call(Throwable throwable) {
+                            Log.e(LOG_TAG, "Error getting bitmap from video", throwable);
+                        }
+                    });
         }
     }
 
@@ -166,7 +256,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                 videoSurface.setVisibility(View.VISIBLE);
             }
 
-            if (isVisible) {
+            if (isVisible && !useCrappyPlayer) {
 
                 if (player == null) {
                     setupVideo();
@@ -186,7 +276,26 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                     previewImageView.setVisibility(View.VISIBLE);
                 }
                 if (previewImageView != null && previewImageView.getDrawable() == null) {
-                    loadBitmapFromVideo(getImageFile().getAbsolutePath(), getMaxWidth(), getMaxHeight());
+                    RxUtil.safeUnsubscribe(bitmapFromVideoSubscription);
+                    bitmapFromVideoSubscription = loadBitmapFromVideo(getImageFile().getAbsolutePath(), getMaxWidth(), getMaxHeight())
+                            .compose(RxUtil.<Bitmap>applyBackgroundSchedulers())
+                            .subscribe(new Action1<Bitmap>() {
+                                @Override
+                                public void call(Bitmap bitmap) {
+                                    if (previewImageView != null) {
+                                        previewImageView.setImageBitmap(bitmap);
+
+                                        if (useCrappyPlayer) {
+                                            setupPlayButton(bitmap.getWidth(), bitmap.getHeight());
+                                        }
+                                    }
+                                }
+                            }, new Action1<Throwable>() {
+                                @Override
+                                public void call(Throwable throwable) {
+                                    Log.e(LOG_TAG, "Error getting bitmap from video", throwable);
+                                }
+                            });
                 }
             }
 
@@ -199,24 +308,13 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         openButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        final String filePath = getImageFile().getAbsolutePath();
-                        final String fileExt = filePath.substring(filePath.lastIndexOf(".") + 1);
-                        final String tmpFileName = MimiUtil.getTempPath(getActivity(), fileExt);
-                        final File tmpFile = new File(tmpFileName);
-                        final String fileUri = "file://" + tmpFileName;
-                        if (copyFile(getImageFile(), tmpFile)) {
-                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(fileUri));
-                            intent.setDataAndType(Uri.parse(fileUri), Utils.getMimeType(fileExt));
-                            startActivity(intent);
-                        }
-
-
-                    }
-                });
-                thread.start();
+                int res = getContext().checkCallingOrSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                if (res == PackageManager.PERMISSION_GRANTED) {
+                    openVideoAsync();
+                } else {
+                    String[] perms = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                    ActivityCompat.requestPermissions(getActivity(), perms, PERMISSIONS_CODE);
+                }
             }
         });
 
@@ -256,6 +354,27 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
     }
 
+    private void openVideoAsync() {
+        final Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (getActivity() != null && GalleryWebmFragment.this.isAdded()) {
+                    final String filePath = getImageFile().getAbsolutePath();
+                    final String fileExt = filePath.substring(filePath.lastIndexOf(".") + 1);
+                    final String tmpFileName = MimiUtil.getTempPath(getActivity(), fileExt);
+                    final File tmpFile = new File(tmpFileName);
+                    final String fileUri = "file://" + tmpFileName;
+                    if (copyFile(getImageFile(), tmpFile)) {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(fileUri));
+                        intent.setDataAndType(Uri.parse(fileUri), Utils.getMimeType(fileExt));
+                        startActivity(intent);
+                    }
+                }
+            }
+        });
+        thread.start();
+    }
+
     private boolean lockAudio() {
         if (getActivity() == null) {
             return false;
@@ -281,6 +400,26 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
         }
 
         return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == PERMISSIONS_CODE) {
+            for (int i = 0; i < permissions.length; i++) {
+                String permission = permissions[i];
+                int grantResult = grantResults[i];
+
+                if (permission.equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                        openVideoAsync();
+                    } else {
+                        requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_CODE);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -404,13 +543,13 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                 }
             }
 
-            if(player != null && player.isMuted() != muted) {
+            if (player != null && player.isMuted() != muted) {
                 player.mute(muted);
             }
         }
     }
 
-    private Subscription loadBitmapFromVideo(String videoPath, final int width, final int height) {
+    private Observable<Bitmap> loadBitmapFromVideo(String videoPath, final int width, final int height) {
         return Observable.just(videoPath)
                 .map(new Func1<String, Bitmap>() {
                     @Override
@@ -445,21 +584,8 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                         }
                         return bmp;
                     }
-                })
-                .compose(RxUtil.<Bitmap>applyBackgroundSchedulers())
-                .subscribe(new Action1<Bitmap>() {
-                    @Override
-                    public void call(Bitmap bitmap) {
-                        if (previewImageView != null) {
-                            previewImageView.setImageBitmap(bitmap);
-                        }
-                    }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-
-                    }
                 });
+
     }
 
     private Bitmap getBitmapFromVideoFile(String path) {
@@ -481,7 +607,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
 
     private void startTimer() {
         updateDisplayTime();
-        videoTimer = Observable.interval(1, TimeUnit.SECONDS).timeInterval()
+        videoTimerSubscription = Observable.interval(1, TimeUnit.SECONDS).timeInterval()
                 .compose(DatabaseUtils.<TimeInterval<Long>>applySchedulers())
                 .subscribe(new Action1<TimeInterval<Long>>() {
                     @Override
@@ -501,7 +627,7 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
             webmTime.setText("00:00 / 00:00");
         }
 
-        RxUtil.safeUnsubscribe(videoTimer);
+        RxUtil.safeUnsubscribe(videoTimerSubscription);
     }
 
     private void setupVideo() {

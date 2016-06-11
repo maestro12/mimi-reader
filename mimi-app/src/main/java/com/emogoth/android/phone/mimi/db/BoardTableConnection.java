@@ -398,7 +398,6 @@ public class BoardTableConnection {
         try {
             for (ChanBoard board : chanBoards) {
                 int updateVal = DatabaseUtils.update(db, convertChanBoardToDbModel(board));
-                Log.d(LOG_TAG, "Update return value: " + updateVal);
 
                 if (updateVal == 0) {
                     DatabaseUtils.insert(db, convertChanBoardToDbModel(board));
@@ -425,9 +424,13 @@ public class BoardTableConnection {
                     ContentValues contentValues = new ContentValues();
                     contentValues.put(Board.KEY_VISIBLE, visible);
 
-                    String name = boardPath.replaceAll("/", "");
+                    if(boardPath != null) {
+                        String name = boardPath.replaceAll("/", "");
 
-                    val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", name);
+                        val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", name);
+                    } else {
+                        val = db.update(Board.TABLE_NAME, contentValues, null);
+                    }
                     transaction.markSuccessful();
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Database update failed", e);

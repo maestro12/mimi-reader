@@ -228,4 +228,7 @@
     <string name="close_all_tabs_prompt_pref">close_all_tabs_prompt_pref</string>
     <string name="close_tab_on_back_pref">close_tab_on_back_pref</string>
 
+    <string name="use_crappy_video_player">use_crappy_video_player</string>
+    <string name="crappy_samsung_default_set">crappy_samsung_default_set</string>
+
 </resources>

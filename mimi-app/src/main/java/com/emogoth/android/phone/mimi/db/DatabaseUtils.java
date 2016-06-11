@@ -33,8 +33,8 @@ public class DatabaseUtils {
         return db.update(baseModel.getTableName(), baseModel.toContentValues(), baseModel.whereClause(), baseModel.whereArg());
     }
 
-    public static void insert(BriteDatabase db, BaseModel baseModel) {
-        db.insert(baseModel.getTableName(), baseModel.toContentValues(), SQLiteDatabase.CONFLICT_REPLACE);
+    public static long insert(BriteDatabase db, BaseModel baseModel) {
+        return db.insert(baseModel.getTableName(), baseModel.toContentValues(), SQLiteDatabase.CONFLICT_REPLACE);
     }
 
     public static <T> Observable.Transformer<T, T> applySchedulers() {

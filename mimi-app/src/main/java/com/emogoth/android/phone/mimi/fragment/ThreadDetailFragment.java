@@ -81,7 +81,6 @@ import com.mimireader.chanlib.models.ChanThread;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
-import java.net.CacheRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -871,6 +870,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
                 if (index >= 0 && recyclerView != null) {
                     scrollListToPosition(recyclerView, index);
+//                    recyclerView.smoothScrollToPosition(index);
 //                    recyclerView.smoothScrollToPosition(index + 2);
                 }
             }
@@ -1266,15 +1266,15 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     private void scrollListToPosition(RecyclerView recyclerView, int position) {
-        if(recyclerView == null) {
+        if (recyclerView == null) {
             return;
         }
 
         RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-        if(layoutManager instanceof LinearLayoutManager) {
-            ((LinearLayoutManager) layoutManager).scrollToPositionWithOffset(position, 10);
-        } else if(layoutManager instanceof StaggeredGridLayoutManager) {
-            ((StaggeredGridLayoutManager) layoutManager).scrollToPositionWithOffset(position, 10);
+        if (layoutManager instanceof LinearLayoutManager) {
+            ((LinearLayoutManager) layoutManager).scrollToPositionWithOffset(position, 0);
+        } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+            ((StaggeredGridLayoutManager) layoutManager).scrollToPositionWithOffset(position, 0);
         }
     }
 
@@ -1446,7 +1446,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                     startActivity(sendIntent);
 
                     return true;
-
             }
 
             return false;

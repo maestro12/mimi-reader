@@ -82,17 +82,18 @@ public class GalleryGifFragment extends GalleryImageBase {
 
     @Override
     public void scaleBitmap(final ImageDisplayedListener listener) {
-        final BitmapFactory.Options options = new BitmapFactory.Options();
+        if (gifImageView.getDrawable() instanceof GifDrawable) {
+            GifDrawable drawable = (GifDrawable) gifImageView.getDrawable();
+            drawable.pause();
 
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(getImageFile().getAbsolutePath(), options);
-        options.inSampleSize = MimiUtil.calculateInSampleSize(options, getMaxWidth(), getMaxHeight());
-        options.inJustDecodeBounds = false;
+            if (listener != null) {
+                final WeakReference<Bitmap> weakBitmap = new WeakReference<>(drawable.seekToPositionAndGet(0));
+                listener.onImageDisplayed(null, weakBitmap.get());
+            }
 
-        if (listener != null) {
-            final WeakReference<Bitmap> weakBitmap = new WeakReference<>(BitmapFactory.decodeFile(getImageFile().getAbsolutePath(), options));
-            listener.onImageDisplayed(null, weakBitmap.get());
+            drawable.start();
         }
+
     }
 
     @Override

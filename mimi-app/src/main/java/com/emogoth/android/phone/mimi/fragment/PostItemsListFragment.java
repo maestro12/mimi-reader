@@ -66,8 +66,8 @@ import com.emogoth.android.phone.mimi.interfaces.EndlessRecyclerOnScrollListener
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
 import com.emogoth.android.phone.mimi.util.BusProvider;
-import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
