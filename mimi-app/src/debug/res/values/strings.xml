@@ -17,4 +17,11 @@
 
 <resources>
     <string name="app_title">Mimi Debug</string>
+
+    <!--<string name="mopub_post_list_native_id">76a3fefaced247959582d2d2df6f4757</string>-->
+    <!--<string name="mopub_post_grid_native_id">76a3fefaced247959582d2d2df6f4757</string>-->
+
+    <string name="mopub_post_list_native_id">85b917b10af44c24a8fea99afd57b4c3</string>
+    <string name="mopub_post_grid_native_id">e3e363f8571245398b751facad3f34fd</string>
+
 </resources>

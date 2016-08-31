@@ -25,7 +25,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'com.android.tools.build:gradle:2.2.0-beta3'
         classpath 'com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.4.1'
     }
 }
@@ -37,6 +37,7 @@ repositories {
     maven { url 'http://guardian.github.com/maven/repo-releases' }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
+    maven { url 'https://jitpack.io' }
 }
 
 dexcount {
@@ -47,19 +48,19 @@ dexcount {
 }
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '23.0.3'
+    compileSdkVersion 24
+    buildToolsVersion '24.0.2'
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 23
+        targetSdkVersion 24
 
-        versionCode 104
-        versionName "5.0.3"
+        versionCode 116
+        versionName "5.1.1"
 
         applicationId "com.emogoth.android.phone.mimi"
 
-        multiDexEnabled false
+        multiDexEnabled true
 
         vectorDrawables.useSupportLibrary = true
 
@@ -68,7 +69,7 @@ android {
         abortOnError false
     }
     dexOptions {
-        javaMaxHeapSize "4g"
+        javaMaxHeapSize "2g"
     }
     signingConfigs {
         debug {
@@ -84,14 +85,6 @@ android {
     productFlavors {
     }
     buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            debuggable false
-            zipAlignEnabled true
-            signingConfig signingConfigs.release
-        }
         debug {
             versionNameSuffix ' (DEBUG)'
             signingConfig signingConfigs.debug
@@ -100,6 +93,18 @@ android {
             shrinkResources false
             debuggable true
             zipAlignEnabled true
+            buildConfigField "boolean", "IS_DEBUG", "true"
+            buildConfigField "boolean", "SHOW_ALL_BOARDS", "false"
+        }
+        release {
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+            minifyEnabled true
+            shrinkResources true
+            debuggable false
+            zipAlignEnabled true
+            buildConfigField "boolean", "IS_DEBUG", "true"
+            buildConfigField "boolean", "SHOW_ALL_BOARDS", "true"
         }
     }
 
@@ -136,24 +141,24 @@ allprojects {
 
 dependencies {
     compile fileTree(dir: 'src/main/libs/', include: '*.jar')
-    compile 'com.android.support:support-v4:23.4.0'
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:cardview-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
-    compile 'com.android.support:recyclerview-v7:23.4.0'
-    compile 'com.android.support:support-annotations:23.4.0'
+    compile 'com.android.support:support-v4:24.2.0'
+    compile 'com.android.support:appcompat-v7:24.2.0'
+    compile 'com.android.support:cardview-v7:24.2.0'
+    compile 'com.android.support:design:24.2.0'
+    compile 'com.android.support:recyclerview-v7:24.2.0'
+    compile 'com.android.support:support-annotations:24.2.0'
 
-//    compile 'com.android.support:multidex:1.0.1'
+    compile 'com.android.support:multidex:1.0.1'
 
-    compile 'com.squareup.okhttp3:okhttp:3.2.0'
-    compile 'com.squareup.okhttp3:okhttp-urlconnection:3.2.0'
+    compile 'com.squareup.okhttp3:okhttp:3.3.1'
+    compile 'com.squareup.okhttp3:okhttp-urlconnection:3.3.1'
 
-    compile 'com.squareup.retrofit2:retrofit:2.0.2'
-    compile 'com.squareup.retrofit2:converter-gson:2.0.2'
-    compile 'com.squareup.retrofit2:adapter-rxjava:2.0.2'
-    compile 'io.reactivex:rxandroid:1.1.0'
-    compile 'io.reactivex:rxjava:1.1.2'
-    compile 'com.google.code.gson:gson:2.4'
+    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    compile 'com.squareup.retrofit2:adapter-rxjava:2.1.0'
+    compile 'io.reactivex:rxandroid:1.2.1'
+    compile 'io.reactivex:rxjava:1.1.6'
+    compile 'com.google.code.gson:gson:2.7'
 
     compile 'com.squareup:otto:+'
 
@@ -162,21 +167,23 @@ dependencies {
 
     compile 'org.apache.commons:commons-lang3:+'
 
-    compile 'pl.droidsonroids.gif:android-gif-drawable:1.1.15'
+    compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.0'
 
     compile 'com.nhaarman.listviewanimations:lib-core:3.1.0@aar'
     compile 'com.nhaarman.listviewanimations:lib-manipulation:3.1.0@aar'
     compile 'com.nhaarman.listviewanimations:lib-core-slh:3.1.0@aar'
 
     compile 'com.nineoldandroids:library:2.4.+'
-    compile 'com.google.android.exoplayer:exoplayer:r1.5.7'
+    compile 'com.google.android.exoplayer:exoplayer:r1.5.9'
 
-    compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.4.1'
+    compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.5.0'
     compile 'com.github.bumptech.glide:glide:3.7.0'
-    compile 'xyz.danoz:recyclerviewfastscroller:0.1.3'
-    compile 'net.rdrei.android.dirchooser:library:3.0'
+    compile 'com.github.bumptech.glide:okhttp3-integration:1.4.0@aar'
+
+    compile 'com.github.pluscubed:recycler-fast-scroll:0.3.2'
+    compile 'net.rdrei.android.dirchooser:library:3.2'
     compile 'com.rarepebble:colorpicker:1.6.0'
-//    compile 'com.facebook.stetho:stetho:1.3.0'
+//    compile 'com.facebook.stetho:stetho:1.3.1'
     compile 'com.michaelpardo:activeandroid:3.1.0-SNAPSHOT'
     compile 'com.squareup.sqlbrite:sqlbrite:0.6.3'
 

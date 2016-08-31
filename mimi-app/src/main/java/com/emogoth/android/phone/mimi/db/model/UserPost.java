@@ -21,7 +21,6 @@ import android.database.Cursor;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
-import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;

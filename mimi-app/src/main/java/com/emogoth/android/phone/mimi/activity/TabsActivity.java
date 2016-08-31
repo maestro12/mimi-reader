@@ -115,6 +115,38 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
         tabPager.setAdapter(tabPagerAdapter);
         tabPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        tabPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(final int position) {
+
+                if (currentFragment == null) {
+                    return;
+                }
+
+                tabPager.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (position < tabPagerAdapter.getCount()) {
+                            currentFragment = (MimiFragmentBase) tabPagerAdapter.instantiateItem(tabPager, position);
+                            currentFragment.initMenu();
+                        }
+                    }
+                });
+
+                setFabVisibility(currentFragment.showFab());
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+
         tabPager.post(new Runnable() {
             @Override
             public void run() {
@@ -174,6 +206,15 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (tabPager != null) {
+            tabPager.clearOnPageChangeListeners();
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
 
@@ -225,33 +266,6 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             }
         }
 
-        tabPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(final int position) {
-
-                tabPager.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (position < tabPagerAdapter.getCount()) {
-                            currentFragment = (MimiFragmentBase) tabPagerAdapter.instantiateItem(tabPager, position);
-                            currentFragment.initMenu();
-                        }
-                    }
-                });
-
-                setFabVisibility(currentFragment.showFab());
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
         tabPager.setCurrentItem(1, true);
     }
 
@@ -437,7 +451,8 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
                 tabLayout.removeTabAt(pos);
                 tabPagerAdapter.removeItemAtIndex(pos);
-                tabPager.setAdapter(tabPagerAdapter);
+                tabPagerAdapter.notifyDataSetChanged();
+//                tabPager.setAdapter(tabPagerAdapter);
                 tabPager.setCurrentItem(newPos, false);
 
                 if (showSnackbar) {

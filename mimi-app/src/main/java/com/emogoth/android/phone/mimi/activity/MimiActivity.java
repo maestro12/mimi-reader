@@ -172,10 +172,14 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout != null && navDrawerView != null && drawerLayout.isDrawerOpen(navDrawerView)) {
-            toggleNavDrawer();
-        } else {
-            super.onBackPressed();
+        try {
+            if (drawerLayout != null && navDrawerView != null && drawerLayout.isDrawerOpen(navDrawerView)) {
+                toggleNavDrawer();
+            } else {
+                super.onBackPressed();
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Caught exception in onBackPressed()", e);
         }
 
     }

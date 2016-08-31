@@ -35,7 +35,7 @@
             android:layout_weight="1"
             android:animateLayoutChanges="true"
             android:dividerHeight="4dp"
-            android:visibility="visible"/>
+            android:visibility="visible" />
 
         <LinearLayout
             android:id="@+id/clear_all_container"
@@ -55,7 +55,7 @@
                 android:textSize="18sp"
                 android:textColor="@color/text_color_dark"
                 android:text="@string/exit"
-                android:background="@drawable/selectable_row_background_dark"/>
+                android:background="@drawable/selectable_row_background_dark" />
 
             <TextView
                 android:id="@+id/clear_all_button"
@@ -66,7 +66,7 @@
                 android:textSize="18sp"
                 android:textColor="@color/text_color_dark"
                 android:text="@string/clear_all"
-                android:background="@drawable/red_button_background"/>
+                android:background="@drawable/red_button_background" />
 
         </LinearLayout>
     </LinearLayout>
@@ -76,13 +76,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">
+
         <TextView
             android:id="@+id/empty_list_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textColor="@color/text_color_dark"
-            tools:text="NO HISTORY"/>
+            tools:text="NO HISTORY" />
     </FrameLayout>
 
 

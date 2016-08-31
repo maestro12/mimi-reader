@@ -19,7 +19,7 @@
     <item
         android:id="@+id/close_tab"
         android:title="@string/close_tab"
-        android:visible="true"/>
+        android:visible="true" />
 
     <item
         android:id="@+id/close_other_tabs"

@@ -44,7 +44,7 @@ public class FourChanBoards {
     }
 
     public List<ChanBoard> toBoardList() {
-        if(boards != null) {
+        if (boards != null) {
             List<ChanBoard> chanBoards = new ArrayList<>();
             for (FourChanBoard board : boards) {
                 chanBoards.add(board.toBoard());

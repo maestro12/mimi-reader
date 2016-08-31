@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
@@ -43,10 +44,13 @@ import com.bumptech.glide.Glide;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
+import com.emogoth.android.phone.mimi.event.RemovePostEvent;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
+import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RefreshScheduler;
@@ -293,6 +297,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             final int position = pos - headers.size();
             final ChanPost threadItem = postList.get(position);
             final int threadId = threadItem.getNo();
+            final boolean sticky = threadItem.isSticky();
             final HolderAbstractor viewHolder = new HolderAbstractor(holder);
 
             if (clickListener != null) {
@@ -408,6 +413,38 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                             if (menuItem.getItemId() == R.id.gallery_menu && activity instanceof GalleryMenuItemClickListener) {
                                 ((GalleryMenuItemClickListener) activity).onGalleryMenuItemClick(boardName, threadId);
                                 return true;
+                            } else if (menuItem.getItemId() == R.id.hide_thread_menu) {
+                                HiddenThreadTableConnection.hideThread(boardName, threadId, sticky)
+                                        .compose(DatabaseUtils.<Boolean>applySchedulers())
+                                        .subscribe(new Action1<Boolean>() {
+                                            @Override
+                                            public void call(Boolean success) {
+                                                int msgId = R.string.thread_hidden;
+                                                if (!success) {
+                                                    msgId = R.string.error_hiding_thread;
+                                                } else {
+                                                    int index = -1;
+                                                    for (int i = 0; i < postList.size(); i++) {
+                                                        if (postList.get(i).getNo() == threadId) {
+                                                            index = i;
+                                                            postList.remove(i);
+                                                        }
+                                                    }
+
+                                                    if (index >= 0) {
+                                                        BusProvider.getInstance().post(new RemovePostEvent(index));
+                                                    }
+                                                }
+
+                                                Snackbar.make(viewHolder.cardRoot, msgId, Snackbar.LENGTH_SHORT).show();
+
+                                            }
+                                        }, new Action1<Throwable>() {
+                                            @Override
+                                            public void call(Throwable throwable) {
+                                                Log.w(LOG_TAG, "Error hiding thread", throwable);
+                                            }
+                                        });
                             } else if (menuItem.getItemId() == R.id.report_menu) {
                                 final String url = "https://" + activity.getString(R.string.sys_link);
                                 final String path = activity.getString(R.string.report_path, boardName, threadId);

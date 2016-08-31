@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -16,6 +14,11 @@
  * limitations under the License.
  */
 package com.emogoth.android.phone.mimi.util;
+
+import android.media.MediaCodec.CryptoException;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Surface;
 
 import com.google.android.exoplayer.CodecCounters;
 import com.google.android.exoplayer.DummyTrackRenderer;
@@ -41,11 +44,6 @@ import com.google.android.exoplayer.upstream.BandwidthMeter;
 import com.google.android.exoplayer.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer.util.DebugTextViewHelper;
 import com.google.android.exoplayer.util.PlayerControl;
-
-import android.media.MediaCodec.CryptoException;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.Surface;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -306,7 +304,7 @@ public class ExoPlayerHelper implements ExoPlayer.Listener, ChunkSampleSource.Ev
         if (muted) {
             audioTrackToRestore = getSelectedTrack(TYPE_AUDIO);
             setSelectedTrack(TYPE_AUDIO, TRACK_DISABLED);
-        } else if (audioTrackToRestore >= 0){
+        } else if (audioTrackToRestore >= 0) {
             setSelectedTrack(TYPE_AUDIO, audioTrackToRestore);
         }
     }

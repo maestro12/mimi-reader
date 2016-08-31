@@ -23,7 +23,7 @@ import rx.schedulers.Schedulers;
 
 public class RxUtil {
     public static void safeUnsubscribe(Subscription subscription) {
-        if(subscription != null && !subscription.isUnsubscribed()) {
+        if (subscription != null && !subscription.isUnsubscribed()) {
             subscription.unsubscribe();
         }
     }

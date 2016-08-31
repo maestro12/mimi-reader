@@ -443,69 +443,74 @@ public class GalleryPagerFragment extends MimiFragmentBase implements Toolbar.On
     @Override
     public boolean onMenuItemClick(MenuItem item) {
 
-        if (item.getItemId() == R.id.save_menu) {
-            if (galleryPager != null && galleryPagerAdapter != null) {
-                final GalleryImageBase fragment = (GalleryImageBase) galleryPagerAdapter.instantiateItem(galleryPager, galleryPager.getCurrentItem());
-                saveFile(fragment);
-            }
-
-            return true;
-        } else if (item.getItemId() == R.id.share_menu) {
-
-            if (getActivity() == null) {
+        try {
+            if (getActivity() == null || !isAdded()) {
                 return true;
             }
 
-            final GalleryImageBase fragment = (GalleryImageBase) galleryPagerAdapter.instantiateItem(galleryPager, galleryPager.getCurrentItem());
-            final View menuView = getActivity().findViewById(R.id.share_menu);
-            PopupMenu popupMenu = new PopupMenu(getActivity(), menuView);
-            popupMenu.inflate(R.menu.share_popup);
-            popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    if (getActivity() == null) {
+            if (item.getItemId() == R.id.save_menu) {
+                if (galleryPager != null && galleryPagerAdapter != null) {
+                    final GalleryImageBase fragment = (GalleryImageBase) galleryPagerAdapter.instantiateItem(galleryPager, galleryPager.getCurrentItem());
+                    saveFile(fragment);
+                }
+
+                return true;
+            } else if (item.getItemId() == R.id.share_menu) {
+
+                final GalleryImageBase fragment = (GalleryImageBase) galleryPagerAdapter.instantiateItem(galleryPager, galleryPager.getCurrentItem());
+                final View menuView = getActivity().findViewById(R.id.share_menu);
+                PopupMenu popupMenu = new PopupMenu(getActivity(), menuView);
+                popupMenu.inflate(R.menu.share_popup);
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        if (getActivity() == null) {
+                            return true;
+                        }
+
+                        final Intent shareIntent = new Intent();
+                        if (item.getItemId() == R.id.share_link) {
+                            shareIntent.setAction(Intent.ACTION_SEND);
+                            shareIntent.putExtra(Intent.EXTRA_TEXT,
+                                    MimiUtil.httpOrHttps(getActivity()) + getResources().getString(R.string.image_link) + getResources().getString(R.string.full_image_path,
+                                            boardName,
+                                            fragment.getTim(),
+                                            fragment.getFileExt()));
+                            shareIntent.setType("text/plain");
+                        } else {
+                            final File shareFile = fragment.getImageFileLocation();
+
+                            if (shareFile != null && shareFile.exists()) {
+                                final Uri uri = FileProvider.getUriForFile(getActivity(), getString(R.string.fileprovider_authority), shareFile);
+                                final String type;
+                                if (shareFile.getName().endsWith(".webm")) {
+                                    type = "video/webm";
+                                } else {
+                                    type = "image/*";
+                                }
+
+                                shareIntent.setAction(Intent.ACTION_SEND);
+                                shareIntent.setDataAndType(uri, type);
+                                shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+                            }
+                        }
+
+                        startActivity(Intent.createChooser(shareIntent, getString(R.string.share)));
                         return true;
                     }
+                });
 
-                    final Intent shareIntent = new Intent();
-                    if (item.getItemId() == R.id.share_link) {
-                        shareIntent.setAction(Intent.ACTION_SEND);
-                        shareIntent.putExtra(Intent.EXTRA_TEXT,
-                                MimiUtil.httpOrHttps(getActivity()) + getResources().getString(R.string.image_link) + getResources().getString(R.string.full_image_path,
-                                        boardName,
-                                        fragment.getTim(),
-                                        fragment.getFileExt()));
-                        shareIntent.setType("text/plain");
-                    } else {
-                        final File shareFile = fragment.getImageFileLocation();
+                popupMenu.show();
 
-                        if (shareFile != null && shareFile.exists()) {
-                            final Uri uri = FileProvider.getUriForFile(getActivity(), getString(R.string.fileprovider_authority), shareFile);
-                            final String type;
-                            if (shareFile.getName().endsWith(".webm")) {
-                                type = "video/webm";
-                            } else {
-                                type = "image/*";
-                            }
+                return true;
 
-                            shareIntent.setAction(Intent.ACTION_SEND);
-                            shareIntent.setDataAndType(uri, type);
-                            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-                        }
-                    }
-
-                    startActivity(Intent.createChooser(shareIntent, getString(R.string.share)));
-                    return true;
-                }
-            });
-
-            popupMenu.show();
-
-            return true;
-        } else if (item.getItemId() == R.id.fullscreen_menu) {
-            BusProvider.getInstance().post(new FullscreenEvent(true, false));
-            galleryToolbar.setVisibility(View.GONE);
-            exitFullscreenButton.setVisibility(View.VISIBLE);
+            } else if (item.getItemId() == R.id.fullscreen_menu) {
+                BusProvider.getInstance().post(new FullscreenEvent(true, false));
+                galleryToolbar.setVisibility(View.GONE);
+                exitFullscreenButton.setVisibility(View.VISIBLE);
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Caught exception after menu item click");
         }
 
         return false;

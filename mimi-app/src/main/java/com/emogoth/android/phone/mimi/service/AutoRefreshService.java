@@ -16,18 +16,19 @@
 
 package com.emogoth.android.phone.mimi.service;
 
+import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -61,9 +62,10 @@ import java.util.List;
 import retrofit2.adapter.rxjava.HttpException;
 import rx.Subscription;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.functions.Func2;
 
-public class AutoRefreshService extends Service {
+public class AutoRefreshService extends IntentService {
     private static final String LOG_TAG = AutoRefreshService.class.getSimpleName();
     private static final boolean LOG_DEBUG = false;
 
@@ -72,17 +74,12 @@ public class AutoRefreshService extends Service {
 
     private Subscription fetchThreadSubscription;
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-
-        RefreshScheduler.getInstance().init(MimiApplication.getInstance());
+    public AutoRefreshService() {
+        super("AutoRefreshService");
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        super.onStartCommand(intent, flags, startId);
-
+    protected void onHandleIntent(final Intent intent) {
         if (intent != null && intent.getExtras() != null) {
             final Bundle extras = intent.getExtras();
             final Bundle hackBundle = extras.getBundle(RefreshScheduler.HACK_BUNDLE_KEY);
@@ -113,27 +110,26 @@ public class AutoRefreshService extends Service {
                         }
                     })
                     .compose(DatabaseUtils.<ChanThread>applySchedulers())
-                    .subscribe(fetchComplete(threadInfo, backgrounded), fetchFailed(threadInfo));
+                    .onErrorReturn(refreshError(threadInfo))
+                    .subscribe(fetchComplete(threadInfo, intent, backgrounded), fetchFailed(threadInfo, intent));
 
             if (LOG_DEBUG) {
                 Log.d(LOG_TAG, "Starting request for " + url + ": backgrounded=" + backgrounded + ", timestamp=" + threadInfo.refreshTimestamp);
             }
         }
 
-        return START_NOT_STICKY;
-
     }
 
-    private Action1<ChanThread> fetchComplete(final ThreadInfo threadInfo, final boolean inBackground) {
+    private Action1<ChanThread> fetchComplete(@NonNull final ThreadInfo threadInfo, @Nullable final Intent intent, final boolean inBackground) {
         return new Action1<ChanThread>() {
             @Override
             public void call(ChanThread response) {
-                if (LOG_DEBUG) {
-                    Log.d(LOG_TAG, "Got response from request");
-                }
-
                 if (response == null) {
                     return;
+                }
+
+                if (LOG_DEBUG) {
+                    Log.d(LOG_TAG, "Got response from request");
                 }
 
                 final String name = threadInfo.boardName;
@@ -219,54 +215,64 @@ public class AutoRefreshService extends Service {
                         }
                     });
                 }
+//
+//                if (intent != null) {
+//                    RefreshBroadcastReceiver.completeWakefulIntent(intent);
+//                }
             }
         };
     }
 
-    private Action1<Throwable> fetchFailed(final ThreadInfo info) {
+    private Action1<Throwable> fetchFailed(@NonNull final ThreadInfo info, @Nullable final Intent intent) {
         return new Action1<Throwable>() {
             @Override
             public void call(Throwable error) {
-                final Bundle dataBundle = new Bundle();
-                final Bundle hackBundle = new Bundle();
-                dataBundle.putInt(RefreshScheduler.RESULT_KEY, RefreshScheduler.RESULT_ERROR);
+                doFailure(info, error);
 
-                hackBundle.putParcelable(RefreshScheduler.THREAD_INFO_KEY, info);
-                dataBundle.putBundle(RefreshScheduler.HACK_BUNDLE_KEY, hackBundle);
-
-                if (error instanceof HttpException) {
-                    HttpException exception = (HttpException) error;
-
-                    dataBundle.putInt(RefreshScheduler.ERROR_CODE, exception.code());
-                    if (exception.code() == 404) {
-                        if (LOG_DEBUG) {
-                            Log.e(LOG_TAG, "Caught 404 error while refreshing " + info.boardName + "/" + info.threadId);
-                        }
-                        HistoryTableConnection.setHistoryRemovedStatus(info.boardName, info.threadId, true).subscribe();
-                    }
-                }
-
-                ThreadRegistry.getInstance().deactivate(info.threadId);
-
-                final Intent result = new Intent(RefreshScheduler.INTENT_FILTER);
-                result.putExtras(dataBundle);
-                sendBroadcast(result);
-
-                BusProvider.getInstance().post(new HttpErrorEvent(error, info));
+//                if (intent != null) {
+//                    RefreshBroadcastReceiver.completeWakefulIntent(intent);
+//                }
             }
         };
     }
 
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    private Func1<Throwable, ChanThread> refreshError(@NonNull final ThreadInfo info) {
+        return new Func1<Throwable, ChanThread>() {
+            @Override
+            public ChanThread call(Throwable throwable) {
+                doFailure(info, throwable);
+                return null;
+            }
+        };
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+    private void doFailure(@NonNull ThreadInfo info, @NonNull Throwable error) {
+        final Bundle dataBundle = new Bundle();
+        final Bundle hackBundle = new Bundle();
+        dataBundle.putInt(RefreshScheduler.RESULT_KEY, RefreshScheduler.RESULT_ERROR);
 
-        RefreshScheduler.getInstance().stop();
+        hackBundle.putParcelable(RefreshScheduler.THREAD_INFO_KEY, info);
+        dataBundle.putBundle(RefreshScheduler.HACK_BUNDLE_KEY, hackBundle);
+
+        if (error instanceof HttpException) {
+            HttpException exception = (HttpException) error;
+
+            dataBundle.putInt(RefreshScheduler.ERROR_CODE, exception.code());
+            if (exception.code() == 404) {
+                if (LOG_DEBUG) {
+                    Log.e(LOG_TAG, "Caught 404 error while refreshing " + info.boardName + "/" + info.threadId);
+                }
+                HistoryTableConnection.setHistoryRemovedStatus(info.boardName, info.threadId, true).subscribe();
+            }
+        }
+
+        ThreadRegistry.getInstance().deactivate(info.threadId);
+
+        final Intent result = new Intent(RefreshScheduler.INTENT_FILTER);
+        result.putExtras(dataBundle);
+        sendBroadcast(result);
+
+        BusProvider.getInstance().post(new HttpErrorEvent(error, info));
     }
 
     private void createNotification(final String boardName, final int threadId, final int notificationLevel) {

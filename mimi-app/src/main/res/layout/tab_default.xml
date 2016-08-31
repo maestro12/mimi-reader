@@ -26,16 +26,16 @@
         android:layout_height="8dp"
         android:layout_marginLeft="10dp"
         android:background="@drawable/new_unread_count"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
-        <!--android:id="@+id/close_button"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_alignParentRight="true"-->
-        <!--android:layout_alignParentTop="true"-->
-        <!--android:textSize="18sp"-->
-        <!--android:text="@string/ic_close" />-->
+    <!--android:id="@+id/close_button"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_alignParentRight="true"-->
+    <!--android:layout_alignParentTop="true"-->
+    <!--android:textSize="18sp"-->
+    <!--android:text="@string/ic_close" />-->
 
     <TextView
         android:id="@+id/title"
@@ -46,7 +46,7 @@
         android:gravity="center"
         android:textSize="12sp"
         android:textColor="#CCCCCC"
-        tools:text="/b/"/>
+        tools:text="/b/" />
 
     <TextView
         android:id="@+id/subtitle"

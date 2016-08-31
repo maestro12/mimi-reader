@@ -18,20 +18,22 @@
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:title="@string/gallery_menu_item"
         android:id="@+id/gallery_menu"
-        />
+        android:title="@string/gallery_menu_item" />
 
     <item
-        android:title="@string/open_link_menu_item"
-        android:id="@+id/open_link_menu" />
+        android:id="@+id/open_link_menu"
+        android:title="@string/open_link_menu_item" />
 
     <item
-        android:title="@string/copy_link_menu_item"
-        android:id="@+id/copy_link_menu" />
+        android:id="@+id/copy_link_menu"
+        android:title="@string/copy_link_menu_item" />
 
     <item
-        android:title="@string/report_menu_item"
         android:id="@+id/report_menu"
-        />
+        android:title="@string/report_menu_item" />
+
+    <item
+        android:id="@+id/hide_thread_menu"
+        android:title="@string/hide" />
 </menu>

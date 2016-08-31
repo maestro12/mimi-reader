@@ -17,30 +17,28 @@
   -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory
-        android:title="@string/history_title">
+    <PreferenceCategory android:title="@string/history_title">
 
         <SwitchPreference
             android:title="@string/save_history_title"
             android:key="@string/save_history_pref"
             android:defaultValue="true"
             android:summaryOff="@string/save_history_summary_off"
-            android:summaryOn="@string/save_history_summary_on"
-            />
+            android:summaryOn="@string/save_history_summary_on" />
 
         <ListPreference
             android:title="@string/auto_refresh_interval_title"
             android:key="@string/app_auto_refresh_time"
             android:defaultValue="10"
             android:entries="@array/foregroundRefreshIntervals"
-            android:entryValues="@array/foregroundRefreshIntervalValues"/>
+            android:entryValues="@array/foregroundRefreshIntervalValues" />
 
         <ListPreference
             android:title="@string/background_refresh_interval_title"
             android:key="@string/background_auto_refresh_time"
             android:defaultValue="120"
             android:entries="@array/backgroundRefreshIntervals"
-            android:entryValues="@array/backgroundRefreshIntervalValues"/>
+            android:entryValues="@array/backgroundRefreshIntervalValues" />
 
         <ListPreference
             android:title="@string/notifications_title"
@@ -54,11 +52,10 @@
             android:key="@string/history_prune_time_pref"
             android:defaultValue="0"
             android:entries="@array/history_prune_times"
-            android:entryValues="@array/history_prune_time_values"/>
+            android:entryValues="@array/history_prune_time_values" />
 
         <Preference
             android:title="@string/clear_history_title"
-            android:key="@string/clear_history_pref"
-            />
+            android:key="@string/clear_history_pref" />
     </PreferenceCategory>
 </PreferenceScreen>

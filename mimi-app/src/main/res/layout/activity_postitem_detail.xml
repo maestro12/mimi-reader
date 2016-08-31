@@ -19,20 +19,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_drawer_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+    android:layout_height="match_parent">
 
     <!--<FrameLayout-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="0dp"-->
-        <!--android:layout_weight="1">-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="0dp"-->
+    <!--android:layout_weight="1">-->
 
-        <android.support.design.widget.CoordinatorLayout
-            android:id="@+id/coordinator_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fitsSystemWindows="true"
-            tools:context="com.emogoth.android.phone.mimi.activity.PostItemDetailActivity">
+    <android.support.design.widget.CoordinatorLayout
+        android:id="@+id/coordinator_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true"
+        tools:context="com.emogoth.android.phone.mimi.activity.PostItemDetailActivity">
 
         <FrameLayout
             android:id="@+id/postitem_detail_container"
@@ -45,7 +44,7 @@
         <android.support.design.widget.AppBarLayout
             android:id="@+id/appbar"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content">
 
             <android.support.v7.widget.Toolbar
                 android:theme="?toolbarBackground"
@@ -61,28 +60,28 @@
                     android:id="@+id/board_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"/>
+                    android:visibility="gone" />
 
                 <FrameLayout
                     android:id="@+id/notification_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"/>
+                    android:visibility="gone" />
 
             </android.support.v7.widget.Toolbar>
         </android.support.design.widget.AppBarLayout>
-    <!--</FrameLayout>-->
+        <!--</FrameLayout>-->
 
-            <android.support.design.widget.FloatingActionButton
-                android:id="@+id/fab_add_content"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|right"
-                android:layout_margin="16dp"
-                app:srcCompat="@drawable/ic_action_create_fab"
-                app:layout_anchor="@id/postitem_detail_container"
-                app:layout_anchorGravity="bottom|right|end"
-                app:layout_behavior="com.emogoth.android.phone.mimi.util.ScrollAwareFABBehavior"/>
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fab_add_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_margin="16dp"
+            app:srcCompat="@drawable/ic_action_create_fab"
+            app:layout_anchor="@id/postitem_detail_container"
+            app:layout_anchorGravity="bottom|right|end"
+            app:layout_behavior="com.emogoth.android.phone.mimi.util.ScrollAwareFABBehavior" />
     </android.support.design.widget.CoordinatorLayout>
 
     <FrameLayout
@@ -92,9 +91,9 @@
         android:layout_gravity="start" />
 
     <!--<FrameLayout-->
-        <!--android:id="@+id/bookmark_drawer"-->
-        <!--android:layout_width="300dp"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_gravity="end" />-->
+    <!--android:id="@+id/bookmark_drawer"-->
+    <!--android:layout_width="300dp"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:layout_gravity="end" />-->
 
 </android.support.v4.widget.DrawerLayout>

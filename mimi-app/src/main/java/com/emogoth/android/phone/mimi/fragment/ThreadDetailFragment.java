@@ -16,7 +16,6 @@
 
 package com.emogoth.android.phone.mimi.fragment;
 
-import android.animation.Animator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -73,11 +72,13 @@ import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.emogoth.android.phone.mimi.view.DividerItemDecoration;
 import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
+import com.pluscubed.recyclerfastscroll.RecyclerFastScroller;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
@@ -90,7 +91,6 @@ import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
-import xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller;
 
 
 public class ThreadDetailFragment extends MimiFragmentBase implements
@@ -102,8 +102,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private static final int LOADER_ID = 2;
 
     private static final int MAX_RETRIES = 5;
-
-    private static final long FAST_SCROLL_TIMEOUT = 2000;
 
     private String threadReplyFragmentTag;
 
@@ -139,6 +137,8 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private Toolbar toolbar;
     private boolean wasVisibleToUser;
 
+    private RecyclerView.ItemDecoration recyclerViewDivider;
+
     private long profileTimer;
 
     private Handler lastReadHandler = new Handler();
@@ -152,47 +152,10 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
     };
 
-    private Runnable hideFastScrollRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (fastScrollLayout != null) {
-                fastScrollLayout.animate()
-                        .alpha(0)
-                        .setDuration(200)
-                        .setListener(new Animator.AnimatorListener() {
-                            @Override
-                            public void onAnimationStart(Animator animation) {
-
-                            }
-
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                if (fastScrollLayout != null) {
-                                    fastScrollLayout.setVisibility(View.INVISIBLE);
-                                }
-                            }
-
-                            @Override
-                            public void onAnimationCancel(Animator animation) {
-
-                            }
-
-                            @Override
-                            public void onAnimationRepeat(Animator animation) {
-
-                            }
-                        })
-                        .start();
-            }
-        }
-    };
-    private Handler hideFastScrollHandler = new Handler();
-
-    //    private CoordinatorLayout coordinatorLayout;
     private Snackbar postingSnackbar;
     private boolean stickyAutoRefresh;
     private ChanConnector chanConnector;
-    private VerticalRecyclerViewFastScroller fastScrollLayout;
+    private RecyclerFastScroller fastScrollLayout;
     private RecyclerView.OnScrollListener fastScrollListener;
 
     private Subscription threadSubscription;
@@ -205,6 +168,8 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private Subscription historyRemovedSubscription;
     private Subscription removeHistorySubscription;
     private Subscription addPostSubscription;
+
+    private boolean useFastScroll;
 
     public static ThreadDetailFragment newInstance(int threadId, String boardName, String boardTitle, ChanPost firstPost, boolean stickyAutoRefresh) {
         final Bundle args = new Bundle();
@@ -258,8 +223,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         closeMessageButton = (TextView) view.findViewById(R.id.close_message_button);
         swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
         rememberThreadScrollPosition = MimiUtil.rememberThreadScrollPosition(getActivity());
-        fastScrollLayout = (VerticalRecyclerViewFastScroller) view.findViewById(R.id.fast_scroll_layout);
-        fastScrollLayout.setRecyclerView(recyclerView);
+        fastScrollLayout = (RecyclerFastScroller) view.findViewById(R.id.fast_scroll_layout);
 
         final MimiActivity activity = (MimiActivity) getActivity();
         toolbar = activity.getToolbar();
@@ -270,6 +234,9 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             listHeader = inflater.inflate(R.layout.header_layout_tall, container, false);
         }
         listFooter = inflater.inflate(R.layout.list_footer, container, false);
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        useFastScroll = preferences.getBoolean(getString(R.string.use_fast_scroll_pref), true);
 
         return view;
     }
@@ -290,6 +257,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
+        recyclerView.addItemDecoration(new DividerItemDecoration(getActivity(), LinearLayoutManager.VERTICAL));
         threadListAdapter = new ThreadListAdapter(getActivity(), getChildFragmentManager(), currentThread, boardName);
 
         setupRepliesDialog();
@@ -298,6 +266,13 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
 
         recyclerView.setAdapter(threadListAdapter);
+
+        if (useFastScroll) {
+            fastScrollLayout.attachRecyclerView(recyclerView);
+        } else {
+            fastScrollLayout.setVisibility(View.GONE);
+        }
+
         threadListAdapter.addHeader(listHeader);
         threadListAdapter.addFooter(listFooter);
 
@@ -489,14 +464,50 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                     closeOtherTabsItem.setVisible(false);
                 }
             }
+
+            final MenuItem scrollToTopItem = toolbar.getMenu().findItem(R.id.quick_top);
+            if (scrollToTopItem != null) {
+                scrollToTopItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        if (recyclerView != null) {
+                            recyclerView.scrollToPosition(0);
+                        }
+                        return true;
+                    }
+                });
+            }
+
+            final MenuItem scrollToBottomItem = toolbar.getMenu().findItem(R.id.quick_bottom);
+            if (scrollToBottomItem != null && recyclerView != null) {
+                scrollToBottomItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        if (recyclerView != null && currentThread != null && currentThread.getPosts() != null) {
+                            recyclerView.scrollToPosition(currentThread.getPosts().size());
+                        }
+                        return true;
+                    }
+                });
+            }
         }
 
     }
 
-    private void createRecyclerViewScrollListeners(final boolean useFastScroll) {
-        recyclerView.removeOnScrollListener(fastScrollLayout.getOnScrollListener());
-        recyclerView.addOnScrollListener(fastScrollLayout.getOnScrollListener());
+    @Override
+    public void onResume() {
+        super.onResume();
 
+        if (threadListAdapter != null) {
+            if (useFastScroll) {
+                fastScrollLayout.attachRecyclerView(recyclerView);
+            } else {
+                fastScrollLayout.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void createRecyclerViewScrollListeners(final boolean useFastScroll) {
         if (useFastScroll) {
             recyclerView.setVerticalScrollBarEnabled(false);
         } else {
@@ -513,15 +524,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                     if (dy > 0) {
                         lastReadHandler.removeCallbacks(lastReadRunnable);
                         lastReadHandler.postDelayed(lastReadRunnable, 500);
-                    }
-
-                    if (useFastScroll && (Math.abs(dy) > 220 || fastScrollLayout.getVisibility() == View.VISIBLE)) {
-                        fastScrollLayout.clearAnimation();
-                        fastScrollLayout.setAlpha(1.0F);
-                        fastScrollLayout.setVisibility(View.VISIBLE);
-
-                        hideFastScrollHandler.removeCallbacks(hideFastScrollRunnable);
-                        hideFastScrollHandler.postDelayed(hideFastScrollRunnable, FAST_SCROLL_TIMEOUT);
                     }
                 }
             };
@@ -713,36 +715,43 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     private void showPostFragment() {
-        final FragmentManager fm = getChildFragmentManager();
 
-        recyclerView.smoothScrollBy(0, 0);
-        if (!createNewPostFragment) {
-            createNewPostFragment = false;
-            postFragment = (PostFragment) fm.findFragmentByTag(threadReplyFragmentTag);
+        if (getActivity() == null || !isAdded()) {
+            return;
         }
 
-        if (postFragment == null) {
-            final Bundle args = new Bundle();
-            args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-            args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
-            args.putInt(Extras.LOADER_ID, loaderId);
+        try {
+            final FragmentManager fm = getChildFragmentManager();
 
-            if (!TextUtils.isEmpty(replyComment)) {
-                args.putString(Extras.EXTRAS_POST_COMMENT, replyComment);
-                replyComment = null;
+            recyclerView.smoothScrollBy(0, 0);
+            if (!createNewPostFragment) {
+                createNewPostFragment = false;
+                postFragment = (PostFragment) fm.findFragmentByTag(threadReplyFragmentTag);
             }
 
-            postFragment = new PostFragment();
-            postFragment.setPostListener(createPostCompleteListener());
-            postFragment.setArguments(args);
-        } else {
-            if (!TextUtils.isEmpty(replyComment)) {
+            if (postFragment == null) {
+                final Bundle args = new Bundle();
+                args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+                args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+                args.putInt(Extras.LOADER_ID, loaderId);
+
+                if (!TextUtils.isEmpty(replyComment)) {
+                    args.putString(Extras.EXTRAS_POST_COMMENT, replyComment);
+                    replyComment = null;
+                }
+
+                postFragment = new PostFragment();
+                postFragment.setPostListener(createPostCompleteListener());
+                postFragment.setArguments(args);
+            } else if (!TextUtils.isEmpty(replyComment)) {
                 postFragment.setComment(replyComment);
             }
-        }
 
-        postFragment.show(fm, threadReplyFragmentTag);
+            postFragment.show(fm, threadReplyFragmentTag);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error showing post form", e);
+        }
     }
 
     private PostFragment.PostListener createPostCompleteListener() {
@@ -870,8 +879,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
                 if (index >= 0 && recyclerView != null) {
                     scrollListToPosition(recyclerView, index);
-//                    recyclerView.smoothScrollToPosition(index);
-//                    recyclerView.smoothScrollToPosition(index + 2);
                 }
             }
         }
@@ -1014,6 +1021,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         if (threadListAdapter != null) {
             threadListAdapter.setThread(thread);
+
             if (getUserVisibleHint()) {
                 ThreadRegistry.getInstance().update(threadId, thread.getPosts().size(), true, isWatched);
             } else {
@@ -1030,14 +1038,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                         scrollListToPosition(recyclerView, originalThreadSize);
                     }
                 });
-
-//                recyclerView.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        layoutManager.scrollToPosition(originalThreadSize);
-//                        Log.d(LOG_TAG, "[processThread] Setting list selection: id=" + threadId + ", position=" + originalThreadSize + ", current thread size=" + thread.getPosts().size() + ", last visible position=" + (originalThreadSize + layoutManager.findLastVisibleItemPosition()));
-//                    }
-//                });
             } else {
                 recyclerView.post(new Runnable() {
                     @Override
@@ -1045,13 +1045,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                         scrollListToPosition(recyclerView, 0);
                     }
                 });
-
-//                recyclerView.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        layoutManager.scrollToPosition(0);
-//                    }
-//                });
             }
         }
 
@@ -1198,16 +1191,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        if (recyclerView != null && getActivity() != null) {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            final boolean useFastScroll = preferences.getBoolean(getString(R.string.use_fast_scroll_pref), true);
-            createRecyclerViewScrollListeners(useFastScroll);
-        }
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         if (!isWatched && MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
@@ -1233,6 +1216,10 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                 if (getActivity() instanceof IToolbarContainer) {
                     IToolbarContainer activity = (IToolbarContainer) getActivity();
                     activity.setExpandedToolbar(true, true);
+                }
+
+                if (recyclerView != null) {
+                    createRecyclerViewScrollListeners(useFastScroll);
                 }
 
                 if (doThreadRegistryUpdate) {
@@ -1418,8 +1405,8 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         return "thread_detail";
     }
 
-    public String getThreadId() {
-        return String.valueOf(threadId);
+    public int getThreadId() {
+        return threadId;
     }
 
     @Override

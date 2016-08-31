@@ -186,7 +186,7 @@ public class DownloadService extends IntentService {
                 final List<ChanPost> batchData;
                 final ArrayList<String> files = new ArrayList<>();
 
-                if(serviceData.containsKey(DATA_KEY)) {
+                if (serviceData.containsKey(DATA_KEY)) {
                     batchData = serviceData.getParcelableArrayList(DATA_KEY);
                 } else {
                     batchData = ThreadRegistry.getInstance().getPosts(REGISTRY_ID);

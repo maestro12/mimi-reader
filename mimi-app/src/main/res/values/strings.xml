@@ -21,6 +21,32 @@
     <string name="app_title">Mimi</string>
     <string name="title_postitem_detail">PostItem Detail</string>
 
+    <!-- 4chan API links -->
+    <!--<string name="sys_link">sys.4chan.org</string>-->
+    <!--<string name="api_link">a.4cdn.org</string>-->
+    <!--<string name="thumb_link">t.4cdn.org</string>-->
+    <!--<string name="image_link">i.4cdn.org</string>-->
+    <!--<string name="board_link">boards.4chan.org</string>-->
+    <!--<string name="board_list_link">a.4cdn.org/boards.json</string>-->
+    <!--<string name="icon_link">s.4cdn.org</string>-->
+    <!--<string name="flag_int_link">s.4cdn.org/image/country/</string>-->
+    <!--<string name="flag_pol_link">s.4cdn.org/image/country/troll/</string>-->
+
+    <!--<string name="board_path">/%s/</string>-->
+    <!--<string name="first_post_path">/%s/</string>-->
+    <!--<string name="api_thread_path">/%1$s/thread/%2$d.json</string>-->
+    <!--<string name="raw_thread_path">/%1$s/thread/%2$d</string>-->
+    <!--<string name="catalog_path">/%s/catalog.json</string>-->
+    <!--<string name="api_thread_list_path">/%1$s/%2$s.json</string>-->
+    <!--<string name="raw_thread_list_path">/%1$s/%2$s</string>-->
+    <!--<string name="report_path">/%1$s/imgboard.php?mode=report&amp;no=%2$d</string>-->
+
+    <!--&lt;!&ndash; /{board}/thumb/{tim}s{ext} &ndash;&gt;-->
+    <!--<string name="thumb_path">/%1$s/%2$ss.jpg</string>-->
+
+    <!--&lt;!&ndash; /{board}/src/{tim}{ext} &ndash;&gt;-->
+    <!--<string name="full_image_path">/%1$s/%2$s%3$s</string>-->
+
     <!-- Colors -->
     <string name="red">Red</string>
     <string name="green">Green</string>
@@ -342,7 +368,7 @@
         <item quantity="other">%d images</item>
     </plurals>
 
-    <plurals name ="unread_plural">
+    <plurals name="unread_plural">
         <item quantity="zero">no unread posts</item>
         <item quantity="one">1 unread post</item>
         <item quantity="other">%d unread posts</item>
@@ -359,7 +385,7 @@
         <item quantity="one">1 thread updated</item>
         <item quantity="other">%d threads updated</item>
     </plurals>
-    <plurals name="replies_to_you_plurals" >
+    <plurals name="replies_to_you_plurals">
         <item quantity="zero">no replies to you</item>
         <item quantity="one">1 reply to you</item>
         <item quantity="other">%d replies to you</item>
@@ -436,6 +462,16 @@
     <string name="youtube_id_not_defined">Youtube ID not defined</string>
     <string name="error_copying_file">Error copying file</string>
     <string name="use_old_video_player_title">Use old video player</string>
+    <string name="hide">Hide</string>
+    <string name="thread_hidden">Thread hidden</string>
+    <string name="error_hiding_thread">Error hiding thread</string>
+    <string name="clear_hidden_threads">Clear hidden threads</string>
+    <string name="all_hidden_threads_cleared">Cleared all hidden threads</string>
+    <string name="failed_to_clear_hidden_threads">Failed to clear hidden threads</string>
+    <string name="quick_scroll_to_top">Scroll To Top</string>
+    <string name="quick_scroll_to_bottom">Scroll To Bottom</string>
+    <string name="text_to_filter">Text To Filter</string>
+    <string name="empty_response_error">Empty response returned from post</string>
 
     <string-array name="youtube_dialog_list">
         <item>Open in browser</item>

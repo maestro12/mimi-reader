@@ -20,7 +20,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    style="?defaultLayoutBackground"
     android:id="@+id/panel_layout"
     android:orientation="vertical"
     android:layout_height="match_parent"
@@ -39,37 +38,27 @@
             android:paddingLeft="4dp"
             android:paddingRight="4dp"
             android:fadingEdge="none"
-            android:divider="@android:color/transparent"
             android:dividerHeight="2.0sp"
             tools:listitem="@layout/thread_post_item"
-            android:drawSelectorOnTop="true"
             android:scrollbars="vertical"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     </android.support.v4.widget.SwipeRefreshLayout>
 
-    <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
+    <!--<xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller-->
+    <!--android:id="@+id/fast_scroll_layout"-->
+    <!--android:layout_width="48dp"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:layout_gravity="right"-->
+    <!--android:visibility="invisible"-->
+    <!--app:rfs_handleColor="?attr/colorAccent"/>-->
+
+    <com.pluscubed.recyclerfastscroll.RecyclerFastScroller
         android:id="@+id/fast_scroll_layout"
-        android:layout_width="48dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:visibility="invisible"
-        app:rfs_handleColor="?attr/colorAccent"/>
-
-    <RelativeLayout
-        android:id="@+id/loading_layout"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:visibility="visible">
-
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/progressBar"
-            android:layout_gravity="center"
-            android:layout_centerInParent="true"/>
-
-    </RelativeLayout>
+        android:layout_gravity="end"
+        app:rfs_handleNormalColor="?attr/colorAccent" />
 
     <FrameLayout
         android:id="@+id/message_container"
@@ -86,8 +75,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:textColor="#CCCCCC"
-            />
+            android:textColor="#CCCCCC" />
 
         <com.emogoth.android.phone.mimi.view.IconTextView
             android:id="@+id/close_message_button"
@@ -99,9 +87,23 @@
             android:textSize="20sp"
             android:background="@drawable/thumbnail_selector"
             android:gravity="center"
-            android:visibility="invisible"
-            />
+            android:visibility="invisible" />
 
     </FrameLayout>
+
+    <RelativeLayout
+        android:id="@+id/loading_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="visible">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/progressBar"
+            android:layout_gravity="center"
+            android:layout_centerInParent="true" />
+
+    </RelativeLayout>
 
 </FrameLayout>

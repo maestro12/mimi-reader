@@ -35,6 +35,7 @@ public class ChanPost implements Parcelable, Externalizable {
 
     private int no;
     private boolean closed;
+    private boolean sticky;
     private String now;
     private String name;
     private String com;
@@ -76,6 +77,7 @@ public class ChanPost implements Parcelable, Externalizable {
     public ChanPost(ChanPost other) {
         this.no = other.no;
         this.closed = other.closed;
+        this.sticky = other.sticky;
         this.now = other.now;
         this.name = other.name;
         this.com = other.com;
@@ -397,6 +399,14 @@ public class ChanPost implements Parcelable, Externalizable {
         this.closed = closed;
     }
 
+    public boolean isSticky() {
+        return sticky;
+    }
+
+    public void setSticky(boolean sticky) {
+        this.sticky = sticky;
+    }
+
     public void setWatched(boolean watched) {
         this.watched = watched;
     }
@@ -435,6 +445,7 @@ public class ChanPost implements Parcelable, Externalizable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(this.no);
         dest.writeByte(closed ? (byte) 1 : (byte) 0);
+        dest.writeByte(sticky ? (byte) 1 : (byte) 0);
         dest.writeByte(watched ? (byte) 1 : (byte) 0);
         dest.writeString(this.now);
         dest.writeString(this.name);
@@ -472,6 +483,7 @@ public class ChanPost implements Parcelable, Externalizable {
     protected ChanPost(Parcel in) {
         this.no = in.readInt();
         this.closed = in.readByte() != 0;
+        this.sticky = in.readByte() != 0;
         this.watched = in.readByte() != 0;
         this.now = in.readString();
         this.name = in.readString();
@@ -520,6 +532,7 @@ public class ChanPost implements Parcelable, Externalizable {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.no = in.readInt();
         this.closed = in.readByte() != 0;
+        this.sticky = in.readByte() != 0;
         this.now = in.readUTF();
         this.name = in.readUTF();
         this.com = in.readUTF();
@@ -557,6 +570,7 @@ public class ChanPost implements Parcelable, Externalizable {
     public void writeExternal(ObjectOutput dest) throws IOException {
         dest.writeInt(this.no);
         dest.writeByte(closed ? (byte) 1 : (byte) 0);
+        dest.writeByte(sticky ? (byte) 1 : (byte) 0);
         dest.writeUTF(getVariableOrEmptyString(this.now));
         dest.writeUTF(getVariableOrEmptyString(this.name));
         dest.writeUTF(getVariableOrEmptyString(this.com));

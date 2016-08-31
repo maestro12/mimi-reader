@@ -66,10 +66,10 @@ import java.util.Map;
 public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final String LOG_TAG = ThreadListAdapter.class.getSimpleName();
 
-    private static final int VIEW_HEADER = 0;
-    private static final int VIEW_TOP_LIST_ITEM = 1;
-    private static final int VIEW_NORMAL_LIST_ITEM = 2;
-    private static final int VIEW_FOOTER = 3;
+    public static final int VIEW_HEADER = 10;
+    public static final int VIEW_TOP_LIST_ITEM = 11;
+    public static final int VIEW_NORMAL_LIST_ITEM = 12;
+    public static final int VIEW_FOOTER = 13;
 
     private final LayoutInflater inflater;
     private final FragmentManager fm;
@@ -112,9 +112,12 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         if (MimiUtil.getInstance().getTheme() == MimiUtil.THEME_LIGHT) {
             defaultPostBackground = R.color.row_item_background_light;
             highlightPostBackground = R.color.post_highlight_light;
-        } else {
+        } else if (MimiUtil.getInstance().getTheme() == MimiUtil.THEME_DARK) {
             defaultPostBackground = R.color.row_item_background_dark;
             highlightPostBackground = R.color.post_highlight_dark;
+        } else {
+            defaultPostBackground = R.color.row_item_background_black;
+            highlightPostBackground = R.color.post_highlight_black;
         }
 
         setupThread();
@@ -547,6 +550,14 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             }
         }
 
+        if (viewHolder != null && viewHolder.replyContainer != null) {
+            if (viewHolder.replyCount.getVisibility() != View.VISIBLE && viewHolder.galleryImageCount == null) {
+                viewHolder.replyContainer.setVisibility(View.GONE);
+            } else {
+                viewHolder.replyContainer.setVisibility(View.VISIBLE);
+            }
+        }
+
         viewHolder.thumbnailContainer.setVisibility(View.INVISIBLE);
         if (postItem.getFilename() != null && !postItem.getFilename().equals("")) {
 
@@ -667,6 +678,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         public TextView galleryImageCount;
         public ImageView thumbUrl;
         public View menuButton;
+        public View replyContainer;
         public ImageView flagIcon;
 
         public ViewHolder(final View root) {
@@ -682,6 +694,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             comment = (TextView) root.findViewById(R.id.comment);
             replyCount = (TextView) root.findViewById(R.id.replies_number);
             replyButton = (TextView) root.findViewById(R.id.reply_button);
+            replyContainer = root.findViewById(R.id.replies_row);
             galleryImageCount = (TextView) root.findViewById(R.id.image_count);
             thumbUrl = (ImageView) root.findViewById(R.id.thumbnail);
             thumbnailInfoContainer = (ViewGroup) root.findViewById(R.id.thumbnail_info_container);

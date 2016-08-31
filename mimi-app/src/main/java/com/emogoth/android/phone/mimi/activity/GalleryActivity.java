@@ -18,7 +18,6 @@ package com.emogoth.android.phone.mimi.activity;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -60,8 +59,6 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
     private boolean systemUiVisible = true;
     private int defaultSystemUiVisibility;
 
-    //    private View advertContainer;
-    private Handler advertHideHandler;
 
     private MimiFragmentBase currentFragment;
 
@@ -133,9 +130,6 @@ public class GalleryActivity extends MimiActivity implements OnThumbnailClickLis
 
             currentFragment = frag;
         }
-
-        advertHideHandler = new Handler();
-
     }
 
     public void toggleFullscreen() {

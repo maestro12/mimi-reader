@@ -17,5 +17,5 @@
   -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/thumbnail_selected_drawable"/>
+    <item android:drawable="@color/thumbnail_selected_drawable" />
 </selector>

@@ -29,7 +29,7 @@
         android:layout_height="?attr/actionBarSize"
         android:orientation="horizontal"
         android:layout_alignParentBottom="true"
-        android:background="#CC000000" >
+        android:background="#CC000000">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -39,6 +39,7 @@
             android:paddingLeft="4dp"
             android:orientation="vertical"
             tools:ignore="RtlSymmetry">
+
             <TextView
                 android:id="@+id/file_name"
                 android:layout_width="wrap_content"
@@ -49,6 +50,7 @@
                 android:paddingBottom="4dp"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
+
             <TextView
                 android:id="@+id/file_size"
                 android:layout_width="wrap_content"
@@ -57,7 +59,7 @@
                 android:ellipsize="end"
                 android:gravity="center_vertical"
                 android:textSize="12sp"
-                android:textColor="#F0F0F0"/>
+                android:textColor="#F0F0F0" />
         </LinearLayout>
 
         <android.support.v7.widget.AppCompatImageView
@@ -76,7 +78,7 @@
         android:id="@+id/gallery_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/gallery_toolbar"/>
+        android:layout_above="@id/gallery_toolbar" />
 
     <android.support.v7.widget.AppCompatImageView
         android:id="@+id/exit_fullscreen_button"
@@ -89,6 +91,6 @@
         android:layout_margin="2dp"
         android:background="#88000000"
         app:srcCompat="@drawable/ic_fullscreen_exit"
-        android:visibility="invisible"/>
+        android:visibility="invisible" />
 
 </RelativeLayout>

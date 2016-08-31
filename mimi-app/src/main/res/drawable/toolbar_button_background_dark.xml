@@ -18,32 +18,43 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="oval">
-            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <padding
+                android:top="1dp"
+                android:right="1dp"
+                android:bottom="1dp"
+                android:left="1dp" />
             <solid android:color="#00000000" />
         </shape>
     </item>
     <item>
         <shape android:shape="oval">
-            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <padding
+                android:top="1dp"
+                android:right="1dp"
+                android:bottom="1dp"
+                android:left="1dp" />
             <solid android:color="#10000000" />
         </shape>
     </item>
     <item>
         <shape android:shape="oval">
-            <padding android:top="1dp" android:right="1dp" android:bottom="1dp" android:left="1dp" />
+            <padding
+                android:top="1dp"
+                android:right="1dp"
+                android:bottom="1dp"
+                android:left="1dp" />
             <solid android:color="#20000000" />
         </shape>
     </item>
 
     <item>
-        <shape android:shape="oval" >
+        <shape android:shape="oval">
             <gradient
                 android:centerColor="#035BF4"
                 android:endColor="#4f4f4f"
                 android:gradientRadius="400"
                 android:startColor="#035BF4"
-                android:type="radial" >
-            </gradient>
+                android:type="radial"></gradient>
         </shape>
     </item>
 </layer-list>

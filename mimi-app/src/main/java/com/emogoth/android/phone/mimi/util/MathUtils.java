@@ -17,7 +17,8 @@
 package com.emogoth.android.phone.mimi.util;
 
 public class MathUtils {
-    private MathUtils() { }
+    private MathUtils() {
+    }
 
     public static float clamp(float value, float min, float max) {
         return Math.min(Math.max(min, value), max);

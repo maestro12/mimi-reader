@@ -29,6 +29,6 @@
         android:gravity="center"
         android:textSize="18sp"
         android:text="@string/loading_video_please_wait"
-        tools:text="Ads Disabled For: 90:09"/>
+        tools:text="Ads Disabled For: 90:09" />
 
 </LinearLayout>

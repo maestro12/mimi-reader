@@ -92,10 +92,9 @@ public class LicensesFragment extends DialogFragment {
 
         // Create and show the dialog.
         final DialogFragment newFragment;
-        if(TextUtils.isEmpty(title)) {
+        if (TextUtils.isEmpty(title)) {
             newFragment = LicensesFragment.newInstance(htmlResToShow);
-        }
-        else {
+        } else {
             newFragment = LicensesFragment.newInstance(htmlResToShow, title);
         }
         newFragment.show(ft, FRAGMENT_TAG);

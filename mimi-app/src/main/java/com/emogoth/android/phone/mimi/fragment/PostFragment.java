@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -29,7 +30,11 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.AppCompatEditText;
+import android.support.v7.widget.AppCompatTextView;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,14 +42,13 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
@@ -59,12 +63,12 @@ import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.PostUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.emogoth.android.phone.mimi.view.IconTextView;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
@@ -98,19 +102,19 @@ public class PostFragment extends DialogFragment {
 
     private ViewGroup shrinkFormContainer;
     //    private ViewGroup headerContainer;
-    private EditText commentField;
-    private TextView nameText;
+    private AppCompatEditText commentField;
+    private AppCompatTextView nameText;
 
-    private EditText nameInput;
-    private EditText optionsInput;
-    private EditText subjectInput;
+    private AppCompatEditText nameInput;
+    private AppCompatEditText optionsInput;
+    private AppCompatEditText subjectInput;
 
     private ViewSwitcher replyFormViewSwitcher;
     private ImageView editUserInfoButton;
-    private TextView doneEditingButton;
+    private AppCompatTextView doneEditingButton;
 
     private String name = "";
-    private String comment = "";
+    private String comment;
     private String email = "";
     private String subject = "";
     private boolean isEditMode = false;
@@ -123,10 +127,10 @@ public class PostFragment extends DialogFragment {
     private boolean isLightTheme = false;
     private boolean isNewPost = false;
     private boolean captchaRequired = true;
-    private TextView clearImage;
+    private IconTextView clearImage;
     private ViewGroup attachedImageContainer;
-    private TextView attachImageButton;
-    private TextView sageButton;
+    private AppCompatTextView attachImageButton;
+    private AppCompatTextView sageButton;
     private boolean formCleared = false;
     private View sendButton;
     private View cancelButton;
@@ -182,7 +186,7 @@ public class PostFragment extends DialogFragment {
             }
         });
 
-        nameText = (TextView) view.findViewById(R.id.edit_user_info);
+        nameText = (AppCompatTextView) view.findViewById(R.id.edit_user_info);
         nameText.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -195,17 +199,17 @@ public class PostFragment extends DialogFragment {
             nameText.setText("Anonymous");
         }
 
-        nameInput = (EditText) view.findViewById(R.id.name_input);
+        nameInput = (AppCompatEditText) view.findViewById(R.id.name_input);
         if (!TextUtils.isEmpty(name)) {
             nameInput.setText(name);
         }
 
-        optionsInput = (EditText) view.findViewById(R.id.options_input);
+        optionsInput = (AppCompatEditText) view.findViewById(R.id.options_input);
         if (!TextUtils.isEmpty(email)) {
             optionsInput.setText(email);
         }
 
-        sageButton = (TextView) view.findViewById(R.id.sage_info);
+        sageButton = (AppCompatTextView) view.findViewById(R.id.sage_info);
         sageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -215,7 +219,7 @@ public class PostFragment extends DialogFragment {
             }
         });
 
-        subjectInput = (EditText) view.findViewById(R.id.subject_input);
+        subjectInput = (AppCompatEditText) view.findViewById(R.id.subject_input);
         if (!TextUtils.isEmpty(subject)) {
             subjectInput.setText(subject);
         }
@@ -230,7 +234,7 @@ public class PostFragment extends DialogFragment {
             }
         });
 
-        doneEditingButton = (TextView) view.findViewById(R.id.done_info);
+        doneEditingButton = (AppCompatTextView) view.findViewById(R.id.done_info);
         doneEditingButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -248,8 +252,7 @@ public class PostFragment extends DialogFragment {
             }
         });
 
-
-        commentField = (EditText) view.findViewById(R.id.comment_input);
+        commentField = (AppCompatEditText) view.findViewById(R.id.comment_input);
         commentField.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
@@ -264,17 +267,32 @@ public class PostFragment extends DialogFragment {
                 });
             }
         });
+        commentField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                Log.d(LOG_TAG, "before text changed");
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
         commentField.requestFocus();
 
         if (!TextUtils.isEmpty(comment)) {
             commentField.setText(comment);
-            commentField.requestFocus();
             commentField.setSelection(comment.length());
         }
 
         attachedImage = (ImageView) view.findViewById(R.id.attached_image);
 
-        clearImage = (TextView) view.findViewById(R.id.clear_image);
+        clearImage = (IconTextView) view.findViewById(R.id.clear_image);
         clearImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -285,7 +303,7 @@ public class PostFragment extends DialogFragment {
         attachedImageContainer = (ViewGroup) view.findViewById(R.id.image_container);
         attachedImageContainer.setVisibility(View.GONE);
 
-        attachImageButton = (TextView) view.findViewById(R.id.attach_image_button);
+        attachImageButton = (AppCompatTextView) view.findViewById(R.id.attach_image_button);
         attachImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -321,6 +339,11 @@ public class PostFragment extends DialogFragment {
         intent.setType("*/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            String[] mimetypes = {"image/*", "video/*"};
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes);
+        }
+
         if (getActivity() != null && getActivity() instanceof MimiActivity) {
 //                    getParentFragment().startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
             ((MimiActivity) getActivity()).setResultFragment(getParentFragment());
@@ -333,32 +356,35 @@ public class PostFragment extends DialogFragment {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    public void clearAttachedImage() {
+    private void clearAttachedImage() {
         attachedImageContainer.setVisibility(View.GONE);
         attachImageButton.setVisibility(View.VISIBLE);
     }
 
-    public void disableCaptcha() {
+    private void disableCaptcha() {
         captchaRequired = false;
     }
 
-    public void enableCaptcha() {
+    private void enableCaptcha() {
         captchaRequired = true;
     }
 
-    public void processResponse(Response<ResponseBody> response) {
+    private void processResponse(Response<ResponseBody> response) {
         String html;
         try {
-            if (response.errorBody() != null) {
-                html = response.errorBody().string();
-            } else {
+            if (response == null) {
+                html = MimiApplication.getInstance().getString(R.string.empty_response_error);
+                throw new Exception(html);
+            } else if (response.isSuccessful()) {
                 html = response.body().string();
+            } else {
+                html = response.errorBody().string();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             if (postListener != null) {
                 postListener.onError(e);
             }
-            e.printStackTrace();
+            Log.e(LOG_TAG, "Error processing response", e);
 
             return;
         }
@@ -402,7 +428,7 @@ public class PostFragment extends DialogFragment {
                         .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                         .setReplyColor(MimiUtil.getInstance().getReplyColor())
                         .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                        .setLinkColor(MimiUtil.getInstance().getLinkColor());;
+                        .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
                 firstPost.setName(name);
                 firstPost.setTim(Calendar.getInstance(Locale.getDefault()).getTime().toString());
@@ -433,6 +459,26 @@ public class PostFragment extends DialogFragment {
         }
     }
 
+    private Action1<Response<ResponseBody>> onPostComplete() {
+        return new Action1<Response<ResponseBody>>() {
+            @Override
+            public void call(Response<ResponseBody> responseBodyResponse) {
+                processResponse(responseBodyResponse);
+            }
+        };
+    }
+
+    private Action1<Throwable> onPostFail() {
+        return new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                if (postListener != null) {
+                    postListener.onError(throwable);
+                }
+            }
+        };
+    }
+
     public void post() {
 
         final ChanConnector chanConnector = new FourChanConnector.Builder()
@@ -449,22 +495,6 @@ public class PostFragment extends DialogFragment {
 
             return;
         }
-
-        final Action1<Response<ResponseBody>> success = new Action1<Response<ResponseBody>>() {
-            @Override
-            public void call(Response<ResponseBody> responseBodyResponse) {
-                processResponse(responseBodyResponse);
-            }
-        };
-
-        final Action1<Throwable> fail = new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                if (postListener != null) {
-                    postListener.onError(throwable);
-                }
-            }
-        };
 
         final File imageLocation;
         if (TextUtils.isEmpty(imagePath)) {
@@ -508,16 +538,16 @@ public class PostFragment extends DialogFragment {
                     }
                 })
                 .compose(DatabaseUtils.<Response<ResponseBody>>applySchedulers())
-                .subscribe(success, fail);
+                .subscribe(onPostComplete(), onPostFail());
     }
 
-    public void saveFormData() {
+    private void saveFormData() {
         comment = commentField.getText().toString();
         subject = subjectInput.getText().toString();
         email = optionsInput.getText().toString();
     }
 
-    public void clearForm() {
+    private void clearForm() {
         formCleared = true;
         nameInput.setText(null);
         commentField.setText(null);
@@ -581,8 +611,8 @@ public class PostFragment extends DialogFragment {
         if (bundle.containsKey(Extras.EXTRAS_BOARD_TITLE)) {
             boardTitle = bundle.getString(Extras.EXTRAS_BOARD_TITLE);
         }
-        if (bundle.containsKey(Extras.EXTRAS_POST_COMMENT)) {
-            comment = bundle.getString(Extras.EXTRAS_POST_COMMENT);
+        if (bundle.containsKey(Extras.EXTRAS_POST_COMMENT) && TextUtils.isEmpty(comment)) {
+            this.comment = bundle.getString(Extras.EXTRAS_POST_COMMENT);
         }
         if (bundle.containsKey(EXTRA_SUBJECT)) {
             subject = bundle.getString(EXTRA_SUBJECT);
@@ -643,25 +673,11 @@ public class PostFragment extends DialogFragment {
         if (TextUtils.isEmpty(comment) && commentField != null) {
             comment = commentField.getText().toString();
         }
-        return commentField.getText().toString();
+        return comment;
     }
 
     public void setComment(String comment) {
         this.comment = comment;
-
-        if (commentField != null) {
-            String originalComment = commentField.getText().toString();
-            if (!TextUtils.isEmpty(originalComment)) {
-                originalComment = originalComment + "\n\n";
-                commentField.setText(originalComment + comment);
-            } else {
-                commentField.setText(comment);
-            }
-
-//            commentField.setText(comment);
-            commentField.requestFocus();
-            commentField.setSelection(comment.length());
-        }
     }
 
     public String getEmail() {

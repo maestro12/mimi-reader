@@ -16,9 +16,9 @@
 
 package com.emogoth.android.phone.mimi.app;
 
-import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.activeandroid.ActiveAndroid;
@@ -27,15 +27,16 @@ import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.db.model.Board;
+import com.emogoth.android.phone.mimi.db.model.HiddenThread;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.db.model.UserPost;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.google.android.exoplayer.util.Util;
 import com.squareup.sqlbrite.BriteDatabase;
@@ -48,7 +49,7 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 
 
-public class MimiApplication extends Application {
+public class MimiApplication extends MultiDexApplication {
 
     private static final String LOG_TAG = MimiApplication.class.getSimpleName();
     private static MimiApplication app;
@@ -62,14 +63,18 @@ public class MimiApplication extends Application {
         MimiUtil.getInstance().init(this);
         HttpClientFactory.getInstance().init();
 
+        @SuppressWarnings("unchecked")
         Configuration.Builder configurationBuilder = new Configuration.Builder(this)
                 .addModelClasses(
                         Board.class,
                         History.class,
-                        UserPost.class
+                        UserPost.class,
+                        HiddenThread.class
                 );
 
         ActiveAndroid.initialize(configurationBuilder.create());
+
+//        Stetho.initializeWithDefaults(this);
 
         try {
             final File fullImageDir = new File(MimiUtil.getInstance().getCacheDir().getAbsolutePath(), "full_images/");
@@ -95,12 +100,11 @@ public class MimiApplication extends Application {
         }
 
         final int historyPruneDays = Integer.valueOf(preferences.getString(getString(R.string.history_prune_time_pref), "0"));
-        HistoryTableConnection.pruneHistory(historyPruneDays)
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
-                .subscribe();
+        HistoryTableConnection.pruneHistory(historyPruneDays).subscribe();
+        HiddenThreadTableConnection.prune(5).subscribe();
         ThreadRegistry.getInstance().init();
         BusProvider.getInstance();
-        RefreshScheduler.getInstance().init(this);
+//        RefreshScheduler.getInstance();
 
         UserPostTableConnection.fetchPosts()
                 .flatMap(new Func1<List<UserPost>, Observable<Boolean>>() {
@@ -144,9 +148,9 @@ public class MimiApplication extends Application {
         if (briteDatabase == null) {
             briteDatabase = ActiveAndroidSqlBriteBridge.getBriteDatabase();
 
-            if (briteDatabase != null && BuildConfig.DEBUG) {
-                briteDatabase.setLoggingEnabled(true);
-            }
+//            if (briteDatabase != null && BuildConfig.DEBUG) {
+//                briteDatabase.setLoggingEnabled(true);
+//            }
         }
 
         return briteDatabase;

@@ -16,7 +16,8 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <LinearLayout
@@ -31,7 +32,7 @@
             android:layout_height="wrap_content"
             android:paddingLeft="8dp"
             android:textSize="?attr/font_medium"
-            android:text="@string/file_name"/>
+            android:text="@string/file_name" />
 
         <TextView
             android:id="@+id/file_name"
@@ -40,7 +41,7 @@
             android:layout_weight="1"
             android:gravity="right"
             android:paddingRight="8dp"
-            android:textSize="?attr/font_small"/>
+            android:textSize="?attr/font_small" />
 
     </LinearLayout>
 
@@ -55,7 +56,7 @@
             android:layout_height="wrap_content"
             android:paddingLeft="8dp"
             android:textSize="?attr/font_medium"
-            android:text="@string/dimensions"/>
+            android:text="@string/dimensions" />
 
         <TextView
             android:id="@+id/dimensions"
@@ -64,7 +65,7 @@
             android:layout_weight="1"
             android:gravity="right"
             android:paddingRight="8dp"
-            android:textSize="?attr/font_small"/>
+            android:textSize="?attr/font_small" />
 
     </LinearLayout>
 
@@ -81,7 +82,7 @@
             android:textSize="?attr/font_medium"
             android:gravity="center"
             android:text="IQDB"
-            android:background="@drawable/thumbnail_selector"/>
+            android:background="@drawable/thumbnail_selector" />
 
         <TextView
             android:id="@+id/google_button"
@@ -91,7 +92,7 @@
             android:textSize="?attr/font_medium"
             android:gravity="center"
             android:text="Google"
-            android:background="@drawable/thumbnail_selector"/>
+            android:background="@drawable/thumbnail_selector" />
 
         <TextView
             android:id="@+id/saucenao_button"
@@ -101,7 +102,7 @@
             android:textSize="?attr/font_medium"
             android:gravity="center"
             android:text="Saucenao"
-            android:background="@drawable/thumbnail_selector"/>
+            android:background="@drawable/thumbnail_selector" />
 
     </LinearLayout>
 

@@ -93,7 +93,7 @@ public class ColorImageView extends ImageView {
         Drawable drawableBorder = getResources().getDrawable(R.drawable.circle_border);
         drawableBorder = DrawableCompat.wrap(drawableBorder);
         int borderColor = mBorderColor;
-        if(isSelected()){
+        if (isSelected()) {
             borderColor = mBorderColorSelected;
         }
         drawableBorder.mutate().setColorFilter(borderColor, PorterDuff.Mode.SRC_IN);

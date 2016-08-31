@@ -52,11 +52,11 @@ public class ThreadInfo implements Parcelable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || ((Object)this).getClass() != o.getClass()) return false;
+        if (o == null || ((Object) this).getClass() != o.getClass()) return false;
 
         ThreadInfo that = (ThreadInfo) o;
 
-        if(boardName == null || threadId == 0) return false;
+        if (boardName == null || threadId == 0) return false;
 
         if (!boardName.equals(that.boardName)) return false;
         if (threadId != that.threadId) return false;

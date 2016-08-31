@@ -58,7 +58,7 @@ public class CaptchaDialog extends DialogFragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        if(webView != null) {
+        if (webView != null) {
             webView.loadCaptchaPage();
             webView.setBackgroundColor(0x00000000);
             webView.setOnRecaptchaResponseCallback(new OnRecaptchaResponseCallback() {
@@ -73,7 +73,7 @@ public class CaptchaDialog extends DialogFragment {
             webView.setOnCaptchaViewReadyCallback(new OnCaptchaViewReadyCallback() {
                 @Override
                 public void onCaptchaViewReady() {
-                    if(captchaLoading.getVisibility() == View.VISIBLE) {
+                    if (captchaLoading.getVisibility() == View.VISIBLE) {
                         captchaLoading.setVisibility(View.GONE);
                     }
                 }

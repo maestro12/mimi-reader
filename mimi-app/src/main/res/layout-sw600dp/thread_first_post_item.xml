@@ -16,18 +16,15 @@
   ~    limitations under the License.
   -->
 
-<android.support.v7.widget.CardView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     style="?cardBackgroundSelector"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="8dp"
-    android:layout_marginLeft="10dp"
-    android:layout_marginRight="10dp"
     android:layout_marginBottom="12dp">
+
     <LinearLayout
-        style="?postBackground"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
@@ -35,10 +32,10 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:layout_gravity="center"
             android:layout_marginLeft="4dp"
-            android:layout_marginRight="4dp">
+            android:layout_marginRight="4dp"
+            android:orientation="horizontal">
 
             <ImageView
                 android:id="@+id/flag_icon"
@@ -46,118 +43,118 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:adjustViewBounds="true"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <TextView
-                style="?postUserName"
                 android:id="@+id/user_name"
+                style="?postUserName"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="left"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
-                android:singleLine="true"
                 android:ellipsize="end"
+                android:gravity="left"
+                android:maxLines="1"
+                android:paddingBottom="4dp"
                 android:paddingLeft="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"/>
+                android:paddingTop="4dp" />
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/user_id"
+                style="?postHeaderText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="left"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
-                android:singleLine="true"
                 android:ellipsize="end"
+                android:gravity="left"
+                android:maxLines="1"
+                android:paddingBottom="4dp"
                 android:paddingLeft="8dp"
                 android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/tripcode"
+                style="?postHeaderText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="left"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
-                android:singleLine="true"
                 android:ellipsize="end"
-                android:paddingLeft="8dp"
-                android:paddingTop="4dp"
+                android:gravity="left"
+                android:maxLines="1"
                 android:paddingBottom="4dp"
-                android:visibility="gone"/>
+                android:paddingLeft="8dp"
+                android:paddingTop="4dp"
+                android:visibility="gone" />
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/timestamp"
+                style="?postHeaderText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="right"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
+                android:gravity="right"
+                android:paddingBottom="4dp"
                 android:paddingLeft="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"/>
+                android:paddingTop="4dp" />
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/thread_id"
+                style="?postHeaderText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="right"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
+                android:gravity="right"
+                android:paddingBottom="4dp"
                 android:paddingLeft="8dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"/>
+                android:paddingTop="4dp" />
 
 
             <com.emogoth.android.phone.mimi.view.IconTextView
                 android:id="@+id/menu_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/ic_menu"
-                android:gravity="center"
                 android:layout_gravity="center_vertical|right"
-                android:paddingRight="8dp"
-                android:paddingLeft="8dp"
                 android:layout_marginLeft="8dp"
-                android:textStyle="bold"
-                android:textSize="@dimen/menu_icon_size"
                 android:baselineAlignBottom="false"
-                android:cropToPadding="false" />
+                android:cropToPadding="false"
+                android:gravity="center"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:text="@string/ic_menu"
+                android:textSize="@dimen/menu_icon_size"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:gravity="center"
-            android:paddingBottom="10dp"
             android:layout_marginLeft="4dp"
-            android:layout_marginRight="4dp">
+            android:layout_marginRight="4dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingBottom="10dp">
 
             <LinearLayout
                 android:id="@+id/thumbnail_info_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="top"
                 android:layout_gravity="top"
+                android:gravity="top"
                 android:orientation="vertical">
 
                 <FrameLayout
                     android:id="@+id/thumbnail_container"
-                    android:layout_gravity="top"
                     android:layout_width="@dimen/thumbnail_image_medium"
                     android:layout_height="@dimen/thumbnail_image_medium"
+                    android:layout_gravity="top"
                     android:background="@drawable/image_border">
 
                     <ImageView
@@ -165,8 +162,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:adjustViewBounds="true"
-                        android:scaleType="centerCrop"
                         android:paddingLeft="8dp"
+                        android:scaleType="centerCrop"
                         android:visibility="visible" />
 
                     <View
@@ -194,29 +191,27 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                >
+                android:orientation="vertical">
 
                 <TextView
-                    style="?postSubjectText"
                     android:id="@+id/subject"
+                    style="?postSubjectText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="2dp"
                     android:paddingBottom="4dp"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp"
-                    android:textSize="16sp"/>
+                    android:paddingTop="2dp"
+                    android:textSize="16sp" />
 
                 <TextView
-                    style="?postCommentText"
                     android:id="@+id/comment"
+                    style="?postCommentText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp"
-                    android:textSize="13sp"
-                    />
+                    android:textSize="13sp" />
 
 
             </LinearLayout>
@@ -228,49 +223,49 @@
             android:layout_height="wrap_content">
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/replies_number"
+                style="?postHeaderText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
                 android:layout_centerVertical="true"
+                android:layout_gravity="bottom"
                 android:layout_marginRight="10dp"
                 android:gravity="center"
                 android:padding="6dp"
-                android:textStyle="bold"
-                android:textSize="11sp"
                 android:textAllCaps="true"
-                tools:text="123"/>
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="123" />
 
             <TextView
-                style="?postHeaderText"
                 android:id="@+id/image_count"
+                style="?postHeaderText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_toRightOf="@+id/replies_number"
                 android:layout_gravity="bottom"
+                android:layout_toRightOf="@+id/replies_number"
                 android:gravity="center"
                 android:padding="8dp"
-                android:textStyle="bold"
                 android:textAllCaps="true"
                 android:textSize="11sp"
-                tools:text="45"/>
+                android:textStyle="bold"
+                tools:text="45" />
 
             <TextView
-                style="?postReplyButton"
                 android:id="@+id/reply_button"
+                style="?postReplyButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
-                android:padding="8dp"
                 android:gravity="center"
+                android:padding="8dp"
+                android:text="@string/reply_menu_item"
                 android:textAllCaps="true"
-                android:textSize="13sp"
-                android:text="@string/reply_menu_item"/>
+                android:textSize="13sp" />
 
         </RelativeLayout>
 
     </LinearLayout>
 
-</android.support.v7.widget.CardView>
+</FrameLayout>

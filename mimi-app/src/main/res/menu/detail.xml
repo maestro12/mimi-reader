@@ -21,21 +21,30 @@
 
     <item
         android:id="@+id/bookmark_menu"
-        android:title="@string/bookmark"
         android:icon="@drawable/ic_bookmark_outline"
-        mimi:showAsAction="always"/>
+        android:title="@string/bookmark"
+        mimi:showAsAction="always" />
 
     <item
         android:id="@+id/refresh_menu"
-        android:title="@string/refresh"
         android:icon="@drawable/ic_refresh"
-        mimi:showAsAction="always"/>
+        android:title="@string/refresh"
+        mimi:showAsAction="always" />
 
     <item
         android:id="@+id/share_menu"
-        android:title="@string/share"
         android:icon="@drawable/ic_share"
-        mimi:showAsAction="always">
-    </item>
+        android:title="@string/share"
+        mimi:showAsAction="always" />
+
+    <item
+        android:id="@+id/quick_top"
+        android:title="@string/quick_scroll_to_top"
+        mimi:showAsAction="never"/>
+
+    <item
+        android:id="@+id/quick_bottom"
+        android:title="@string/quick_scroll_to_bottom"
+        mimi:showAsAction="never"/>
 
 </menu>

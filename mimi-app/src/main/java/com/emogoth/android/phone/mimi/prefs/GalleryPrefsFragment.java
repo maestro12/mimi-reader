@@ -17,14 +17,11 @@
 package com.emogoth.android.phone.mimi.prefs;
 
 import android.os.Bundle;
-import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.support.annotation.NonNull;
 
-import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 
 import net.rdrei.android.dirchooser.DirectoryChooserConfig;

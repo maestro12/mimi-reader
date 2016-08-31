@@ -39,8 +39,7 @@
             android:visibility="visible"
             android:drawSelectorOnTop="true"
             android:scrollbars="vertical"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            />
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
     </android.support.v4.widget.SwipeRefreshLayout>
 
     <RelativeLayout
@@ -54,7 +53,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/progressBar"
             android:layout_gravity="center"
-            android:layout_centerInParent="true"/>
+            android:layout_centerInParent="true" />
 
     </RelativeLayout>
 
@@ -64,18 +63,20 @@
         android:layout_height="match_parent"
         android:layout_gravity="top"
         android:visibility="gone">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center">
+
             <TextView
                 android:id="@+id/error_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:textSize="18sp"
-                android:gravity="center"/>
+                android:gravity="center" />
 
             <TextView
                 style="?basicButton"
@@ -84,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:padding="5dp"
                 android:layout_gravity="center"
-                android:text="@string/refresh"/>
+                android:text="@string/refresh" />
         </LinearLayout>
     </FrameLayout>
 

@@ -83,7 +83,8 @@ public class YoutubeActivity extends AppCompatActivity {
             });
         }
 
-        String id = getString(R.string.google_youtube_id);
+        String id = "stub";
+//        String id = getString(R.string.google_youtube_id);
         if("stub".equals(id)) {
             Toast.makeText(this, R.string.youtube_id_not_defined, Toast.LENGTH_SHORT).show();
             finish();

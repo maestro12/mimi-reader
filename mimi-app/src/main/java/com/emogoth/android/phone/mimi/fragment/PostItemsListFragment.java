@@ -53,11 +53,14 @@ import com.emogoth.android.phone.mimi.adapter.BoardDropDownAdapter;
 import com.emogoth.android.phone.mimi.adapter.PostItemsAdapter;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.db.model.Board;
+import com.emogoth.android.phone.mimi.db.model.HiddenThread;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.FABVisibilityEvent;
+import com.emogoth.android.phone.mimi.event.RemovePostEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
@@ -77,6 +80,7 @@ import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
+import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -727,7 +731,10 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             currentPage = page;
 
             RxUtil.safeUnsubscribe(pageSubscription);
-            pageSubscription = chanConnector.fetchPage(getActivity(), page, boardName, boardTitle)
+            pageSubscription = Observable.zip(
+                    chanConnector.fetchPage(getActivity(), page, boardName, boardTitle),
+                    HiddenThreadTableConnection.fetchHiddenThreads(boardName),
+                    hideThreads())
                     .map(new Func1<ChanCatalog, ChanCatalog>() {
                         @Override
                         public ChanCatalog call(ChanCatalog catalog) {
@@ -784,7 +791,10 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
     private void fetchCatalog() {
         RxUtil.safeUnsubscribe(catalogSubscription);
-        catalogSubscription = chanConnector.fetchCatalog(getActivity(), boardName, boardTitle)
+        catalogSubscription = Observable.zip(
+                chanConnector.fetchCatalog(getActivity(), boardName, boardTitle),
+                HiddenThreadTableConnection.fetchHiddenThreads(boardName),
+                hideThreads())
                 .flatMap(sortPosts())
                 .map(new Func1<ChanCatalog, ChanCatalog>() {
                     @Override
@@ -811,6 +821,42 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                         Log.e(LOG_TAG, "Error fetching catalog", throwable);
                     }
                 });
+    }
+
+    private Func2<ChanCatalog, List<HiddenThread>, ChanCatalog> hideThreads() {
+        return new Func2<ChanCatalog, List<HiddenThread>, ChanCatalog>() {
+            @Override
+            public ChanCatalog call(ChanCatalog chanCatalog, List<HiddenThread> hiddenThreads) {
+                if (chanCatalog != null) {
+                    List<ChanPost> posts = new ArrayList<>();
+                    for (ChanPost post : chanCatalog.getPosts()) {
+                        boolean found = false;
+                        for (HiddenThread hiddenThread : hiddenThreads) {
+                            if (hiddenThread.threadId == post.getNo()) {
+                                found = true;
+                            }
+                        }
+
+                        if (!found) {
+                            posts.add(post);
+                        }
+                    }
+
+                    chanCatalog.setPosts(posts);
+
+                }
+                return chanCatalog;
+            }
+        };
+    }
+
+    private Func1<ChanCatalog, Observable<ChanCatalog>> hidePosts() {
+        return new Func1<ChanCatalog, Observable<ChanCatalog>>() {
+            @Override
+            public Observable<ChanCatalog> call(ChanCatalog chanCatalog) {
+                return null;
+            }
+        };
     }
 
     private Func1<ChanCatalog, Observable<ChanCatalog>> sortPosts() {
@@ -1155,6 +1201,8 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     public void onPause() {
         super.onPause();
 
+        BusProvider.getInstance().unregister(this);
+
         RxUtil.safeUnsubscribe(catalogSubscription);
         RxUtil.safeUnsubscribe(pageSubscription);
         RxUtil.safeUnsubscribe(boardInfoSubscription);
@@ -1166,6 +1214,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     @Override
     public void onResume() {
         super.onResume();
+        BusProvider.getInstance().register(this);
     }
 
     @Override
@@ -1201,22 +1250,31 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     }
 
     private void showPostForm() {
-        listView.smoothScrollBy(0, 0);
-
-        final FragmentManager fm = getChildFragmentManager();
-        postFragment = (PostFragment) fm.findFragmentByTag(POST_FRAGMENT_TAG);
-        if (postFragment == null) {
-            final Bundle args = new Bundle();
-            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-            args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
-            args.putBoolean(Extras.EXTRAS_POST_NEW, true);
-
-            postFragment = new PostFragment();
-            postFragment.setPostListener(createPostCompleteListener());
-            postFragment.setArguments(args);
+        if (getActivity() == null || !isAdded()) {
+            return;
         }
 
-        postFragment.show(fm, POST_FRAGMENT_TAG);
+        try {
+
+            listView.smoothScrollBy(0, 0);
+
+            final FragmentManager fm = getChildFragmentManager();
+            postFragment = (PostFragment) fm.findFragmentByTag(POST_FRAGMENT_TAG);
+            if (postFragment == null) {
+                final Bundle args = new Bundle();
+                args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+                args.putBoolean(Extras.EXTRAS_POST_NEW, true);
+
+                postFragment = new PostFragment();
+                postFragment.setPostListener(createPostCompleteListener());
+                postFragment.setArguments(args);
+            }
+
+            postFragment.show(fm, POST_FRAGMENT_TAG);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Caught error while showing post form", e);
+        }
     }
 
     private PostFragment.PostListener createPostCompleteListener() {
@@ -1370,6 +1428,11 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     @Override
     public void addContent() {
         showPostForm();
+    }
+
+    @Subscribe
+    public void removePost(RemovePostEvent event) {
+        postItemsAdapter.notifyItemRemoved(event.index + 1);
     }
 
     public interface CatalogItemClickListener {

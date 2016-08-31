@@ -24,5 +24,4 @@
     android:configure="com.emogoth.android.phone.mimi.widget.MimiWidgetConfigureActivity"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:initialKeyguardLayout="@layout/mimi_widget">
-</appwidget-provider>
+    android:initialKeyguardLayout="@layout/mimi_widget"></appwidget-provider>

@@ -23,8 +23,7 @@
     <com.emogoth.android.phone.mimi.view.CaptchaWebView
         android:id="@+id/captch_webview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        />
+        android:layout_height="match_parent" />
 
     <TextView
         style="?defaultLayoutBackground"
@@ -33,6 +32,6 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:padding="8dp"
-        android:text="@string/loading_captcha"/>
+        android:text="@string/loading_captcha" />
 
 </RelativeLayout>

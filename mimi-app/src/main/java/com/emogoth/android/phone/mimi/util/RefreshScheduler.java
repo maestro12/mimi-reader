@@ -20,10 +20,8 @@ package com.emogoth.android.phone.mimi.util;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,6 +31,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.model.History;
@@ -45,11 +44,12 @@ import java.util.List;
 
 import rx.Subscription;
 import rx.functions.Action1;
+import rx.functions.Func1;
 
-public class RefreshScheduler extends BroadcastReceiver {
+public class RefreshScheduler {
 
     public static final String LOG_TAG = RefreshScheduler.class.getSimpleName();
-    public static final boolean LOG_DEBUG = false;
+    public static final boolean LOG_DEBUG = true;
 
     public static final String INTENT_FILTER = "com.emogoth.android.phone.mimi.AutoRefresh";
 
@@ -85,7 +85,7 @@ public class RefreshScheduler extends BroadcastReceiver {
 
     private boolean refreshActive = false;
     private boolean waitingForService = false;
-    private boolean backgrounded = false;
+    private boolean backgrounded = true;
 
     private Object lock;
 
@@ -116,16 +116,18 @@ public class RefreshScheduler extends BroadcastReceiver {
     private Subscription fetchHistorySubscription;
 
 
-    public RefreshScheduler() {
+    private RefreshScheduler() {
         threadInfoQueue = new LinkedList<>();
 
         sequencer = new Sequencer();
-        sequencer.setOnSequencerStartedCallback(new OnSequencerStartedCallback() {
-            @Override
-            public void onStart() {
-                loadBookmarkFiles();
-            }
-        });
+//        sequencer.setOnSequencerStartedCallback(new OnSequencerStartedCallback() {
+//            @Override
+//            public void onStart() {
+//                loadBookmarkFiles();
+//            }
+//        });
+
+        init(MimiApplication.getInstance());
     }
 
     public static RefreshScheduler getInstance() {
@@ -138,46 +140,66 @@ public class RefreshScheduler extends BroadcastReceiver {
     }
 
     public void init(final Context context) {
-        if (this.context == null) {
-            this.context = context;
-            backgrounded = false;
 
-            refreshInterval = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string.app_auto_refresh_time), "10"));
+        this.context = context;
 
-            sequencer.start();
+        refreshInterval = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string.app_auto_refresh_time), "10"));
 
-            refreshScheduler = (AlarmManager) this.context.getSystemService(Context.ALARM_SERVICE);
-            context.registerReceiver(this, new IntentFilter(INTENT_FILTER));
-        }
+        sequencer.start();
+
+        refreshScheduler = (AlarmManager) this.context.getSystemService(Context.ALARM_SERVICE);
     }
 
     private void loadBookmarkFiles() {
-//        if (lock == null) {
-//            backgrounded = true;
-//        } else {
-//            backgrounded = false;
-//        }
 
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
         fetchHistorySubscription = HistoryTableConnection.fetchHistory(true)
                 .compose(DatabaseUtils.<List<History>>applySchedulers())
+                .onErrorReturn(new Func1<Throwable, List<History>>() {
+                    @Override
+                    public List<History> call(Throwable throwable) {
+                        Log.w(LOG_TAG, "Error fetching history", throwable);
+                        return null;
+                    }
+                })
                 .subscribe(new Action1<List<History>>() {
                     @Override
                     public void call(List<History> historyList) {
+                        if (historyList == null) {
+                            return;
+                        }
+
                         for (History bookmark : historyList) {
                             final ThreadInfo threadInfo = new ThreadInfo(bookmark.threadId, bookmark.boardName, 0, bookmark.watched);
-                            sequencer.addThread(threadInfo);
+
+                            if (sequencer.started) {
+                                sequencer.addThread(threadInfo);
+                            } else {
+                                addThreadSynchronized(threadInfo);
+                            }
                         }
 
                         if (LOG_DEBUG) {
                             Log.d(LOG_TAG, "Initializing refresh scheduler: thread size=" + historyList.size() + ", refresh interval=" + refreshInterval + ", backgrounded=" + backgrounded);
                         }
                     }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        if (LOG_DEBUG) {
+                            Log.w(LOG_TAG, "Error while processing history", throwable);
+                        }
+                    }
                 });
     }
 
     public void addThread(String boardName, int threadId, boolean watched) {
-        sequencer.addThread(boardName, threadId, watched);
+        if (sequencer.started) {
+            sequencer.addThread(boardName, threadId, watched);
+        } else {
+            ThreadInfo threadInfo = new ThreadInfo(threadId, boardName, null, watched);
+            addThreadSynchronized(threadInfo);
+        }
     }
 
     protected void addThreadSynchronized(final ThreadInfo threadInfo) {
@@ -193,7 +215,7 @@ public class RefreshScheduler extends BroadcastReceiver {
                 scheduleNextRun();
             }
         } else if (LOG_DEBUG) {
-            Log.d(LOG_TAG, "Not adding thread: id=/" + threadInfo.boardName + "/" + threadInfo.threadId);
+            Log.d(LOG_TAG, "Thread already exists: id=/" + threadInfo.boardName + "/" + threadInfo.threadId);
         }
     }
 
@@ -203,7 +225,11 @@ public class RefreshScheduler extends BroadcastReceiver {
             Log.e(LOG_TAG, "Removing thread: id=/" + boardName + "/" + threadId);
         }
 
-        sequencer.removeThread(boardName, threadId);
+        if (sequencer.started) {
+            sequencer.removeThread(boardName, threadId);
+        } else {
+            removeThreadSynchronized(boardName, threadId);
+        }
     }
 
     protected void removeThreadSynchronized(final String boardName, final int threadId) {
@@ -229,7 +255,29 @@ public class RefreshScheduler extends BroadcastReceiver {
         if (threadInfoQueue.size() == 0) {
             refreshActive = false;
         }
+    }
 
+    public void scheduleNext(int id) {
+        if (timeoutList.size() > 0) {
+
+            if (timeoutList.remove(id) == null) {
+                timeoutHandler.removeCallbacks(timeoutRunnable);
+                scheduleNextRun();
+            }
+
+        } else {
+            scheduleNextRun();
+        }
+    }
+
+    public void setWaitingForService(boolean waiting) {
+        waitingForService = waiting;
+    }
+
+    public void onRefreshStart(Bundle extras) {
+        if (callback != null) {
+            callback.onRefreshStart(extras);
+        }
     }
 
     public void setInterval(final int timeout) {
@@ -243,18 +291,18 @@ public class RefreshScheduler extends BroadcastReceiver {
     public void setAutoRefreshListener(final AutoRefreshListener listener) {
 
         callback = listener;
-        refreshInterval = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString("refreshTimeout", "10"));
-
-        if (refreshInterval > 0) {
-            context.registerReceiver(this, new IntentFilter(INTENT_FILTER));
-            //scheduleNextRun();
-        }
+//        refreshInterval = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString("refreshTimeout", "10"));
+//
+//        if (refreshInterval > 0) {
+//            context.registerReceiver(this, new IntentFilter(INTENT_FILTER));
+//            //scheduleNextRun();
+//        }
     }
 
     public void stop() {
         try {
-            refreshInterval = 0;
-            context.unregisterReceiver(this);
+//            refreshInterval = 0;
+//            context.unregisterReceiver(this);
 
             if (lastPendingIntent != null) {
                 refreshScheduler.cancel(lastPendingIntent);
@@ -264,21 +312,25 @@ public class RefreshScheduler extends BroadcastReceiver {
 
             refreshActive = false;
         } catch (Exception e) {
-            Log.e(LOG_TAG, "Error: " + e.getLocalizedMessage());
+            Log.e(LOG_TAG, "Error stopping refresh scheduler", e);
         }
-    }
-
-    public void forceRefresh() {
-
     }
 
     public void scheduleNextRun() {
         refreshActive = true;
-        sequencer.scheduleNextRun();
+
+        if (sequencer.started) {
+            sequencer.scheduleNextRun();
+        } else {
+            scheduleNextRunSynchronized();
+        }
     }
 
-    public void scheduleNextRunSynchronized() {
+    private void scheduleNextRunSynchronized() {
         if (threadInfoQueue == null) {
+            if (LOG_DEBUG) {
+                Log.d(LOG_TAG, "threadInfoQueue is null; not scheduling next");
+            }
             return;
         }
 
@@ -339,108 +391,12 @@ public class RefreshScheduler extends BroadcastReceiver {
 
             stop();
 
-            loadBookmarkFiles();
+//            loadBookmarkFiles();
         }
-    }
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Log.d(LOG_TAG, "AlarmManager fired!");
-        int result = -1;
-        final Bundle extras = intent.getExtras();
-        if (extras != null) {
-
-            if (extras.containsKey(RESULT_KEY)) {
-                result = extras.getInt(RESULT_KEY);
-            }
-
-            ThreadInfo threadInfo = null;
-            if (extras.containsKey(HACK_BUNDLE_KEY)) {
-                Bundle hackBundle = extras.getBundle(HACK_BUNDLE_KEY);
-
-                if (hackBundle != null && hackBundle.containsKey(THREAD_INFO_KEY)) {
-                    threadInfo = hackBundle.getParcelable(THREAD_INFO_KEY);
-                }
-            }
-
-            switch (result) {
-                case RESULT_SCHEDULED:
-                    if (callback != null) {
-                        callback.onRefreshStart(extras);
-                    }
-
-                    final Intent threadData = new Intent(this.context, AutoRefreshService.class);
-                    threadData.putExtras(extras);
-
-                    waitingForService = true;
-                    this.context.startService(threadData);
-                    break;
-                case RESULT_SUCCESS:
-
-                    waitingForService = false;
-
-                    if (LOG_DEBUG) {
-                        if (threadInfo != null) {
-                            Log.d(LOG_TAG, "Returned from refresh service successfully: id=/" + threadInfo.boardName + "/" + threadInfo.threadId + ", size=" + ThreadRegistry.getInstance().getThreadSize(threadInfo.threadId) + ", unread=" + ThreadRegistry.getInstance().getUnreadCount(threadInfo.threadId));
-                        } else {
-                            Log.d(LOG_TAG, "Returned from refresh service successfully: id=UNKNOWN");
-                        }
-                    }
-
-                    if (threadInfo != null) {
-                        Integer id = threadInfo.threadId;
-                        if (!timeoutList.remove(id)) {
-                            timeoutHandler.removeCallbacks(timeoutRunnable);
-                            scheduleNextRun();
-                        }
-                    }
-
-                    break;
-                case RESULT_ERROR:
-                    waitingForService = false;
-
-                    if (extras.containsKey(ERROR_CODE)) {
-                        final int code = extras.getInt(ERROR_CODE);
-
-                        if (code == 404 && threadInfo != null) {
-                            removeThread(threadInfo.boardName, threadInfo.threadId);
-                        }
-                    }
-
-                    if (LOG_DEBUG) {
-                        if (threadInfo != null) {
-                            Log.e(LOG_TAG, "Error while auto refreshing thread: id=/" + threadInfo.boardName + "/" + threadInfo.threadId);
-                        } else {
-                            Log.e(LOG_TAG, "Error while auto refreshing thread: id=UNKNOWN");
-                        }
-                    }
-
-                    if (threadInfo != null) {
-                        Integer id = threadInfo.threadId;
-                        if (!timeoutList.remove(id)) {
-                            timeoutHandler.removeCallbacks(timeoutRunnable);
-                            scheduleNextRun();
-                        }
-                    }
-
-                    break;
-
-                default:
-                    waitingForService = false;
-                    Log.w(LOG_TAG, "Did not recognize result: " + result);
-                    scheduleNextRun();
-                    break;
-
-            }
-
-        } else {
-            Log.e(LOG_TAG, "Extras bundle from refresh scheduler is null: aborting");
-        }
-
     }
 
     public void register(final Activity activity) {
-        if (activity != lock) {
+        if (activity != lock || lock == null) {
             lock = activity;
 
             if (LOG_DEBUG) {
@@ -484,11 +440,13 @@ public class RefreshScheduler extends BroadcastReceiver {
                     Log.d(LOG_TAG, "Not starting refresh; interval is 0)");
                 }
             }
+        } else if (LOG_DEBUG) {
+            Log.d(LOG_TAG, "Not registering activity: name=" + activity.getClass().getSimpleName());
         }
     }
 
     public void unregister(final Activity activity) {
-        if (activity == lock) {
+        if (activity == lock || lock == null) {
             lock = null;
 
             if (LOG_DEBUG) {
@@ -502,16 +460,18 @@ public class RefreshScheduler extends BroadcastReceiver {
             } else {
                 handler.postDelayed(backgroundScheduler, MAX_TIME_BETWEEN_REGISTER);
             }
+        } else if (LOG_DEBUG) {
+            Log.d(LOG_TAG, "Not unregistering activity: name=" + activity.getClass().getSimpleName());
         }
     }
 
-    public void shutdown() {
+    private void shutdown() {
         refreshActive = false;
         backgrounded = true;
 
         if (threadInfoQueue != null) {
             if (LOG_DEBUG) {
-                Log.d(LOG_TAG, "Clearing thread queue");
+                Log.d(LOG_TAG, "Clearing thread queue", new Exception());
             }
             threadInfoQueue.clear();
         }
@@ -549,6 +509,8 @@ public class RefreshScheduler extends BroadcastReceiver {
         private Handler handler;
         private OnSequencerStartedCallback callback;
 
+        protected boolean started = false;
+
 
         @Override
         public void run() {
@@ -576,6 +538,8 @@ public class RefreshScheduler extends BroadcastReceiver {
                         }
                     }
                 };
+
+                started = true;
 
                 if (callback != null) {
                     callback.onStart();

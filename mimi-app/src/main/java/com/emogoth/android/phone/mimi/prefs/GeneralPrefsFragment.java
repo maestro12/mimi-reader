@@ -35,7 +35,7 @@ public class GeneralPrefsFragment extends PreferenceFragment {
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.general_prefs);
 
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.IS_DEBUG) {
             addPreferencesFromResource(R.xml.debug_prefs);
         }
 

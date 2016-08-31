@@ -21,27 +21,23 @@
         android:id="@+id/select_all"
         android:title="@string/all"
         android:enabled="true"
-        mimi:showAsAction="always|withText">
-    </item>
+        mimi:showAsAction="always|withText"></item>
     <item
         android:id="@+id/select_none"
         android:title="@string/none"
         android:enabled="true"
         android:visible="false"
-        mimi:showAsAction="always|withText">
-    </item>
+        mimi:showAsAction="always|withText"></item>
 
     <item
         android:id="@+id/invert"
         android:title="@string/invert"
         android:enabled="true"
-        mimi:showAsAction="always|withText">
-    </item>
+        mimi:showAsAction="always|withText"></item>
     <item
         android:id="@+id/download"
         android:title="@string/download"
         android:icon="@drawable/ic_send"
         android:enabled="true"
-        mimi:showAsAction="always">
-    </item>
+        mimi:showAsAction="always"></item>
 </menu>

@@ -78,6 +78,7 @@ public class MimiUtil {
 
     public static final int THEME_LIGHT = 0;
     public static final int THEME_DARK = 1;
+    public static final int THEME_BLACK = 2;
 
     public static final int THEME_COLOR_DEFAULT = 0;
     public static final int THEME_COLOR_RED = 1;
@@ -114,7 +115,7 @@ public class MimiUtil {
     private int highlightColor;
     private int linkColor;
 
-    private static Integer[][] themeArray = new Integer[2][15];
+    private static Integer[][] themeArray = new Integer[3][15];
 
     static {
         themeArray[THEME_LIGHT][THEME_COLOR_DEFAULT] = R.style.Theme_Mimi_Light_Toolbar_Default;
@@ -148,6 +149,22 @@ public class MimiUtil {
         themeArray[THEME_DARK][THEME_COLOR_GREY] = R.style.Theme_Mimi_Dark_Toolbar_Grey;
         themeArray[THEME_DARK][THEME_COLOR_DARK_GREY] = R.style.Theme_Mimi_Dark_Toolbar_DarkGrey;
         themeArray[THEME_DARK][THEME_COLOR_BLACK] = R.style.Theme_Mimi_Dark_Toolbar_Black;
+        
+        themeArray[THEME_BLACK][THEME_COLOR_DEFAULT] = R.style.Theme_Mimi_Black_Toolbar_Default;
+        themeArray[THEME_BLACK][THEME_COLOR_RED] = R.style.Theme_Mimi_Black_Toolbar_Red;
+        themeArray[THEME_BLACK][THEME_COLOR_GREEN] = R.style.Theme_Mimi_Black_Toolbar_Green;
+        themeArray[THEME_BLACK][THEME_COLOR_BLUE] = R.style.Theme_Mimi_Black_Toolbar_Blue;
+        themeArray[THEME_BLACK][THEME_COLOR_INDIGO] = R.style.Theme_Mimi_Black_Toolbar_Indigo;
+        themeArray[THEME_BLACK][THEME_COLOR_PINK] = R.style.Theme_Mimi_Black_Toolbar_Pink;
+        themeArray[THEME_BLACK][THEME_COLOR_PURPLE] = R.style.Theme_Mimi_Black_Toolbar_Purple;
+        themeArray[THEME_BLACK][THEME_COLOR_ORANGE] = R.style.Theme_Mimi_Black_Toolbar_Orange;
+        themeArray[THEME_BLACK][THEME_COLOR_DEEP_ORANGE] = R.style.Theme_Mimi_Black_Toolbar_DeepOrange;
+        themeArray[THEME_BLACK][THEME_COLOR_BROWN] = R.style.Theme_Mimi_Black_Toolbar_Brown;
+        themeArray[THEME_BLACK][THEME_COLOR_BLUE_GREY] = R.style.Theme_Mimi_Black_Toolbar_BlueGrey;
+        themeArray[THEME_BLACK][THEME_COLOR_LIGHT_GREY] = R.style.Theme_Mimi_Black_Toolbar_LightGrey;
+        themeArray[THEME_BLACK][THEME_COLOR_GREY] = R.style.Theme_Mimi_Black_Toolbar_Grey;
+        themeArray[THEME_BLACK][THEME_COLOR_DARK_GREY] = R.style.Theme_Mimi_Black_Toolbar_DarkGrey;
+        themeArray[THEME_BLACK][THEME_COLOR_BLACK] = R.style.Theme_Mimi_Black_Toolbar_Black;
     }
 
     private static Map<String, Integer> fontSizeMap = new HashMap<>();
@@ -156,6 +173,12 @@ public class MimiUtil {
         fontSizeMap.put("0", R.style.FontStyle_Small);
         fontSizeMap.put("1", R.style.FontStyle_Medium);
         fontSizeMap.put("2", R.style.FontStyle_Large);
+    }
+
+    private static final Map<String, String> keywordMap = new HashMap<>();
+
+    static {
+        keywordMap.put("random", "Anime, Celebrity, Politics");
     }
 
     public static MimiUtil getInstance() {
@@ -397,7 +420,7 @@ public class MimiUtil {
                     @Override
                     public void call(Boolean success) {
                         if (success) {
-                            if(listener != null) {
+                            if (listener != null) {
                                 listener.onOperationComplete();
                             }
                         } else {
@@ -648,47 +671,34 @@ public class MimiUtil {
 
     public static String parseKeywordsFromBoardTitle(final String boardTitle) {
         if (boardTitle != null) {
-            String[] keywordArray;
-            if (boardTitle.contains("&")) {
-                keywordArray = boardTitle.split("&");
 
-                if (keywordArray.length > 1) {
-                    String keywords = null;
-                    int i = 0;
-                    while (i < keywordArray.length) {
-                        keywords = keywordArray[i];
-                        i++;
-
-                        if (i < keywordArray.length) {
-                            keywords = keywords + ",";
-                        }
-                    }
-
-                    return keywords;
-                }
+            String mappedKeywords = keywordMap.get(boardTitle.toLowerCase());
+            if (mappedKeywords != null) {
+                return mappedKeywords;
             }
 
-            if (boardTitle.contains("/")) {
+            String[] keywordArray = null;
+            if (boardTitle.contains("&")) {
                 keywordArray = boardTitle.split("&");
+            } else if (boardTitle.contains("/")) {
+                keywordArray = boardTitle.split("/");
+            }
 
-                if (keywordArray.length > 1) {
-                    String keywords = null;
-                    int i = 0;
-                    while (i < keywordArray.length) {
-                        keywords = keywordArray[i];
-                        i++;
+            if (keywordArray != null && keywordArray.length > 0) {
+                StringBuilder keywords = new StringBuilder();
 
-                        if (i < keywordArray.length) {
-                            keywords = keywords + ",";
-                        }
+                for (int i = 0; i < keywordArray.length; i++) {
+                    keywords.append(keywordArray[i]);
+                    if (i + 1 < keywordArray.length) {
+                        keywords.append(",");
                     }
-
-                    return keywords;
                 }
+
+                return keywords.toString();
             }
         }
 
-        return null;
+        return boardTitle;
     }
 
     public static int dpToPx(int dp) {

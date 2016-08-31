@@ -25,6 +25,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
@@ -32,6 +33,7 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.ViewStubCompat;
@@ -487,7 +489,14 @@ public abstract class GalleryImageBase extends MimiFragmentBase {
         } else {
             type = "image/*";
         }
-        final Uri uriToImage = Uri.parse("file://" + destPath.getAbsolutePath());
+
+        final Uri uriToImage;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            uriToImage = Uri.parse("file://" + destPath.getAbsolutePath());
+        } else {
+            final String authority = getString(R.string.fileprovider_authority);
+            uriToImage = FileProvider.getUriForFile(getActivity(), authority, getImageFile());
+        }
         final Intent contentIntent = new Intent();
         contentIntent.setAction(Intent.ACTION_VIEW);
         contentIntent.setDataAndType(uriToImage, type);

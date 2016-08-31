@@ -42,17 +42,19 @@ public class AppRater {
         try {
             final PackageInfo manager = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             currentVersion = manager.versionCode;
-        } catch(final Exception e) {
-            Log.e(LOG_TAG, "Could not get version code", e);
+        } catch (final Exception e) {
+            e.printStackTrace();
         }
 
-        if(currentVersion > storedVersion) {
-            editor.putInt("currentversion", currentVersion).apply();
+        if (currentVersion > storedVersion) {
+            editor.putInt("currentversion", currentVersion);
 //            editor.putBoolean("dontshowagain", false);
-//            editor.commit();
+            editor.commit();
         }
 
-        if (prefs.getBoolean("dontshowagain", false)) { return ; }
+        if (prefs.getBoolean("dontshowagain", false)) {
+            return;
+        }
 
         // Increment launch counter
         final long launchCount = prefs.getLong("launch_count", 0) + 1;
@@ -72,10 +74,9 @@ public class AppRater {
 
                 final String applicationName = context.getPackageName();
 
-                if(applicationName.contains("amazon")) {
+                if (applicationName.contains("amazon")) {
                     editor.putBoolean("dontshowagain", true);
-                }
-                else {
+                } else {
                     final RateAppEvent event = new RateAppEvent();
                     event.setAction(RateAppEvent.OPEN);
                     BusProvider.getInstance().post(event);

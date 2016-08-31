@@ -28,15 +28,14 @@ import com.emogoth.android.phone.mimi.util.MimiUtil;
 import java.util.List;
 
 
-public class UrlRouter extends AppCompatActivity {
-    private static final String LOG_TAG = UrlRouter.class.getSimpleName();
+public class UrlRouterActivity extends AppCompatActivity {
+    private static final String LOG_TAG = UrlRouterActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(MimiUtil.getInstance().getThemeResourceId());
         super.onCreate(savedInstanceState);
 
-//        Crashlytics.start(this);
         try {
             if (getIntent() != null && getIntent().getAction() != null) {
                 Log.i(LOG_TAG, "Host=" + getIntent().getData().getHost() + ", Intent Action=" + getIntent().getAction());

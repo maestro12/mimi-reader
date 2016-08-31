@@ -38,8 +38,6 @@ import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import rx.Observable;

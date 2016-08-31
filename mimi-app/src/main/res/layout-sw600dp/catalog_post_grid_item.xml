@@ -27,17 +27,18 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="2dp">
+
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        >
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="10dp"
             android:orientation="horizontal">
+
             <TextView
                 style="?postHeaderText"
                 android:id="@+id/thread_id"
@@ -49,7 +50,7 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
                 android:textSize="11sp"
-                tools:text="123455689"/>
+                tools:text="123455689" />
 
             <!--<TextView-->
             <!--style="?postHeaderText"-->
@@ -104,7 +105,7 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
                 android:textSize="12sp"
-                tools:text="5 minutes ago"/>
+                tools:text="5 minutes ago" />
 
             <com.emogoth.android.phone.mimi.view.IconTextView
                 style="?rowItemBackground"
@@ -141,7 +142,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="50dp"
                 android:adjustViewBounds="true"
-                android:scaleType="fitXY"/>
+                android:scaleType="fitXY" />
 
             <TextView
                 android:id="@+id/subject"
@@ -151,7 +152,7 @@
                 android:paddingBottom="2dp"
                 android:paddingLeft="8dp"
                 android:textSize="14sp"
-                tools:text="This it the subject"/>
+                tools:text="This it the subject" />
 
             <TextView
                 android:id="@+id/comment"
@@ -160,7 +161,7 @@
                 android:paddingLeft="8dp"
                 android:maxLines="3"
                 android:textSize="12sp"
-                android:ellipsize="end"/>
+                android:ellipsize="end" />
 
         </LinearLayout>
 
@@ -186,7 +187,7 @@
                 android:layout_gravity="center"
                 android:layout_marginRight="2dp"
                 android:textSize="13sp"
-                android:text="@string/ic_chat_bubble"/>
+                android:text="@string/ic_chat_bubble" />
 
             <TextView
                 style="?postHeaderText"
@@ -199,7 +200,7 @@
                 android:paddingRight="20dp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
-                tools:text="one reply"/>
+                tools:text="one reply" />
 
             <!--<ImageView-->
             <!--android:layout_width="wrap_content"-->
@@ -215,7 +216,7 @@
                 android:gravity="center"
                 android:layout_marginRight="2dp"
                 android:textSize="13sp"
-                android:text="@string/ic_images"/>
+                android:text="@string/ic_images" />
 
             <TextView
                 style="?postHeaderText"
@@ -227,19 +228,19 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
-                tools:text="one image"/>
+                tools:text="one image" />
 
         </LinearLayout>
 
         <!--<TextView-->
-            <!--style="?postHeaderBackground"-->
-            <!--android:id="@+id/timestamp"-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:gravity="right|center"-->
-            <!--android:paddingRight="8dp"-->
-            <!--android:textStyle="italic"-->
-            <!--android:textSize="12sp"/>-->
+        <!--style="?postHeaderBackground"-->
+        <!--android:id="@+id/timestamp"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:gravity="right|center"-->
+        <!--android:paddingRight="8dp"-->
+        <!--android:textStyle="italic"-->
+        <!--android:textSize="12sp"/>-->
 
     </LinearLayout>
 </android.support.v7.widget.CardView>

@@ -17,7 +17,6 @@
 package com.emogoth.android.phone.mimi.fragment;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatImageView;
@@ -28,7 +27,6 @@ import android.view.View;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.event.GalleryImageTouchEvent;
 import com.emogoth.android.phone.mimi.util.BusProvider;
-import com.emogoth.android.phone.mimi.util.MimiUtil;
 
 import java.io.File;
 import java.io.IOException;

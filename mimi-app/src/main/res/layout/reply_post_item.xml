@@ -19,19 +19,19 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
- >
+    android:layout_height="match_parent">
+
     <FrameLayout
         style="?postBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginLeft="1dp"
-        android:layout_marginRight="1dp" >
+        android:layout_marginRight="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <RelativeLayout
                 android:id="@+id/post_header"
@@ -48,7 +48,7 @@
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:adjustViewBounds="true"
-                    android:visibility="gone"/>
+                    android:visibility="gone" />
 
                 <TextView
                     style="?postUserName"
@@ -66,7 +66,7 @@
                     android:paddingBottom="4dp"
                     android:layout_toRightOf="@+id/flag_icon"
                     android:textSize="?attr/font_label_xsmall"
-                    tools:text="Anonymous"/>
+                    tools:text="Anonymous" />
 
                 <TextView
                     style="?postHeaderText"
@@ -84,7 +84,7 @@
                     android:visibility="gone"
                     android:layout_toRightOf="@+id/user_name"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="User ID"/>
+                    tools:text="User ID" />
 
                 <TextView
                     style="?postHeaderText"
@@ -102,7 +102,7 @@
                     android:visibility="gone"
                     android:layout_toRightOf="@+id/user_id"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="Tripcode"/>
+                    tools:text="Tripcode" />
 
                 <View
                     style="?postHeaderDecoration"
@@ -110,7 +110,7 @@
                     android:layout_width="1px"
                     android:layout_height="12dp"
                     android:layout_centerVertical="true"
-                    android:layout_toRightOf="@+id/tripcode"/>
+                    android:layout_toRightOf="@+id/tripcode" />
 
                 <TextView
                     style="?postHeaderText"
@@ -126,7 +126,7 @@
                     android:textStyle="normal"
                     android:layout_toRightOf="@+id/spacer"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="123456"/>
+                    tools:text="123456" />
 
                 <TextView
                     style="?postHeaderText"
@@ -142,7 +142,7 @@
                     android:layout_toLeftOf="@+id/menu_button"
                     android:layout_alignParentRight="true"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="the time"/>
+                    tools:text="the time" />
 
             </RelativeLayout>
 
@@ -185,8 +185,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_gravity="top"
-                    >
+                    android:layout_gravity="top">
 
                     <TextView
                         style="?postCommentText"
@@ -197,7 +196,7 @@
                         android:paddingRight="8dp"
                         android:focusable="false"
                         android:focusableInTouchMode="false"
-                        android:textSize="?attr/font_label_small"/>
+                        android:textSize="?attr/font_label_small" />
 
 
                 </LinearLayout>
@@ -205,11 +204,13 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="left|center_vertical">
+
                     <LinearLayout
                         android:id="@+id/replies_row"
                         android:layout_width="wrap_content"
@@ -222,14 +223,14 @@
                         android:background="@drawable/thumbnail_selector">
 
                         <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
-                            <!--style="?postHeaderText"-->
-                            <!--android:layout_width="wrap_content"-->
-                            <!--android:layout_height="wrap_content"-->
-                            <!--android:gravity="center"-->
-                            <!--android:layout_gravity="center_vertical"-->
-                            <!--android:layout_marginRight="2dp"-->
-                            <!--android:textSize="13sp"-->
-                            <!--android:text="@string/ic_reply"/>-->
+                        <!--style="?postHeaderText"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:gravity="center"-->
+                        <!--android:layout_gravity="center_vertical"-->
+                        <!--android:layout_marginRight="2dp"-->
+                        <!--android:textSize="13sp"-->
+                        <!--android:text="@string/ic_reply"/>-->
 
                         <TextView
                             style="?postHeaderText"
@@ -240,7 +241,7 @@
                             android:textSize="?attr/font_xsmall"
                             android:textAllCaps="true"
                             android:gravity="center_vertical"
-                            tools:text="one reply"/>
+                            tools:text="one reply" />
 
                     </LinearLayout>
                 </FrameLayout>
@@ -254,7 +255,7 @@
                     android:textSize="18sp"
                     android:gravity="center"
                     android:layout_gravity="right"
-                    android:background="@drawable/thumbnail_selector"/>
+                    android:background="@drawable/thumbnail_selector" />
             </FrameLayout>
         </LinearLayout>
     </FrameLayout>

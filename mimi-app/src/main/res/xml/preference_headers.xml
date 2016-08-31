@@ -54,21 +54,20 @@
         android:summary="@string/more_info_summary" />
 
     <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$PostingPrefsHCFragment"-->
-            <!--android:title="Posting"-->
-            <!--android:summary="Preferences for posting">-->
-        <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
-             <!--arguments to its fragment. &ndash;&gt;-->
-        <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--android:title="Posting"-->
+    <!--android:summary="Preferences for posting">-->
+    <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
+    <!--arguments to its fragment. &ndash;&gt;-->
+    <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
     <!--</header>-->
     <!---->
     <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$ThreadPrefsHCFragment"-->
-            <!--android:title="Thread"-->
-            <!--android:summary="Preferences for threads">-->
-        <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
-             <!--arguments to its fragment. &ndash;&gt;-->
-        <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--android:title="Thread"-->
+    <!--android:summary="Preferences for threads">-->
+    <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
+    <!--arguments to its fragment. &ndash;&gt;-->
+    <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
     <!--</header>-->
-
 
 
 </preference-headers>

@@ -21,4 +21,4 @@
     android:layout_height="match_parent"
     android:text="THIS IS HAPPENING"
     android:textAlignment="center"
-    android:background="@color/reply_highlight"/>
+    android:background="@color/reply_highlight" />

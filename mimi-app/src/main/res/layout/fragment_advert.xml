@@ -24,7 +24,7 @@
     <com.mopub.mobileads.MoPubView
         android:id="@+id/advert"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent" />
 
     <com.emogoth.android.phone.mimi.view.IconTextView
         android:id="@+id/hide_advert"
@@ -38,6 +38,6 @@
         android:shadowRadius="1"
         android:textAlignment="center"
         android:gravity="top|left"
-        android:layout_gravity="top|left"/>
+        android:layout_gravity="top|left" />
 
 </FrameLayout>

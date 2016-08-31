@@ -37,6 +37,9 @@ public class FourChanPost implements PostConverter {
     @SerializedName("closed")
     @Expose
     private int closed;
+    @SerializedName("sticky")
+    @Expose
+    private int sticky;
     @SerializedName("now")
     @Expose
     private String now;
@@ -49,7 +52,7 @@ public class FourChanPost implements PostConverter {
     @SerializedName("sub")
     @Expose
     private String sub;
-//    private Spanned subject;
+    //    private Spanned subject;
     @SerializedName("filename")
     @Expose
     private String filename;
@@ -154,6 +157,22 @@ public class FourChanPost implements PostConverter {
 
     public void setCom(String com) {
         this.com = com;
+    }
+
+    public int getClosed() {
+        return closed;
+    }
+
+    public void setClosed(int closed) {
+        this.closed = closed;
+    }
+
+    public int getSticky() {
+        return sticky;
+    }
+
+    public void setSticky(int sticky) {
+        this.sticky = sticky;
     }
 
     public String getFilename() {
@@ -384,6 +403,8 @@ public class FourChanPost implements PostConverter {
     public ChanPost toPost() {
         ChanPost post = new ChanPost();
         post.setNo(no);
+        post.setClosed(closed == 1);
+        post.setSticky(sticky == 1);
         post.setBumplimit(bumplimit);
         post.setCom(com);
         post.setSub(sub);
@@ -417,7 +438,7 @@ public class FourChanPost implements PostConverter {
     }
 
     public void processComment(Context context, String boardName, int threadId) {
-        if(com != null) {
+        if (com != null) {
             FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
             parserBuilder.setContext(context)
                     .setBoardName(boardName)
@@ -426,7 +447,8 @@ public class FourChanPost implements PostConverter {
                     .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                     .setReplyColor(MimiUtil.getInstance().getReplyColor())
                     .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                    .setLinkColor(MimiUtil.getInstance().getLinkColor());;
+                    .setLinkColor(MimiUtil.getInstance().getLinkColor());
+            ;
 
             comment = parserBuilder.build().parse();
         }

@@ -27,7 +27,8 @@ public class UpdateHistoryEvent {
     private int threadId;
     private int threadSize;
 
-    public UpdateHistoryEvent() {    }
+    public UpdateHistoryEvent() {
+    }
 
     public UpdateHistoryEvent(final String boardName, final ChanThread thread) {
         this.boardName = boardName;
@@ -40,7 +41,7 @@ public class UpdateHistoryEvent {
 
     public void setThread(ChanThread thread) {
         this.thread = thread;
-        if(thread != null) {
+        if (thread != null) {
             this.threadId = thread.getThreadId();
             this.threadSize = thread.getPosts().size();
         }
@@ -63,7 +64,7 @@ public class UpdateHistoryEvent {
     }
 
     public int getThreadId() {
-        if(thread != null) {
+        if (thread != null) {
             threadId = thread.getThreadId();
         }
         return threadId;
@@ -74,7 +75,7 @@ public class UpdateHistoryEvent {
     }
 
     public int getThreadSize() {
-        if(thread != null) {
+        if (thread != null) {
             threadSize = thread.getPosts().size();
         }
         return threadSize;

@@ -286,7 +286,11 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                                         previewImageView.setImageBitmap(bitmap);
 
                                         if (useCrappyPlayer) {
-                                            setupPlayButton(bitmap.getWidth(), bitmap.getHeight());
+                                            if (bitmap == null) {
+                                                setupPlayButton(0, 0);
+                                            } else {
+                                                setupPlayButton(bitmap.getWidth(), bitmap.getHeight());
+                                            }
                                         }
                                     }
                                 }
@@ -367,7 +371,10 @@ public class GalleryWebmFragment extends GalleryImageBase implements ExoPlayerHe
                     if (copyFile(getImageFile(), tmpFile)) {
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(fileUri));
                         intent.setDataAndType(Uri.parse(fileUri), Utils.getMimeType(fileExt));
-                        startActivity(intent);
+
+                        if (getActivity() != null) {
+                            startActivity(intent);
+                        }
                     }
                 }
             }

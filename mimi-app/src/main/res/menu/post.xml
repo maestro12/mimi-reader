@@ -22,13 +22,11 @@
         android:id="@+id/cancel_menu_button"
         android:title="@string/cancel"
         android:icon="@drawable/ic_clear"
-        mimi:showAsAction="always|withText"
-        />
+        mimi:showAsAction="always|withText" />
     <item
         android:id="@+id/send_menu_button"
         android:title="@string/send"
         android:icon="@drawable/ic_send"
-        mimi:showAsAction="always|withText"
-        />
+        mimi:showAsAction="always|withText" />
 
 </menu>

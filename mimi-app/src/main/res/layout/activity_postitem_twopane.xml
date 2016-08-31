@@ -18,8 +18,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_drawer_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    >
+    android:layout_height="match_parent">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -29,6 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
             <LinearLayout
                 android:id="@+id/content"
                 android:layout_width="match_parent"
@@ -66,21 +66,23 @@
                     android:layout_weight="1.5" />
 
             </LinearLayout>
+
             <FrameLayout
                 android:id="@+id/gallery_grid_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
+
             <FrameLayout
                 android:id="@+id/advert_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"/>
+                android:layout_alignParentBottom="true" />
         </RelativeLayout>
 
         <FrameLayout
             android:id="@+id/gallery_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent" />
 
         <android.support.v7.widget.Toolbar
             android:theme="?toolbarBackground"
@@ -89,8 +91,7 @@
             android:layout_width="match_parent"
             android:minHeight="?attr/actionBarSize" />
 
-        <include
-            layout="@layout/app_rating_container" />
+        <include layout="@layout/app_rating_container" />
     </FrameLayout>
 
     <FrameLayout
@@ -100,9 +101,9 @@
         android:layout_gravity="start" />
 
     <!--<FrameLayout-->
-        <!--android:id="@+id/bookmark_drawer"-->
-        <!--android:layout_width="300dp"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_gravity="end" />-->
+    <!--android:id="@+id/bookmark_drawer"-->
+    <!--android:layout_width="300dp"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:layout_gravity="end" />-->
 
 </android.support.v4.widget.DrawerLayout>

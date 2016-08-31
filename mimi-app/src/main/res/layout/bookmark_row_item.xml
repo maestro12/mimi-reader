@@ -42,12 +42,14 @@
         android:paddingLeft="2dp"
         android:layout_weight="1"
         android:orientation="vertical">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingBottom="4dp"
             android:paddingRight="2dp">
+
             <TextView
                 style="?postHeaderText"
                 android:id="@+id/board_name"
@@ -57,7 +59,7 @@
                 android:textSize="?attr/font_small"
                 android:textStyle="italic"
                 android:textColor="@color/subtext_color_light"
-                tools:text="/b/"/>
+                tools:text="/b/" />
 
             <com.emogoth.android.phone.mimi.view.IconTextView
                 android:layout_width="wrap_content"
@@ -68,7 +70,7 @@
                 android:paddingRight="2dp"
                 android:textSize="?attr/font_small"
                 android:textColor="@color/subtext_color_light"
-                android:text="@string/ic_dash"/>
+                android:text="@string/ic_dash" />
 
             <TextView
                 style="?postHeaderText"
@@ -79,7 +81,8 @@
                 android:textSize="?attr/font_small"
                 android:textStyle="italic"
                 android:textColor="@color/subtext_color_light"
-                tools:text="233943"/>
+                tools:text="233943" />
+
             <View
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -96,13 +99,14 @@
                 android:textSize="?attr/font_label_xsmall"
                 android:textStyle="italic"
                 android:textColor="@color/subtext_color_light"
-                tools:text="55 minutes ago"/>
+                tools:text="55 minutes ago" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
+
             <TextView
                 android:id="@+id/text"
                 android:layout_width="0dp"
@@ -123,7 +127,7 @@
                 android:textColor="@color/history_item_badge_text_color"
                 android:gravity="center"
                 android:background="@drawable/new_unread_count"
-                android:visibility="gone"/>
+                android:visibility="gone" />
 
         </LinearLayout>
     </LinearLayout>

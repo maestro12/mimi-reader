@@ -105,6 +105,7 @@ public class ChanThread implements Parcelable, Externalizable {
     };
 
     @Override
+    @SuppressWarnings("unchecked")
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         this.posts = (List<ChanPost>) in.readObject();
         this.boardName = in.readUTF();

@@ -17,12 +17,13 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.emogoth.android.phone.mimi" >
+    package="com.emogoth.android.phone.mimi">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission
         android:name="android.permission.ACCESS_COARSE_LOCATION"
         tools:node="remove" />
@@ -32,7 +33,6 @@
     <uses-permission
         android:name="android.permission.USE_CREDENTIALS"
         tools:node="remove" />
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
 
     <application
         android:name=".app.MimiApplication"
@@ -45,7 +45,7 @@
         tools:replace="android:theme, icon, label">
 
         <meta-data android:name="AA_DB_NAME" android:value="mimi.db" />
-        <meta-data android:name="AA_DB_VERSION" android:value="10" />
+        <meta-data android:name="AA_DB_VERSION" android:value="11" />
         <meta-data
             android:name="AA_MODELS"
             android:value="com.emogoth.android.phone.mimi.db.model.Board" />
@@ -62,6 +62,8 @@
 
         <service android:name=".service.AutoRefreshService" />
         <service android:name=".service.DownloadService" />
+
+        <activity android:name=".activity.FilterActivity" />
 
         <activity
             android:name=".activity.PostItemListActivity"
@@ -101,7 +103,7 @@
             android:theme="@style/Theme.Mimi.Gallery"
             android:configChanges="orientation|screenLayout|screenSize"/>
         <activity android:name=".activity.LoginActivity" />
-        <activity android:name=".activity.UrlRouter" >
+        <activity android:name=".activity.UrlRouterActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -131,8 +133,12 @@
         </activity>
 
         <receiver
-            android:name=".util.RefreshScheduler"
-            android:enabled="true" />
+            android:name=".util.RefreshBroadcastReceiver"
+            android:enabled="true" >
+            <intent-filter>
+                <action android:name="com.emogoth.android.phone.mimi.AutoRefresh" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

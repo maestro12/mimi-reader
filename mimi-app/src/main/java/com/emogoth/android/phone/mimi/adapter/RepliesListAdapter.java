@@ -181,7 +181,7 @@ public class RepliesListAdapter extends BaseAdapter {
             viewHolder.repliesText.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if(v.getContext() != null) {
+                    if (v.getContext() != null) {
                         if (postItem.getRepliesFrom().size() > 0) {
                             if (thread != null) {
                                 RepliesDialog.newInstance(thread, postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);

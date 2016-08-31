@@ -5,7 +5,7 @@ This README attempts to document how to set up this crappy project.
 ### What is this repository for? ###
 
 * Read 4chan on your Android device
-* 5.0.11
+* 5.1.1
 * [Market Link](https://play.google.com/store/apps/details?id=com.emogoth.android.phone.mimi)
 
 ### How do I get set up? ###

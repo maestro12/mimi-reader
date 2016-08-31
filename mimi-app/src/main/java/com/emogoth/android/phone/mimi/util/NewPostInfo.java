@@ -17,8 +17,6 @@
 package com.emogoth.android.phone.mimi.util;
 
 
-import android.util.SparseArray;
-
 public class NewPostInfo {
 
     private enum Status {

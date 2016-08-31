@@ -39,7 +39,7 @@ public class MimiSettings extends AppCompatPreferenceActivity implements OnShare
         setTheme(MimiUtil.getInstance().getThemeResourceId());
         super.onCreate(savedInstanceState);
 
-        LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
+        LinearLayout root = (LinearLayout) findViewById(android.R.id.list).getParent().getParent().getParent();
         Toolbar toolbar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.toolbar, root, false);
         root.addView(toolbar, 0);
         if (toolbar != null) {

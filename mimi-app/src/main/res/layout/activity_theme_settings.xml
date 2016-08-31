@@ -43,20 +43,20 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/current_color"
                     android:layout_margin="2dp"
                     android:layout_height="48dp"
                     android:layout_width="48dp"
                     android:scaleType="centerCrop"
-                    app:imageBackgroundColor="@color/link"
-                    />
+                    app:imageBackgroundColor="@color/link" />
 
                 <Spinner
                     android:id="@+id/color_type_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginBottom="20dp"/>
+                    android:layout_marginBottom="20dp" />
             </LinearLayout>
 
 
@@ -65,12 +65,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:columnCount="4">
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_columnSpan="4"
                     android:layout_rowSpan="1"
-                    android:text="@string/default_colors"/>
+                    android:text="@string/default_colors" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/default_reply"
                     android:layout_margin="2dp"
@@ -79,8 +81,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/reply"
-                    />
+                    app:imageBackgroundColor="@color/reply" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/default_highlight"
                     android:layout_margin="2dp"
@@ -89,8 +91,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/reply_highlight"
-                    />
+                    app:imageBackgroundColor="@color/reply_highlight" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/default_quote"
                     android:layout_margin="2dp"
@@ -99,8 +101,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/quote"
-                    />
+                    app:imageBackgroundColor="@color/quote" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/default_link"
                     android:layout_margin="2dp"
@@ -109,15 +111,16 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/link"
-                    />
+                    app:imageBackgroundColor="@color/link" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:layout_columnSpan="4"
                     android:layout_rowSpan="1"
-                    android:text="@string/material_colors"/>
+                    android:text="@string/material_colors" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_blue"
                     android:layout_margin="2dp"
@@ -126,8 +129,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_blue_700"
-                    />
+                    app:imageBackgroundColor="@color/md_blue_700" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_red"
                     android:layout_margin="2dp"
@@ -136,8 +139,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_red_700"
-                    />
+                    app:imageBackgroundColor="@color/md_red_700" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_green"
                     android:layout_margin="2dp"
@@ -146,8 +149,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_green_700"
-                    />
+                    app:imageBackgroundColor="@color/md_green_700" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_yellow"
                     android:layout_margin="2dp"
@@ -156,8 +159,7 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_yellow_A400"
-                    />
+                    app:imageBackgroundColor="@color/md_yellow_A400" />
 
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_light_grey"
@@ -167,8 +169,8 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_grey_300"
-                    />
+                    app:imageBackgroundColor="@color/md_grey_300" />
+
                 <com.emogoth.android.phone.mimi.view.ColorImageView
                     android:id="@+id/material_dark_grey"
                     android:layout_margin="2dp"
@@ -177,14 +179,13 @@
                     android:scaleType="centerCrop"
                     android:layout_columnSpan="1"
                     android:layout_rowSpan="1"
-                    app:imageBackgroundColor="@color/md_grey_900"
-                    />
+                    app:imageBackgroundColor="@color/md_grey_900" />
             </GridLayout>
 
             <FrameLayout
                 android:id="@+id/container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
         </LinearLayout>
 

@@ -54,7 +54,7 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
 
     @Override
     public ChanThread loadInBackground() {
-        if(outThread == null) {
+        if (outThread == null) {
             return null;
         }
 
@@ -120,7 +120,7 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
         List<ChanPost> updatedPosts = new ArrayList<>(posts.size());
         List<Integer> userPosts = new ArrayList<>(ThreadRegistry.getInstance().getUserPosts(boardName, threadId));
         List<Integer> hightlightedPosts = new ArrayList<>();
-        if(highlightedPost > 0) {
+        if (highlightedPost > 0) {
             hightlightedPosts.add(highlightedPost);
         }
 
@@ -140,7 +140,7 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
             );
             post.setDisplayedName(nameSpan);
 
-            if(post.getCom() != null) {
+            if (post.getCom() != null) {
                 parserBuilder.setBoardName(boardName)
                         .setComment(post.getCom())
                         .setThreadId(post.getResto())
@@ -150,25 +150,24 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
                 post.setComment(parserBuilder.build().parse());
             }
 
-            if(post.getRepliesTo() != null) {
+            if (post.getRepliesTo() != null) {
                 final ChanPost searchPost = new ChanPost();
-                for(final String replyPostId : post.getRepliesTo()) {
+                for (final String replyPostId : post.getRepliesTo()) {
                     try {
                         searchPost.setNo(Integer.valueOf(replyPostId));
                         final int index = posts.indexOf(searchPost);
                         if (index >= 0) {
-                            if(!posts.get(index).getRepliesFrom().contains(post)) {
+                            if (!posts.get(index).getRepliesFrom().contains(post)) {
                                 posts.get(index).addReplyFrom(post);
                             }
                         }
-                    }
-                    catch (NumberFormatException e) {
+                    } catch (NumberFormatException e) {
                         // ignore
                     }
                 }
             }
 
-            if(post.getSub() != null) {
+            if (post.getSub() != null) {
                 post.setSubject(Html.fromHtml(post.getSub()));
             }
 

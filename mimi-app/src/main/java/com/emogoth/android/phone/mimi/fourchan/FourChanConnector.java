@@ -140,14 +140,14 @@ public class FourChanConnector extends ChanConnector {
                     public ChanThread call(FourChanThread fourChanThread) {
                         ChanThread thread = new ChanThread();
 
-                            List<ChanPost> posts = new ArrayList<>();
-                            for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
-                                posts.add(fourChanPost.toPost());
-                            }
+                        List<ChanPost> posts = new ArrayList<>();
+                        for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
+                            posts.add(fourChanPost.toPost());
+                        }
 
-                            thread.setPosts(posts);
-                            thread.setBoardName(boardName);
-                            thread.setThreadId(threadId);
+                        thread.setPosts(posts);
+                        thread.setBoardName(boardName);
+                        thread.setThreadId(threadId);
 
                         return thread;
                     }
@@ -193,7 +193,7 @@ public class FourChanConnector extends ChanConnector {
 
     public String getThumbUrl(String boardName, String id, boolean secureConnection) {
         final String http;
-        if(secureConnection) {
+        if (secureConnection) {
             http = "https://";
         } else {
             http = "http://";
@@ -205,7 +205,7 @@ public class FourChanConnector extends ChanConnector {
     @Override
     public String getImageCountText(int imageCount) {
 
-        if(imageCount == 1) {
+        if (imageCount == 1) {
             return "1 image";
         }
 
@@ -214,7 +214,7 @@ public class FourChanConnector extends ChanConnector {
 
     @Override
     public String getRepliesCountText(int repliesCount) {
-        if(repliesCount == 1) {
+        if (repliesCount == 1) {
             return "1 reply";
         }
 

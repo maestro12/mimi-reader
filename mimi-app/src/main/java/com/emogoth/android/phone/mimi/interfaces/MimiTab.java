@@ -18,5 +18,6 @@ package com.emogoth.android.phone.mimi.interfaces;
 
 public interface MimiTab {
     String getTabName();
+
     boolean isCloseable();
 }

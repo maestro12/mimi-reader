@@ -55,8 +55,7 @@
             android:title="@string/text_colors"
             android:summary="@string/text_colors_summary">
 
-            <intent
-                android:action="com.emogoth.android.phone.mimi.activity.ThemeSettingsActivity" />
+            <intent android:action="com.emogoth.android.phone.mimi.activity.ThemeSettingsActivity" />
         </Preference>
 
     </PreferenceCategory>

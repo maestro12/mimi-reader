@@ -32,7 +32,6 @@ import com.emogoth.android.phone.mimi.adapter.RepliesListAdapter;
 import com.emogoth.android.phone.mimi.async.ProcessThreadTask;
 import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
-
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.RxUtil;
@@ -84,16 +83,16 @@ public class RepliesDialog extends DialogFragment {
         return dialog;
     }
 
-    public static RepliesDialog newInstance(@Nullable  ChanThread thread, String id) {
+    public static RepliesDialog newInstance(@Nullable ChanThread thread, String id) {
 
-        if(thread != null && thread.getPosts() != null && thread.getPosts().size() > 0 && !TextUtils.isEmpty(id)) {
+        if (thread != null && thread.getPosts() != null && thread.getPosts().size() > 0 && !TextUtils.isEmpty(id)) {
             final String boardName = thread.getBoardName();
             final RepliesDialog dialog = new RepliesDialog();
             final Bundle args = new Bundle();
             final ArrayList<ChanPost> posts = new ArrayList<>();
 
             for (ChanPost post : thread.getPosts()) {
-                if(id.equals(post.getId())) {
+                if (id.equals(post.getId())) {
                     posts.add(post);
                 }
             }
@@ -146,33 +145,33 @@ public class RepliesDialog extends DialogFragment {
 
         RxUtil.safeUnsubscribe(repliesSubscription);
         repliesSubscription = Observable.just(replies)
-            .subscribeOn(Schedulers.computation())
-            .observeOn(AndroidSchedulers.mainThread())
-            .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
-            .subscribe(new Action1<List<ChanPost>>() {
-                @Override
-                public void call(List<ChanPost> posts) {
-                    final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
-                    listView.setAdapter(adapter);
-                }
-            });
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
+                .subscribe(new Action1<List<ChanPost>>() {
+                    @Override
+                    public void call(List<ChanPost> posts) {
+                        final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
+                        listView.setAdapter(adapter);
+                    }
+                });
     }
 
     private void extractExtras(final Bundle bundle) {
-        if(bundle.containsKey(Extras.EXTRAS_BOARD_NAME)) {
+        if (bundle.containsKey(Extras.EXTRAS_BOARD_NAME)) {
             boardName = bundle.getString(Extras.EXTRAS_BOARD_NAME);
         }
-        if(bundle.containsKey(Extras.EXTRAS_POST_ID)) {
+        if (bundle.containsKey(Extras.EXTRAS_POST_ID)) {
             id = bundle.getInt(Extras.EXTRAS_POST_ID);
         }
-        if(bundle.containsKey(Extras.EXTRAS_POST_LIST)) {
+        if (bundle.containsKey(Extras.EXTRAS_POST_LIST)) {
             bundle.setClassLoader(ChanPost.class.getClassLoader());
             replies = bundle.getParcelableArrayList(Extras.EXTRAS_POST_LIST);
         }
-        if(bundle.containsKey(Extras.EXTRAS_OUTSIDE_LINK_LIST)) {
+        if (bundle.containsKey(Extras.EXTRAS_OUTSIDE_LINK_LIST)) {
             outsideLinks = bundle.getParcelableArrayList(Extras.EXTRAS_OUTSIDE_LINK_LIST);
         }
-        if(bundle.containsKey(Extras.EXTRAS_SINGLE_THREAD)) {
+        if (bundle.containsKey(Extras.EXTRAS_SINGLE_THREAD)) {
             thread = bundle.getParcelable(Extras.EXTRAS_SINGLE_THREAD);
         }
     }

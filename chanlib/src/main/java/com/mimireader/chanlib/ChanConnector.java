@@ -153,7 +153,7 @@ public abstract class ChanConnector {
         protected Retrofit initRetrofit(boolean isPost) {
             if (client == null) {
                 OkHttpClient.Builder builder = new OkHttpClient.Builder();
-                if(cacheDir != null && cacheDir.exists()) {
+                if (cacheDir != null && cacheDir.exists()) {
                     builder.cache(new Cache(cacheDir, cacheSize));
                 }
                 client = builder.build();

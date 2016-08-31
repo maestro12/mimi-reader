@@ -20,26 +20,26 @@ buildscript {
         mavenCentral()
         jcenter()
 
-        flatDir{
+        flatDir {
             dirs 'libs'
         }
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'com.android.tools.build:gradle:2.2.0-beta3'
     }
 }
 
 ext {
-    compileSdkVersion = 23
-    buildToolsVersion = "23.0.3"
+    compileSdkVersion = 24
+    buildToolsVersion = "24.0.2"
 }
 
 allprojects {
     repositories {
         mavenCentral()
 
-        flatDir{
+        flatDir {
             dirs 'libs'
         }
     }

@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2016. Eli Connelly
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.emogoth.android.phone.mimi.view;
 
 import android.content.Context;
@@ -25,6 +9,25 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
+import com.emogoth.android.phone.mimi.adapter.ThreadListAdapter;
+
+/*
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Grid support was added by Avi Ben - Hamo
+ */
 public class DividerItemDecoration extends RecyclerView.ItemDecoration {
 
     private static final int[] ATTRS = new int[]{
@@ -62,7 +65,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     }
 
     @Override
-    public void onDraw(Canvas c, RecyclerView parent) {
+    public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
         switch (mOrientation) {
             case LIST_VERTICAL:
                 drawVertical(c, parent);
@@ -87,13 +90,16 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
 
         final int childCount = parent.getChildCount();
         for (int i = 0; i < childCount; i++) {
-            final View child = parent.getChildAt(i);
-            final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
-                    .getLayoutParams();
-            final int top = child.getBottom() + params.bottomMargin;
-            final int bottom = top + mDivider.getIntrinsicHeight();
-            mDivider.setBounds(left, top, right, bottom);
-            mDivider.draw(c);
+            final RecyclerView.ViewHolder holder = parent.findViewHolderForLayoutPosition(i);
+            if (holder == null || (holder.getItemViewType() != ThreadListAdapter.VIEW_HEADER && holder.getItemViewType() != ThreadListAdapter.VIEW_FOOTER)) {
+                final View child = parent.getChildAt(i);
+                final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
+                        .getLayoutParams();
+                final int top = child.getBottom() + params.bottomMargin;
+                final int bottom = top + mDivider.getIntrinsicHeight();
+                mDivider.setBounds(left, top, right, bottom);
+                mDivider.draw(c);
+            }
         }
     }
 
@@ -125,15 +131,16 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
             final int bottom = child.getBottom() + params.bottomMargin;
             mDivider.setBounds(left, top, left + mDivider.getIntrinsicHeight(), bottom);
             mDivider.draw(c);
-            mDivider.setBounds(right - mDivider.getIntrinsicHeight(), top, right , bottom);
+            mDivider.setBounds(right - mDivider.getIntrinsicHeight(), top, right, bottom);
             mDivider.draw(c);
-            mDivider.setBounds(left, top, right , top + mDivider.getIntrinsicHeight());
+            mDivider.setBounds(left, top, right, top + mDivider.getIntrinsicHeight());
             mDivider.draw(c);
-            mDivider.setBounds(left, bottom -mDivider.getIntrinsicHeight() , right , bottom);
+            mDivider.setBounds(left, bottom - mDivider.getIntrinsicHeight(), right, bottom);
             mDivider.draw(c);
             mDivider.draw(c);
         }
     }
+
     public void drawGridFill(Canvas c, RecyclerView parent) {
         final int childCount = parent.getChildCount();
         for (int i = 0; i < childCount; i++) {
@@ -148,9 +155,9 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
             mDivider.draw(c);
         }
     }
-    @Override
-    public void getItemOffsets(Rect outRect, int itemPosition, RecyclerView parent) {
 
+    @Override
+    public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         switch (mOrientation) {
             case LIST_VERTICAL:
                 outRect.set(0, 0, 0, mDivider.getIntrinsicHeight());
@@ -159,10 +166,10 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
                 outRect.set(0, 0, mDivider.getIntrinsicWidth(), 0);
                 break;
             case GRID_FILL:
-                outRect.set(mDivider.getIntrinsicWidth(), mDivider.getIntrinsicWidth(),mDivider.getIntrinsicWidth(),mDivider.getIntrinsicWidth());
+                outRect.set(mDivider.getIntrinsicWidth(), mDivider.getIntrinsicWidth(), mDivider.getIntrinsicWidth(), mDivider.getIntrinsicWidth());
                 break;
             case GRID_STROKE:
-                outRect.set(0, 0,0,0);
+                outRect.set(0, 0, 0, 0);
                 break;
             default:
                 throw new IllegalArgumentException("invalid orientation");

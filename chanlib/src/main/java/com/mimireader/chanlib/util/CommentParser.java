@@ -17,10 +17,8 @@
 package com.mimireader.chanlib.util;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.text.Spannable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 

@@ -16,6 +16,6 @@
   -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/toolbar_button_background_light_pressed" android:state_pressed="true"/>
-    <item android:drawable="@drawable/toolbar_button_background_light"/>
+    <item android:drawable="@drawable/toolbar_button_background_light_pressed" android:state_pressed="true" />
+    <item android:drawable="@drawable/toolbar_button_background_light" />
 </selector>

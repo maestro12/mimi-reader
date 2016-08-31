@@ -31,16 +31,16 @@
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:inputType="textCapCharacters"
-            android:hint="@string/token_hint"/>
+            android:hint="@string/token_hint" />
 
         <android.support.v7.widget.AppCompatEditText
             android:id="@+id/pin_text"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:inputType="number"
-            android:hint="@string/pin_hint"/>
+            android:hint="@string/pin_hint" />
 
-        <android.support.v7.widget.AppCompatEditText
+        <TextView
             style="?basicButton"
             android:id="@+id/login_button"
             android:layout_width="wrap_content"
@@ -48,13 +48,13 @@
             android:layout_marginTop="15dp"
             android:gravity="center"
             android:padding="5dp"
-            android:text="@string/login_button"/>
+            android:text="@string/login_button" />
 
         <TextView
             android:id="@+id/error_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="15dp"/>
+            android:layout_marginTop="15dp" />
 
     </LinearLayout>
 

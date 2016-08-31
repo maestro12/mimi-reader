@@ -42,6 +42,7 @@
     <attr name="basicButton" format="color|reference" />
     <attr name="postSubjectText" format="color|reference" />
     <attr name="postCommentText" format="color|reference" />
+    <attr name="postFirstCommentText" format="color|reference" />
     <attr name="postHighlight" format="color|reference" />
     <attr name="boardOrderBackground" format="color|reference" />
     <attr name="boardOrderItem" format="color|reference" />

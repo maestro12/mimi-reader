@@ -24,47 +24,40 @@
 
         <!-- About -->
         <!--<Preference-->
-            <!--android:title="@string/more_info_about"-->
-            <!--android:key="@string/about_pref"-->
+        <!--android:title="@string/more_info_about"-->
+        <!--android:key="@string/about_pref"-->
         <!--/>-->
 
         <Preference
             android:title="@string/feedback"
-            android:key="@string/feedback_pref"
-        />
+            android:key="@string/feedback_pref" />
 
         <Preference
             android:title="@string/rate"
-            android:key="@string/rate_pref"
-        />
+            android:key="@string/rate_pref" />
 
         <!-- Website -->
         <Preference
             android:title="@string/more_info_website"
-            android:key="@string/website_pref"
-            />
+            android:key="@string/website_pref" />
 
         <!-- Privacy Policy -->
         <Preference
             android:title="@string/more_info_privacy"
-            android:key="@string/privacy_pref"
-            />
+            android:key="@string/privacy_pref" />
 
         <!-- Licenses -->
         <Preference
             android:title="@string/more_info_licences"
-            android:key="@string/licenses_pref"
-            />
+            android:key="@string/licenses_pref" />
 
         <Preference
             android:title="@string/more_info_changelog"
-            android:key="@string/changelog_pref"
-            />
+            android:key="@string/changelog_pref" />
 
         <!-- Version -->
         <Preference
             android:title="Mimi Reader"
-            android:key="@string/version_pref"
-            />
+            android:key="@string/version_pref" />
     </PreferenceCategory>
 </PreferenceScreen>

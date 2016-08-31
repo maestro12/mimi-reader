@@ -22,7 +22,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.span.CodeSpan;
@@ -118,13 +117,6 @@ public final class FourChanCommentParser extends CommentParser {
         if (userPostIds != null) {
             for (Integer userPostId : userPostIds) {
                 final String id = userPostId.toString();
-                if (postWithoutHtml.contains(id)) {
-                    Log.d(LOG_TAG, "Found user post: id=" + id);
-
-                    if (postWithoutHtml.contains(">>" + id)) {
-                        Log.d(LOG_TAG, "Found >>" + id);
-                    }
-                }
                 postWithoutHtml = postWithoutHtml.replace(">>" + id, ">>" + id + youTag);
             }
         }

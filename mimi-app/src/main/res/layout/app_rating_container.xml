@@ -41,7 +41,7 @@
             android:paddingLeft="8dp"
             android:textSize="?attr/font_small"
             android:textColor="#000000"
-            android:text="@string/please_rate"/>
+            android:text="@string/please_rate" />
 
         <TextView
             android:id="@+id/rate_now"
@@ -53,9 +53,10 @@
             android:gravity="center"
             android:textSize="?attr/font_label_small"
             android:textColor="#222222"
-            android:text="@string/rate"/>
+            android:text="@string/rate" />
 
-        <View android:layout_height="fill_parent"
+        <View
+            android:layout_height="fill_parent"
             android:layout_width="1px"
             android:background="#90909090"
             android:layout_marginBottom="5dp"
@@ -72,9 +73,10 @@
             android:gravity="center"
             android:textSize="?attr/font_label_small"
             android:textColor="#222222"
-            android:text="@string/later"/>
+            android:text="@string/later" />
 
-        <View android:layout_height="fill_parent"
+        <View
+            android:layout_height="fill_parent"
             android:layout_width="1px"
             android:background="#90909090"
             android:layout_marginBottom="5dp"
@@ -91,7 +93,7 @@
             android:gravity="center"
             android:textSize="?attr/font_label_small"
             android:textColor="#222222"
-            android:text="@string/never"/>
+            android:text="@string/never" />
 
     </LinearLayout>
 

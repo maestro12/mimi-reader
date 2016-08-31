@@ -424,7 +424,7 @@ public class BoardTableConnection {
                     ContentValues contentValues = new ContentValues();
                     contentValues.put(Board.KEY_VISIBLE, visible);
 
-                    if(boardPath != null) {
+                    if (boardPath != null) {
                         String name = boardPath.replaceAll("/", "");
 
                         val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", name);

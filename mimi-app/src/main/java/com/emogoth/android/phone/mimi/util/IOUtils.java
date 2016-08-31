@@ -38,7 +38,7 @@ public class IOUtils {
      * Simple wrapper around {@link java.io.InputStream#read()} that throws EOFException
      * instead of returning -1.
      */
-	public static int read(InputStream is) throws IOException {
+    public static int read(InputStream is) throws IOException {
         int b = is.read();
         if (b == -1) {
             throw new EOFException();
@@ -63,14 +63,14 @@ public class IOUtils {
     }
 
     public static void writeLong(OutputStream os, long n) throws IOException {
-        os.write((byte)(n >>> 0));
-        os.write((byte)(n >>> 8));
-        os.write((byte)(n >>> 16));
-        os.write((byte)(n >>> 24));
-        os.write((byte)(n >>> 32));
-        os.write((byte)(n >>> 40));
-        os.write((byte)(n >>> 48));
-        os.write((byte)(n >>> 56));
+        os.write((byte) (n >>> 0));
+        os.write((byte) (n >>> 8));
+        os.write((byte) (n >>> 16));
+        os.write((byte) (n >>> 24));
+        os.write((byte) (n >>> 32));
+        os.write((byte) (n >>> 40));
+        os.write((byte) (n >>> 48));
+        os.write((byte) (n >>> 56));
     }
 
     public static long readLong(InputStream is) throws IOException {
@@ -122,11 +122,11 @@ public class IOUtils {
         }
         return result;
     }
-    
+
 
     /**
      * Reads the contents of an InputStream into a byte[].
-     * */
+     */
     public static byte[] streamToBytes(InputStream in, int length) throws IOException {
         byte[] bytes = new byte[length];
         int count;
@@ -139,7 +139,7 @@ public class IOUtils {
         }
         return bytes;
     }
-    
+
     public static class CountingInputStream extends FilterInputStream {
         private int bytesRead = 0;
 
@@ -164,14 +164,15 @@ public class IOUtils {
             }
             return result;
         }
-        
-        public long getBytesRead() {  
-            return bytesRead;  
+
+        public long getBytesRead() {
+            return bytesRead;
         }
     }
 
     // copy from InputStream
     //-----------------------------------------------------------------------
+
     /**
      * Copy bytes from an <code>InputStream</code> to an
      * <code>OutputStream</code>.
@@ -185,10 +186,10 @@ public class IOUtils {
      * use the <code>copyLarge(InputStream, OutputStream)</code> method.
      *
      * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param output the <code>OutputStream</code> to write to
      * @return the number of bytes copied, or -1 if &gt; Integer.MAX_VALUE
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 1.1
      */
     public static int copy(InputStream input, OutputStream output) throws IOException {
@@ -209,10 +210,10 @@ public class IOUtils {
      * The buffer size is given by {@link #DEFAULT_BUFFER_SIZE}.
      *
      * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param output the <code>OutputStream</code> to write to
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 1.3
      */
     public static long copyLarge(InputStream input, OutputStream output)
@@ -229,11 +230,11 @@ public class IOUtils {
      * <p>
      *
      * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param output the <code>OutputStream</code> to write to
      * @param buffer the buffer to use for the copy
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output, byte[] buffer)
@@ -256,14 +257,14 @@ public class IOUtils {
      * <p>
      * The buffer size is given by {@link #DEFAULT_BUFFER_SIZE}.
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param input       the <code>InputStream</code> to read from
+     * @param output      the <code>OutputStream</code> to write to
      * @param inputOffset : number of bytes to skip from input before copying
-     *         -ve values are ignored
-     * @param length : number of bytes to copy. -ve means all
+     *                    -ve values are ignored
+     * @param length      : number of bytes to copy. -ve means all
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output, long inputOffset, long length)
@@ -279,20 +280,19 @@ public class IOUtils {
      * <code>BufferedInputStream</code>.
      * <p>
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param input       the <code>InputStream</code> to read from
+     * @param output      the <code>OutputStream</code> to write to
      * @param inputOffset : number of bytes to skip from input before copying
-     *         -ve values are ignored
-     * @param length : number of bytes to copy. -ve means all
-     * @param buffer the buffer to use for the copy
-     *
+     *                    -ve values are ignored
+     * @param length      : number of bytes to copy. -ve means all
+     * @param buffer      the buffer to use for the copy
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output,
-                                 final long inputOffset, final long length, byte[] buffer)  throws IOException {
+                                 final long inputOffset, final long length, byte[] buffer) throws IOException {
         if (inputOffset > 0) {
             skipFully(input, inputOffset);
         }
@@ -323,14 +323,12 @@ public class IOUtils {
      * as possible before giving up; this may not always be the case for
      * subclasses of {@link Reader}.
      *
-     * @param input byte stream to skip
+     * @param input  byte stream to skip
      * @param toSkip number of bytes to skip.
      * @return number of bytes actually skipped.
-     *
-     * @see InputStream#skip(long)
-     *
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException              if there is a problem reading the file
      * @throws IllegalArgumentException if toSkip is negative
+     * @see InputStream#skip(long)
      * @since 2.0
      */
     public static long skip(InputStream input, long toSkip) throws IOException {
@@ -362,13 +360,12 @@ public class IOUtils {
      * This allows for the possibility that {@link InputStream#skip(long)} may
      * not skip as many bytes as requested (most likely because of reaching EOF).
      *
-     * @param input stream to skip
+     * @param input  stream to skip
      * @param toSkip the number of bytes to skip
-     * @see InputStream#skip(long)
-     *
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException              if there is a problem reading the file
      * @throws IllegalArgumentException if toSkip is negative
-     * @throws EOFException if the number of bytes skipped was incorrect
+     * @throws EOFException             if the number of bytes skipped was incorrect
+     * @see InputStream#skip(long)
      * @since 2.0
      */
     public static void skipFully(InputStream input, long toSkip) throws IOException {

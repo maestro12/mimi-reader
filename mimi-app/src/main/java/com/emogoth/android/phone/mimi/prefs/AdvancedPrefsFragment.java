@@ -29,13 +29,21 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.LoginActivity;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+
+import rx.functions.Action1;
 
 
 public class AdvancedPrefsFragment extends PreferenceFragment {
+    public static final String LOG_TAG = AdvancedPrefsFragment.class.getSimpleName();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,12 +81,43 @@ public class AdvancedPrefsFragment extends PreferenceFragment {
         }
 
         final Preference showAllBoardsPref = findPreference(getString(R.string.show_all_boards));
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         final PreferenceCategory category = (PreferenceCategory) findPreference(getString(R.string.advanced_preference_category));
-        final boolean enabled = prefs.getBoolean(getString(R.string.full_board_list_enabled), false);
 
-        if (!enabled) {
+        if (showAllBoardsPref != null) {
             category.removePreference(showAllBoardsPref);
+        }
+
+        final Preference clearHiddenThreadsPref = findPreference(getString(R.string.clear_hidden_threads_pref));
+        if (clearHiddenThreadsPref != null) {
+            clearHiddenThreadsPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    HiddenThreadTableConnection.clearAll()
+                            .subscribe(new Action1<Boolean>() {
+                                @Override
+                                public void call(Boolean success) {
+                                    Log.d(LOG_TAG, "Clearing hidden threads: success=" + success);
+
+                                    int msgResId = R.string.all_hidden_threads_cleared;
+                                    if (!success) {
+                                        msgResId = R.string.failed_to_clear_hidden_threads;
+                                    }
+
+                                    Toast.makeText(MimiApplication.getInstance(), msgResId, Toast.LENGTH_SHORT).show();
+
+                                }
+                            }, new Action1<Throwable>() {
+                                @Override
+                                public void call(Throwable throwable) {
+                                    Log.w(LOG_TAG, "Could not clear hidden threads", throwable);
+
+                                    Toast.makeText(MimiApplication.getInstance(), R.string.failed_to_clear_hidden_threads, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+
+                    return true;
+                }
+            });
         }
 
         final Preference chanpassLogin = findPreference(getString(R.string.chanpass_login_pref));

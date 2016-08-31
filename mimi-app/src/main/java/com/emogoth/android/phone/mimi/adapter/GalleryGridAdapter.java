@@ -77,7 +77,7 @@ public class GalleryGridAdapter extends RecyclerView.Adapter<GalleryGridAdapter.
     }
 
     @Override
-    public void onBindViewHolder(final GridViewHolder viewHolder, final int position) {
+    public void onBindViewHolder(final GridViewHolder viewHolder, int position) {
         final ChanPost threadItem = posts.get(position);
         final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim(), secureConnection);
         viewHolder.galleryThumbnail.setAspectRatio(threadItem.getThumbnailWidth(), threadItem.getThumbnailHeight());
@@ -99,11 +99,13 @@ public class GalleryGridAdapter extends RecyclerView.Adapter<GalleryGridAdapter.
             viewHolder.selected.setVisibility(View.GONE);
         }
 
+        viewHolder.itemNumber.setText(String.valueOf(position + 1));
+
         viewHolder.root.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (itemClickListener != null) {
-                    itemClickListener.onItemClick(null, viewHolder.root, position, 0);
+                    itemClickListener.onItemClick(null, viewHolder.root, viewHolder.getAdapterPosition(), 0);
                 }
             }
         });
@@ -112,7 +114,7 @@ public class GalleryGridAdapter extends RecyclerView.Adapter<GalleryGridAdapter.
             @Override
             public boolean onLongClick(View v) {
                 if (itemLongClickListener != null) {
-                    itemLongClickListener.onItemLongClick(null, viewHolder.root, position, 0);
+                    itemLongClickListener.onItemLongClick(null, viewHolder.root, viewHolder.getAdapterPosition(), 0);
                 }
 
                 return true;
@@ -228,20 +230,23 @@ public class GalleryGridAdapter extends RecyclerView.Adapter<GalleryGridAdapter.
     }
 
 
-    public class GridViewHolder extends RecyclerView.ViewHolder {
-        public final GridItemImageView galleryThumbnail;
-        public final TextView fileSize;
-        public final TextView fileExt;
-        public final TextView selected;
-        public final View root;
+    class GridViewHolder extends RecyclerView.ViewHolder {
+        final GridItemImageView galleryThumbnail;
+        final TextView fileSize;
+        final TextView fileExt;
+        final TextView selected;
+        final TextView itemNumber;
+        final View root;
 
-        public GridViewHolder(final View root) {
+        GridViewHolder(final View root) {
             super(root);
 
             galleryThumbnail = (GridItemImageView) root.findViewById(R.id.gallery_thumbnail);
             fileSize = (TextView) root.findViewById(R.id.file_size);
             fileExt = (TextView) root.findViewById(R.id.file_ext);
             selected = (TextView) root.findViewById(R.id.selected);
+            itemNumber = (TextView) root.findViewById(R.id.item_number);
+
             selected.setTypeface(typeface);
             this.root = root;
         }

@@ -32,8 +32,7 @@ public class SimpleMediaScannerConnction implements MediaScannerConnection.Media
         mediaScannerConnection = new MediaScannerConnection(context, this);
         try {
             mediaScannerConnection.connect();
-        }
-        catch (final Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
         }
     }
@@ -45,8 +44,8 @@ public class SimpleMediaScannerConnction implements MediaScannerConnection.Media
 
     @Override
     public void onScanCompleted(final String path, final Uri uri) {
-        if(path != null) {
-            if(path.equals(fileToScan.getAbsolutePath())) {
+        if (path != null) {
+            if (path.equals(fileToScan.getAbsolutePath())) {
                 mediaScannerConnection.disconnect();
             }
         }

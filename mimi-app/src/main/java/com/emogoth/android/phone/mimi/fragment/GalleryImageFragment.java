@@ -23,6 +23,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.ViewStubCompat;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
@@ -128,6 +129,12 @@ public class GalleryImageFragment extends GalleryImageBase {
                             @Override
                             public void call(Bitmap bitmap) {
                                 listener.onImageDisplayed(GalleryImageFragment.this, bitmap);
+                            }
+                        }, new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                Log.e(LOG_TAG, "Error while saving file. It may not have saved.", throwable);
+                                Toast.makeText(getActivity(), R.string.failed_to_save_file, Toast.LENGTH_SHORT).show();
                             }
                         });
             }

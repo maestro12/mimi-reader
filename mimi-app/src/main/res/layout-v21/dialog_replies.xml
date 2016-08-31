@@ -32,14 +32,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
         <android.support.v7.widget.Toolbar
             android:theme="?toolbarBackground"
             android:id="@+id/reply_dialog_toolbar"
             android:layout_width="match_parent"
             android:layout_height="40dp">
+
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -49,7 +52,8 @@
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textAllCaps="true"
-                    android:text="@string/replies"/>
+                    android:text="@string/replies" />
+
                 <com.emogoth.android.phone.mimi.view.IconTextView
                     android:id="@+id/close_button"
                     android:layout_width="40dp"
@@ -58,14 +62,15 @@
                     android:gravity="center"
                     android:textSize="28sp"
                     android:textColor="@color/comment_dark"
-                    android:text="@string/ic_close"/>
+                    android:text="@string/ic_close" />
             </FrameLayout>
         </android.support.v7.widget.Toolbar>
+
         <ListView
             android:id="@+id/replies_list"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"/>
+            android:layout_gravity="center" />
     </LinearLayout>
 
 </android.support.v7.widget.CardView>

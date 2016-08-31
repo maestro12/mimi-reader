@@ -21,12 +21,11 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
+
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.app.MimiApplication;
 
 /**
  * The configuration screen for the {@link MimiWidget Mimi} AppWidget.
@@ -51,7 +50,7 @@ public class MimiWidgetConfigureActivity extends Activity {
         setResult(RESULT_CANCELED);
 
         setContentView(R.layout.mimi_widget_configure);
-        mAppWidgetText = (EditText)findViewById(R.id.appwidget_text);
+        mAppWidgetText = (EditText) findViewById(R.id.appwidget_text);
         findViewById(R.id.add_button).setOnClickListener(mOnClickListener);
 
         // Find the widget id from the intent.
@@ -77,7 +76,7 @@ public class MimiWidgetConfigureActivity extends Activity {
 
             // When the button is clicked, store the string locally
             String widgetText = mAppWidgetText.getText().toString();
-            saveTitlePref(context,mAppWidgetId,widgetText);
+            saveTitlePref(context, mAppWidgetId, widgetText);
 
             // It is the responsibility of the configuration activity to update the app widget
             AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);

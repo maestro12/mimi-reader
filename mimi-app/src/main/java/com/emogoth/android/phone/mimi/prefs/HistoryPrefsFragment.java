@@ -24,7 +24,6 @@ import android.preference.SwitchPreference;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 
 

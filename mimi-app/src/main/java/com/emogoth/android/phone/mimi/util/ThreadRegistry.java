@@ -47,10 +47,9 @@ public class ThreadRegistry {
     }
 
     public void init() {
-        if(threadArray != null) {
+        if (threadArray != null) {
             threadArray.clear();
-        }
-        else {
+        } else {
             threadArray = new SparseArray<>();
         }
 
@@ -77,7 +76,7 @@ public class ThreadRegistry {
     }
 
     public void setPosts(int id, List<ChanPost> posts) {
-        if(this.threadId == 0) {
+        if (this.threadId == 0) {
             Log.d(LOG_TAG, "Setting a post list: id=" + id + ", size=" + posts.size());
             this.threadId = id;
             this.chanPosts = posts;
@@ -85,7 +84,7 @@ public class ThreadRegistry {
     }
 
     public List<ChanPost> getPosts(int id) {
-        if(this.threadId == id) {
+        if (this.threadId == id) {
             Log.d(LOG_TAG, "Getting post list: id=" + id);
             return this.chanPosts;
         }
@@ -94,7 +93,7 @@ public class ThreadRegistry {
     }
 
     public void clearPosts(int id) {
-        if(threadId > 0 && threadId == id) {
+        if (threadId > 0 && threadId == id) {
             Log.d(LOG_TAG, "clearing post list: id=" + id);
             this.threadId = 0;
             this.chanPosts = null;
@@ -104,20 +103,19 @@ public class ThreadRegistry {
     public void add(final String boardName, final int threadId, final int postId, final int postCount, final boolean bookmarked) {
         Log.d(LOG_TAG, "Adding thread information: thread id=" + threadId + ", size=" + postCount);
         final ThreadRegistryModel thread;
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             thread = threadArray.get(threadId);
             threadArray.remove(threadId);
 
             thread.setBookmarked(bookmarked);
 
-            if(bookmarked) {
+            if (bookmarked) {
                 updateUnreadCount(thread, postCount);
-            }
-            else {
+            } else {
                 thread.setUnreadCount(0);
             }
 
-            if(postId > 0 && !thread.getUserPosts().contains(postId)) {
+            if (postId > 0 && !thread.getUserPosts().contains(postId)) {
                 thread.getUserPosts().add(postId);
             }
 
@@ -125,8 +123,7 @@ public class ThreadRegistry {
 
             threadArray.put(threadId, thread);
             Log.i(LOG_TAG, "Modifying thread: id=" + threadId + ", board=" + boardName + ", size=" + postCount);
-        }
-        else {
+        } else {
 
             thread = new ThreadRegistryModel();
             thread.setThreadId(threadId);
@@ -137,7 +134,7 @@ public class ThreadRegistry {
 
             Log.i(LOG_TAG, "Adding thread: id=" + threadId + ", board=" + boardName + ", size=" + postCount);
 
-            if(postId > 0 && !thread.getUserPosts().contains(postId)) {
+            if (postId > 0 && !thread.getUserPosts().contains(postId)) {
                 thread.getUserPosts().add(postId);
             }
 
@@ -151,48 +148,44 @@ public class ThreadRegistry {
     }
 
     public void remove(final int threadId) {
-        if(threadArray != null && threadArray.get(threadId) != null) {
+        if (threadArray != null && threadArray.get(threadId) != null) {
             final ThreadRegistryModel threadRegistryModel = threadArray.get(threadId);
             threadArray.remove(threadId);
 
             RefreshScheduler.getInstance().removeThread(threadRegistryModel.getBoardName(), threadRegistryModel.getThreadId());
-        }
-        else {
+        } else {
             Log.e(LOG_TAG, "Could not remove thread from registry: id=" + threadId);
         }
     }
 
     public void deactivate(final int threadId) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             threadArray.get(threadId).setActive(false);
         }
     }
 
     public void setLastReadPosition(final int threadId, final int position) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             final ThreadRegistryModel thread = threadArray.get(threadId);
             final int pos;
-            if(position > thread.getThreadSize()) {
+            if (position > thread.getThreadSize()) {
                 pos = thread.getThreadSize();
-            }
-            else {
+            } else {
                 pos = position;
             }
 
             if (pos > thread.getLastReadPosition()) {
                 thread.setLastReadPosition(pos);
             }
-        }
-        else {
+        } else {
             Log.e(LOG_TAG, "Trying to update the last read position, but thread doesn't exist: id=" + threadId);
         }
     }
 
     public int getLastReadPosition(final int threadId) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             return threadArray.get(threadId).getLastReadPosition();
-        }
-        else {
+        } else {
             return -1;
         }
     }
@@ -201,15 +194,14 @@ public class ThreadRegistry {
         final ThreadRegistryModel threadRegistryModel = threadArray.get(threadId);
 
         if (threadRegistryModel != null) {
-            if(!threadRegistryModel.getUserPosts().contains(postId)) {
+            if (!threadRegistryModel.getUserPosts().contains(postId)) {
                 threadRegistryModel.getUserPosts().add(postId);
             }
 
             threadArray.put(threadId, threadRegistryModel);
 
             Log.d(LOG_TAG, "Added post id " + postId + " to /" + boardname + "/" + threadId);
-        }
-        else{
+        } else {
             Log.e(LOG_TAG, "Error trying to add post id " + postId + " to /" + boardname + "/" + threadId);
         }
 
@@ -218,7 +210,7 @@ public class ThreadRegistry {
     public List<Integer> getUserPosts(final String boardName, final int threadId) {
         final ThreadRegistryModel threadRegistryModel = threadArray.get(threadId);
 
-        if(threadRegistryModel != null) {
+        if (threadRegistryModel != null) {
             return threadRegistryModel.getUserPosts();
         }
 
@@ -226,7 +218,7 @@ public class ThreadRegistry {
     }
 
     public boolean threadExists(final int threadId) {
-        if(threadArray != null && threadArray.get(threadId) != null) {
+        if (threadArray != null && threadArray.get(threadId) != null) {
             return true;
         }
 
@@ -234,15 +226,15 @@ public class ThreadRegistry {
     }
 
     public void setUnreadCount(final int threadId, final int count) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             threadArray.get(threadId).setUnreadCount(count);
         }
     }
 
     public void setThreadSize(final int threadId, final int size) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             final ThreadRegistryModel thread = threadArray.get(threadId);
-            if(thread.isBookmarked()) {
+            if (thread.isBookmarked()) {
                 updateUnreadCount(thread, size);
             }
 
@@ -263,7 +255,7 @@ public class ThreadRegistry {
     }
 
     public int getThreadSize(final int threadId) {
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             return threadArray.get(threadId).getThreadSize();
         }
 
@@ -271,13 +263,13 @@ public class ThreadRegistry {
     }
 
     public List<ThreadRegistryModel> getUpdatedThreads() {
-        if(threadArray != null && threadArray.size() > 0) {
+        if (threadArray != null && threadArray.size() > 0) {
             final List<ThreadRegistryModel> updatedThreadList = new ArrayList<>(threadArray.size());
             for (int i = 0; i < threadArray.size(); i++) {
                 final int key = threadArray.keyAt(i);
                 final ThreadRegistryModel model = threadArray.get(key);
 
-                if(model.getUnreadCount() > 0) {
+                if (model.getUnreadCount() > 0) {
                     updatedThreadList.add(model);
                 }
             }
@@ -291,17 +283,16 @@ public class ThreadRegistry {
     public void update(final int threadId, final int size, final boolean reset, final boolean bookmarked) {
         Log.d(LOG_TAG, "[refresh] update called: id=" + threadId + ", size=" + size + ", reset=" + reset + ", bookmarked=" + bookmarked);
 
-        if(threadExists(threadId)) {
+        if (threadExists(threadId)) {
             final ThreadRegistryModel threadRegistryModel = threadArray.get(threadId);
             Log.d(LOG_TAG, "[refresh] Updating thread information: thread id=" + threadId + ", size=" + size + ", old size=" + threadRegistryModel.getThreadSize() + ", last read pos=" + threadRegistryModel.getLastReadPosition());
             if (reset) {
                 threadRegistryModel.setThreadSize(size);
             }
 
-            if(bookmarked) {
+            if (bookmarked) {
                 updateUnreadCount(threadRegistryModel, size);
-            }
-            else {
+            } else {
                 threadRegistryModel.setUnreadCount(0);
             }
 
@@ -319,7 +310,7 @@ public class ThreadRegistry {
     }
 
     public void clear() {
-        if(threadArray != null) {
+        if (threadArray != null) {
             threadArray.clear();
         }
     }
@@ -330,7 +321,7 @@ public class ThreadRegistry {
     }
 
     public int getUnreadCount(final int threadId) {
-        if(threadArray.get(threadId) == null) {
+        if (threadArray.get(threadId) == null) {
             return -1;
         }
         final ThreadRegistryModel threadRegistryModel = threadArray.get(threadId);
@@ -339,7 +330,7 @@ public class ThreadRegistry {
 
     public int getUnreadCount() {
         int count = 0;
-        if(threadArray != null) {
+        if (threadArray != null) {
             for (int i = 0; i < threadArray.size(); i++) {
                 final int index = threadArray.keyAt(i);
                 if (threadArray.get(index).isBookmarked()) {

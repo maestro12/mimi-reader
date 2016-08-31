@@ -218,7 +218,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top"
-                    android:maxLines="3"
+                    android:maxLines="8"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp"
                     android:textSize="?attr/font_label_small" />

@@ -4,6 +4,9 @@
 .idea/uiDesigner.xml
 .idea/
 .idea
+.gradle/
+.gradle
+captures/
 build/
 ant_build/
 bin/
@@ -18,4 +21,5 @@ target/
 **/*.iml
 **/BuildConfig.java
 keystore.properties
-release.keystore
+*.keystore
+YouTubeAndroidPlayerApi.jar

@@ -93,7 +93,7 @@ public class HistoryTableConnection {
                 .from(History.class)
                 .orderBy(History.KEY_ORDER_ID + " ASC");
 
-        if(showRemoved != null) {
+        if (showRemoved != null) {
             query = query.where(History.KEY_THREAD_REMOVED + "=?", showRemoved);
         }
         if (watched != null) {
@@ -244,14 +244,14 @@ public class HistoryTableConnection {
                 return Observable.just(val > 0);
             }
         })
-        .onErrorReturn(new Func1<Throwable, Boolean>() {
-            @Override
-            public Boolean call(Throwable throwable) {
-                Log.e(LOG_TAG, "Error deleting history: name=" + boardName + ", thread=" + threadId, throwable);
-                return false;
-            }
-        })
-        .compose(DatabaseUtils.<Boolean>applySchedulers());
+                .onErrorReturn(new Func1<Throwable, Boolean>() {
+                    @Override
+                    public Boolean call(Throwable throwable) {
+                        Log.e(LOG_TAG, "Error deleting history: name=" + boardName + ", thread=" + threadId, throwable);
+                        return false;
+                    }
+                })
+                .compose(DatabaseUtils.<Boolean>applySchedulers());
     }
 
     public static Observable<Boolean> removeAllHistory(final boolean watched) {

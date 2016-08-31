@@ -16,9 +16,11 @@
   -->
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/share_link"
-        android:title="@string/link"/>
+    <item
+        android:id="@+id/share_link"
+        android:title="@string/link" />
 
-    <item android:id="@+id/share_image"
-        android:title="@string/image"/>
+    <item
+        android:id="@+id/share_image"
+        android:title="@string/image" />
 </menu>

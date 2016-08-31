@@ -19,8 +19,8 @@ package com.emogoth.android.phone.mimi.view;
 /**
  * Created by Eli Connelly on 2/25/2015.
  */
+
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.widget.TextView;

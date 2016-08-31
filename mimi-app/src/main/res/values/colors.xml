@@ -18,21 +18,29 @@
 <resources>
 
     <!-- General App Colors -->
+    <color name="background_black">#000000</color>
     <color name="background_dark">#121212</color>
     <color name="background_light">#F4F4F4</color>
 
-    <color name="divider_light">#B6B6B6</color>
+    <color name="divider_black">#000000</color>
     <color name="divider_dark">#010101</color>
+    <color name="divider_light">#B6B6B6</color>
 
+    <color name="text_color_black">#DDDDDD</color>
+    <color name="text_color_dark">#DDDDDD</color>
     <color name="text_color_light">#222222</color>
-    <color name="text_color_dark">#ACACAC</color>
 
-    <color name="subtext_color_light">#7C7C7C</color>
+    <color name="subtext_color_black">#666666</color>
     <color name="subtext_color_dark">#666666</color>
+    <color name="subtext_color_light">#7C7C7C</color>
 
     <color name="row_item_background_light">#FCFFFE</color>
     <color name="row_item_background_light_focused">#FFFFFF</color>
     <color name="row_item_background_light_pressed">#FFFFFF</color>
+
+    <color name="row_item_background_black">#000000</color>
+    <color name="row_item_background_black_focused">#181818</color>
+    <color name="row_item_background_black_pressed">#303030</color>
 
     <color name="row_item_background_dark">#222222</color>
     <color name="row_item_background_dark_focused">#303030</color>
@@ -46,19 +54,27 @@
     <color name="row_item_border_dark_focused">#121212</color>
     <color name="row_item_border_dark_pressed">#222222</color>
 
-    <color name="post_highlight_light">#F5F7F6</color>
+    <color name="row_item_border_black">#000000</color>
+    <color name="row_item_border_black_focused">#121212</color>
+    <color name="row_item_border_black_pressed">#222222</color>
+
+    <color name="post_highlight_black">#101010</color>
     <color name="post_highlight_dark">#101010</color>
+    <color name="post_highlight_light">#F5F7F6</color>
 
-    <color name="reply_form_background_light">#EFEFEF</color>
+    <color name="reply_form_background_black">#101010</color>
     <color name="reply_form_background_dark">#101010</color>
+    <color name="reply_form_background_light">#EFEFEF</color>
 
+    <color name="toolbar_background_black">#000000</color>
     <color name="toolbar_background_dark">#121212</color>
     <color name="toolbar_highlight_primary_dark">#010101</color>
 
     <color name="nav_drawer_background">#273238</color>
 
+    <color name="post_reply_button_black">@color/md_blue_700</color>
     <color name="post_reply_button_dark">#388E3C</color>
-    <color name="post_reply_button_light">#448AFF</color>
+    <color name="post_reply_button_light">@color/md_blue_900</color>
 
     <!-- Board List Colors -->
     <color name="sort_by_row_color">#273238</color>
@@ -73,7 +89,9 @@
     <color name="subject_light">#FF1A1A1A</color>
     <color name="subject_dark">#FFCCCCCC</color>
     <color name="comment_light">#FF1A1A1A</color>
-    <color name="comment_dark">#FFCCCCCC</color>
+    <color name="first_comment_light">#FF222222</color>
+    <color name="comment_dark">#FFFFFFFF</color>
+    <color name="first_comment_dark">#FFCCCCCC</color>
 
     <color name="thumbnail_selected_drawable">#CC33B5E5</color>
 
@@ -109,18 +127,20 @@
     <color name="transparent">#00000000</color>
 
     <!-- Post Details Toolbar -->
+    <color name="toolbar_icon_color_black">#FFFFFFFF</color>
+    <color name="toolbar_icon_shadow_color_black">#FF000000</color>
     <color name="toolbar_icon_color_dark">#FFFFFFFF</color>
     <color name="toolbar_icon_shadow_color_dark">#FF121212</color>
     <color name="toolbar_icon_color_light">#FFFFFFFF</color>
     <color name="toolbar_icon_shadow_color_light">#FF121212</color>
 
-    <color name="toolbar_blue_grey_primary">#324148</color>
     <color name="toolbar_blue_grey_dark">#212B30</color>
+    <color name="toolbar_blue_grey_primary">#324148</color>
 
-    <color name="toolbar_light_red_primary">#8D1616</color>
-    <color name="toolbar_light_red_dark">#6A1111</color>
     <color name="toolbar_dark_red_primary">#7C1313</color>
     <color name="toolbar_dark_red_dark">#580E0E</color>
+    <color name="toolbar_light_red_primary">#8D1616</color>
+    <color name="toolbar_light_red_dark">#6A1111</color>
 
     <!-- Post Info -->
     <color name="username_color_dark">#1E75C7</color>
@@ -130,7 +150,8 @@
     <color name="post_header_decoration_light">#444444</color>
     <color name="post_header_decoration_dark">#888888</color>
 
-    <color name="highlight_color_dark">#0388F4</color>
+    <color name="highlight_color_black">@color/md_blue_800</color>
+    <color name="highlight_color_dark">@color/md_blue_800</color>
     <color name="highlight_color_light">#03A9F4</color>
 
     <!-- Rating Bar -->
@@ -141,11 +162,12 @@
 
     <color name="solid_black">#ff000000</color>
 
-    <color name="app_background_normal_light">#273238</color>
-    <color name="app_background_pressed_light">#1E2B31</color>
-
+    <color name="app_background_normal_black">#FF000000</color>
+    <color name="app_background_pressed_black">#FF121212</color>
     <color name="app_background_normal_dark">#FF222222</color>
     <color name="app_background_pressed_dark">#FF121212</color>
+    <color name="app_background_normal_light">#273238</color>
+    <color name="app_background_pressed_light">#1E2B31</color>
 
     <!-- Native Ads -->
     <color name="cta_background_color">#49A836</color>

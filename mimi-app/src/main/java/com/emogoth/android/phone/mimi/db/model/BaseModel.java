@@ -23,7 +23,10 @@ import com.activeandroid.Model;
 
 public abstract class BaseModel extends Model {
     public abstract ContentValues toContentValues();
+
     public abstract String getTableName();
+
     public abstract String whereClause();
+
     public abstract String whereArg();
 }
