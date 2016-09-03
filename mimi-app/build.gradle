@@ -70,11 +70,13 @@ android {
         javaMaxHeapSize "2g"
     }
     signingConfigs {
-        release {
-            storeFile file('release.keystore')
-            keyAlias 'fake'
-            keyPassword 'fake'
-            storePassword 'fake'
+        if (!System.getenv("TRAVIS")) {
+            release {
+                storeFile file('release.keystore')
+                keyAlias 'fake'
+                keyPassword 'fake'
+                storePassword 'fake'
+            }
         }
     }
     productFlavors {
