@@ -70,9 +70,6 @@ android {
         javaMaxHeapSize "2g"
     }
     signingConfigs {
-        debug {
-            storeFile file('debug.keystore')
-        }
         release {
             storeFile file('release.keystore')
             keyAlias 'fake'
