@@ -1,0 +1,11 @@
+sudo: false
+language: android
+jdk:
+  - oraclejdk8
+android:
+  components:
+    - platform-tools
+    - tools
+    - extra-android-m2repository
+    - build-tools-24.0.2
+    - android-24
