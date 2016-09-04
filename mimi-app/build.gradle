@@ -69,18 +69,18 @@ android {
     dexOptions {
         javaMaxHeapSize "2g"
     }
+    if (!System.getenv("TRAVIS")) {
+        signingConfigs {
 
-    signingConfigs {
+            release {
+                storeFile file('release.keystore')
+                keyAlias 'fake'
+                keyPassword 'fake'
+                storePassword 'fake'
+            }
 
-        release {
-            storeFile file('release.keystore')
-            keyAlias 'fake'
-            keyPassword 'fake'
-            storePassword 'fake'
         }
-
     }
-
     productFlavors {
     }
     buildTypes {
@@ -96,7 +96,9 @@ android {
             buildConfigField "boolean", "SHOW_ALL_BOARDS", "false"
         }
         release {
-            signingConfig signingConfigs.release
+            if (!System.getenv("TRAVIS")) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             minifyEnabled true
             shrinkResources true
@@ -122,21 +124,21 @@ android {
     }
 }
 
-//allprojects {
-//    afterEvaluate { project ->
-//        def propsFile = rootProject.file('keystore.properties')
-//        def configName = 'release'
-//
-//        if (propsFile.exists() && android.signingConfigs.hasProperty(configName)) {
-//            def props = new Properties()
-//            props.load(new FileInputStream(propsFile))
-//            android.signingConfigs[configName].storeFile = file(props['storeFile'])
-//            android.signingConfigs[configName].storePassword = props['storePassword']
-//            android.signingConfigs[configName].keyAlias = props['keyAlias']
-//            android.signingConfigs[configName].keyPassword = props['keyPassword']
-//        }
-//    }
-//}
+allprojects {
+    afterEvaluate { project ->
+        def propsFile = rootProject.file('keystore.properties')
+        def configName = 'release'
+
+        if (propsFile.exists() && android.signingConfigs.hasProperty(configName)) {
+            def props = new Properties()
+            props.load(new FileInputStream(propsFile))
+            android.signingConfigs[configName].storeFile = file(props['storeFile'])
+            android.signingConfigs[configName].storePassword = props['storePassword']
+            android.signingConfigs[configName].keyAlias = props['keyAlias']
+            android.signingConfigs[configName].keyPassword = props['keyPassword']
+        }
+    }
+}
 
 dependencies {
     compile fileTree(dir: 'src/main/libs/', include: '*.jar')
