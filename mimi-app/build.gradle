@@ -69,18 +69,18 @@ android {
     dexOptions {
         javaMaxHeapSize "2g"
     }
-    if (!System.getenv("TRAVIS")) {
-        signingConfigs {
 
-            release {
-                storeFile file('release.keystore')
-                keyAlias 'fake'
-                keyPassword 'fake'
-                storePassword 'fake'
-            }
+    signingConfigs {
 
+        release {
+            storeFile file('release.keystore')
+            keyAlias 'fake'
+            keyPassword 'fake'
+            storePassword 'fake'
         }
+
     }
+
     productFlavors {
     }
     buildTypes {
