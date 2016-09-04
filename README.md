@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/MimiReader/mimi-reader.svg?branch=master)](https://travis-ci.org/MimiReader/mimi-reader)
+
 # README #
 
 This README attempts to document how to set up this crappy project.
