@@ -86,7 +86,6 @@ android {
     buildTypes {
         debug {
             versionNameSuffix ' (DEBUG)'
-            signingConfig signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt', 'proguard-rules-debug.txt'
             minifyEnabled true
             shrinkResources false
@@ -96,9 +95,6 @@ android {
             buildConfigField "boolean", "SHOW_ALL_BOARDS", "false"
         }
         release {
-            if (!System.getenv("TRAVIS")) {
-                signingConfig signingConfigs.release
-            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
             minifyEnabled true
             shrinkResources true
