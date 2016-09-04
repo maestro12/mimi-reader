@@ -67,7 +67,7 @@ android {
         abortOnError false
     }
     dexOptions {
-        javaMaxHeapSize "2g"
+        javaMaxHeapSize "4g"
     }
     if (!System.getenv("TRAVIS")) {
         signingConfigs {
