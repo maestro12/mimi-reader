@@ -266,4 +266,51 @@ public class ChanBoard implements Parcelable {
             return new ChanBoard[size];
         }
     };
+
+    public boolean compareContents(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ChanBoard chanBoard = (ChanBoard) o;
+
+        if (getWsBoard() != chanBoard.getWsBoard()) return false;
+        if (getPerPage() != chanBoard.getPerPage()) return false;
+        if (getPages() != chanBoard.getPages()) return false;
+        if (getMaxFilesize() != chanBoard.getMaxFilesize()) return false;
+        if (getMaxWebmFilesize() != chanBoard.getMaxWebmFilesize()) return false;
+        if (getMaxCommentChars() != chanBoard.getMaxCommentChars()) return false;
+        if (getBumpLimit() != chanBoard.getBumpLimit()) return false;
+        if (getImageLimit() != chanBoard.getImageLimit()) return false;
+        if (getIsArchived() != chanBoard.getIsArchived()) return false;
+        if (getSpoilers() != chanBoard.getSpoilers()) return false;
+        if (getCustomSpoilers() != chanBoard.getCustomSpoilers()) return false;
+        if (getUserIds() != chanBoard.getUserIds()) return false;
+        if (getCodeTags() != chanBoard.getCodeTags()) return false;
+        if (getCountryFlags() != chanBoard.getCountryFlags()) return false;
+        if (getSjisTags() != chanBoard.getSjisTags()) return false;
+        if (getMathTags() != chanBoard.getMathTags()) return false;
+        if (isFavorite() != chanBoard.isFavorite()) return false;
+        if (!getName().equals(chanBoard.getName())) return false;
+        if (getTitle() != null ? !getTitle().equals(chanBoard.getTitle()) : chanBoard.getTitle() != null)
+            return false;
+        return getMetaDescription() != null ? getMetaDescription().equals(chanBoard.getMetaDescription()) : chanBoard.getMetaDescription() == null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ChanBoard chanBoard = (ChanBoard) o;
+
+        if (!getName().equals(chanBoard.getName())) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getName().hashCode();
+        result = 31 * result + (getTitle() != null ? getTitle().hashCode() : 0);
+        return result;
+    }
 }

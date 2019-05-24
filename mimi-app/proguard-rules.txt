@@ -55,6 +55,7 @@
 -keep class de.nikwen.dynamicshareactionprovider.library.** { *; }
 -keep class com.emogoth.android.phone.mimi.view.** { *; }
 -keep class android.support.v7.widget.SearchView { *; }
+-dontnote android.**
 
 -keep class * extends java.util.ListResourceBundle {
     protected Object[][] getContents();
@@ -95,24 +96,6 @@
 ##----------------- dynamic listview ------------------
 -dontwarn com.nhaarman.listviewanimations.**
 
-##----- ads -----
--keep class com.google.ads.internal.** {*;}
--keep class com.mopub.mobileads.** {*;}
--keep class com.mopub.nativeads.** {*;}
--keep class com.facebook.ads.** {*;}
--keep class com.amazon.device.ads.** {*;}
--dontwarn com.mopub.mobileads.**
--dontwarn com.mopub.nativeads.**
--keep class com.avocarrot.** {*;}
--dontwarn com.avocarrot.**
-
--keep class com.nuance.nmdp.** {*;}
--keepclassmembers class com.millennialmedia.android.* {
-public *;
-}
--keep class com.millennialmedia.android.**
--dontwarn com.millennialmedia.android.NVASpeechKit*
-
 -dontwarn java.nio.file.**
 -dontwarn org.codehaus.mojo.animal_sniffer.**
 
@@ -131,40 +114,33 @@ public *;
 -keep public class * extends android.support.v7.preference.Preference
 -keep class android.support.v7.preference.** {*;}
 
-## AdColony
--dontwarn com.immersion.**
--dontnote com.immersion.**
-
--dontwarn com.google.android.gms.**
-
-# Tapjoy
-#-keep class com.tapjoy.** { *; }
--dontwarn com.tapjoy.**
--keepattributes JavascriptInterface
--keep class * extends java.util.ListResourceBundle {
-protected Object[][] getContents();
-}
--keep class com.google.android.gms.ads.identifier.** { *; }
-
 # Glide
 -keep class com.bumptech.glide.integration.okhttp.OkHttpGlideModule
 -keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.AppGlideModule
 -keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$** {
     **[] $VALUES;
     public *;
 }
+-dontnote com.bumptech.glide.**
 
 # Retrofit 2.X
 -dontwarn retrofit2.**
+-dontnote retrofit2.**
 -keep class retrofit2.** { *; }
 
 -keep class com.squareup.okhttp3.** { *; }
 -keep interface com.squareup.okhttp3.** { *; }
+-keep class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
 -dontwarn okhttp3.**
+-dontnote okhttp3.**
 -dontwarn com.squareup.okhttp3.**
+-dontnote com.squareup.okhttp3.**
 -dontwarn okio.**
+-dontnote okio.**
 -dontwarn rx.**
+-dontnote rx.**
 
 -keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
     long producerIndex;
@@ -193,6 +169,7 @@ protected Object[][] getContents();
 
 # Stetho
 -keep class com.facebook.stetho.** {*;}
+-dontnote com.facebook.stetho.**
 
 -dontwarn com.mimireader.chanlib.**
 -keep class com.mimireader.chanlib.** { *; }
@@ -216,3 +193,6 @@ public *;
 -keepclasseswithmembers class * {
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
+
+# AndroidPdfViewer
+-keep class com.shockwave.**

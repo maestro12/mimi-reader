@@ -17,6 +17,7 @@
 package com.mimireader.chanlib.util;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.text.Spannable;
 
 import java.util.List;
@@ -27,14 +28,14 @@ public abstract class CommentParser {
     protected static Pattern YOUTUBE_PATTERN = Pattern.compile(".*(?:youtu.be\\/|v\\/|u\\/\\w\\/|embed\\/|watch\\?v=)([^#\\&\\?]*).*");
 
     protected final List<String> replies;
-    protected final List<Integer> userPostIds;
-    protected final List<Integer> highlightedPosts;
+    protected final List<Long> userPostIds;
+    protected final List<Long> highlightedPosts;
     protected final Context context;
     protected final CharSequence comment;
     protected final String boardName;
     protected final String opTag;
     protected final String youTag;
-    protected final int threadId;
+    protected final long threadId;
     protected final boolean demoMode;
 
     protected int replyColor;
@@ -42,7 +43,7 @@ public abstract class CommentParser {
     protected int quoteColor;
     protected int linkColor;
 
-    public CommentParser(List<String> replies, List<Integer> userPostIds, List<Integer> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, int threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode) {
+    public CommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode) {
         this.replies = replies;
         this.userPostIds = userPostIds;
         this.highlightedPosts = highlightedPosts;
@@ -61,14 +62,14 @@ public abstract class CommentParser {
 
     public abstract static class Builder {
         protected List<String> replies = null;
-        protected List<Integer> userPostIds = null;
-        protected List<Integer> highlightedPosts = null;
+        protected List<Long> userPostIds = null;
+        protected List<Long> highlightedPosts = null;
         protected Context context = null;
         protected CharSequence comment = null;
         protected String boardName = null;
         protected String opTag = " (OP)";
         protected String youTag = " (You)";
-        protected int threadId = 0;
+        protected long threadId = 0;
 
         protected int replyColor = -1;
         protected int highlightColor = -1;
@@ -82,12 +83,12 @@ public abstract class CommentParser {
             return this;
         }
 
-        public Builder setUserPostIds(List<Integer> userPostIds) {
+        public Builder setUserPostIds(List<Long> userPostIds) {
             this.userPostIds = userPostIds;
             return this;
         }
 
-        public Builder setHighlightedPosts(List<Integer> highlightedPosts) {
+        public Builder setHighlightedPosts(List<Long> highlightedPosts) {
             this.highlightedPosts = highlightedPosts;
             return this;
         }
@@ -117,7 +118,7 @@ public abstract class CommentParser {
             return this;
         }
 
-        public Builder setThreadId(int threadId) {
+        public Builder setThreadId(long threadId) {
             this.threadId = threadId;
             return this;
         }

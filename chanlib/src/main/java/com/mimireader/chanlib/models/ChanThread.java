@@ -17,27 +17,36 @@
 package com.mimireader.chanlib.models;
 
 
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.text.TextUtils;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import com.google.gson.annotations.Expose;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static com.mimireader.chanlib.util.ChanUtil.getVariableOrEmptyString;
+public class ChanThread {
+    @Expose protected List<ChanPost> posts = new ArrayList<>();
+    @Expose protected String boardName;
+    @Expose protected String boardTitle;
+    @Expose protected long threadId;
 
-public class ChanThread implements Parcelable, Externalizable {
+    public ChanThread() {
+        this.threadId = -1;
+    }
 
-    static final long serialVersionUID = -5847345613624646217L;
+    public ChanThread(String boardName, long threadId, List<ChanPost> posts) {
+        this.boardName = boardName;
+        this.threadId = threadId;
+        this.posts.addAll(posts);
+    }
 
-    private List<ChanPost> posts = new ArrayList<>();
-
-    private String boardName;
-    private String boardTitle;
-    private int threadId;
+    public ChanThread(ChanThread thread) {
+        this.boardName = thread.getBoardName();
+        this.boardTitle = thread.getBoardTitle();
+        this.threadId = thread.getThreadId();
+        this.posts.addAll(thread.getPosts());
+    }
 
     public List<ChanPost> getPosts() {
         return posts;
@@ -55,11 +64,11 @@ public class ChanThread implements Parcelable, Externalizable {
         this.boardName = boardName;
     }
 
-    public int getThreadId() {
+    public long getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(int threadId) {
+    public void setThreadId(long threadId) {
         this.threadId = threadId;
     }
 
@@ -71,53 +80,11 @@ public class ChanThread implements Parcelable, Externalizable {
         this.boardTitle = boardTitle;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public static ChanThread empty() {
+        return new ChanThread("", -1, Collections.<ChanPost>emptyList());
     }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeTypedList(posts);
-        dest.writeString(this.boardName);
-        dest.writeString(this.boardTitle);
-        dest.writeInt(this.threadId);
-    }
-
-    public ChanThread() {
-    }
-
-    protected ChanThread(Parcel in) {
-        this.posts = in.createTypedArrayList(ChanPost.CREATOR);
-        this.boardName = in.readString();
-        this.boardTitle = in.readString();
-        this.threadId = in.readInt();
-    }
-
-    public static final Parcelable.Creator<ChanThread> CREATOR = new Parcelable.Creator<ChanThread>() {
-        public ChanThread createFromParcel(Parcel source) {
-            return new ChanThread(source);
-        }
-
-        public ChanThread[] newArray(int size) {
-            return new ChanThread[size];
-        }
-    };
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.posts = (List<ChanPost>) in.readObject();
-        this.boardName = in.readUTF();
-        this.boardTitle = in.readUTF();
-        this.threadId = in.readInt();
-    }
-
-    @Override
-    public void writeExternal(ObjectOutput dest) throws IOException {
-        dest.writeObject(posts);
-        dest.writeUTF(getVariableOrEmptyString(this.boardName));
-        dest.writeUTF(getVariableOrEmptyString(this.boardTitle));
-        dest.writeInt(this.threadId);
+    public static boolean isEmpty(ChanThread thread) {
+        return thread == null || (TextUtils.isEmpty(thread.boardName) && thread.threadId == -1 && thread.posts.size() == 0);
     }
 }

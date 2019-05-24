@@ -17,7 +17,6 @@
 package com.mimireader.chanlib;
 
 
-import android.content.Context;
 import android.webkit.MimeTypeMap;
 
 import com.mimireader.chanlib.models.ChanBoard;
@@ -29,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.reactivex.Flowable;
+import io.reactivex.Single;
 import okhttp3.Cache;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -36,28 +37,29 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
-import rx.Observable;
 
 public abstract class ChanConnector {
 
     public static final String CACHE_DEFAULT = null;
     public static final String CACHE_FORCE_NETWORK = "no-cache";
 
-    public abstract Observable<List<ChanBoard>> fetchBoards();
+    public abstract Flowable<List<ChanBoard>> fetchBoards();
 
-    public abstract Observable<ChanCatalog> fetchCatalog(Context context, String boardName, String boardTitle);
+    public abstract Flowable<ChanCatalog> fetchCatalog(String boardName, String boardTitle);
 
-    public abstract Observable<ChanCatalog> fetchPage(Context context, int page, String boardName, String boardTitle);
+    public abstract Flowable<ChanCatalog> fetchPage(int page, String boardName, String boardTitle);
 
-    public abstract Observable<ChanThread> fetchThread(Context context, String boardName, int threadId, String cacheControl);
+    public abstract Flowable<ChanThread> fetchThread(String boardName, long threadId, String cacheControl);
 
-    public abstract Observable<Response<ResponseBody>> post(String boardName, Map<String, Object> params);
+    public abstract Single<Response<ResponseBody>> post(String boardName, Map<String, Object> params);
 
-    public abstract Observable<Response<ResponseBody>> login(String token, String pin);
+    public abstract Single<Response<ResponseBody>> login(String token, String pin);
 
-    public abstract String getThumbUrl(String boardName, String id, boolean secureConnection);
+    public abstract String getThumbUrl(String boardName, String id);
+
+    public abstract String getImageBaseUrl();
 
     public abstract String getImageCountText(int imageCount);
 
@@ -74,9 +76,9 @@ public abstract class ChanConnector {
                 if (entry.getValue() instanceof String) {
                     rb = RequestBody.create(MediaType.parse("text/plain"), (String) entry.getValue());
                 } else if (entry.getValue() instanceof Integer) {
-                    rb = RequestBody.create(MediaType.parse("text/plain"), String.valueOf((Integer) entry.getValue()));
+                    rb = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(entry.getValue()));
                 } else if (entry.getValue() instanceof Long) {
-                    rb = RequestBody.create(MediaType.parse("text/plain"), String.valueOf((Long) entry.getValue()));
+                    rb = RequestBody.create(MediaType.parse("text/plain"), String.valueOf(entry.getValue()));
                 } else if (entry.getValue() instanceof File) {
                     if (entry.getValue() != null) {
                         File f = (File) entry.getValue();
@@ -163,7 +165,7 @@ public abstract class ChanConnector {
                     .baseUrl(isPost ? postEndpoint : endpoint)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create())
-                    .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                     .build();
         }
 

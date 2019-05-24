@@ -19,57 +19,51 @@ package com.mimireader.chanlib.models;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import com.google.gson.annotations.Expose;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.mimireader.chanlib.util.ChanUtil.getVariableOrEmptyString;
-
-public class ChanPost implements Parcelable, Externalizable {
-
-    static final long serialVersionUID = -5847345613624646217L;
-
-    private int no;
-    private boolean closed;
-    private boolean sticky;
-    private String now;
-    private String name;
-    private String com;
+public class ChanPost implements Parcelable {
+    @Expose private long no;
+    @Expose private boolean closed;
+    @Expose private boolean sticky;
+    @Expose private String now;
+    @Expose private String name;
+    @Expose private String com;
     private transient CharSequence comment;
-    private String sub;
+    @Expose private String sub;
     private transient CharSequence subject;
-    private String filename;
-    private String ext;
-    private int w;
-    private int h;
-    private int tnW;
-    private int tnH;
-    private String tim;
-    private int time;
-    private String md5;
-    private int fsize;
-    private int resto;
-    private int bumplimit;
-    private int imagelimit;
-    private String semanticUrl;
-    private int replies;
-    private int images;
-    private int omittedPosts;
-    private int omittedImages;
-    private String email;
-    private String trip;
-    private String id;
-    private String capcode;
-    private String country;
-    private String countryName;
-    private boolean watched;
+    @Expose private String filename;
+    @Expose private String ext;
+    @Expose private int w;
+    @Expose private int h;
+    @Expose private int tnW;
+    @Expose private int tnH;
+    @Expose private String tim;
+    @Expose private int time;
+    @Expose private String md5;
+    @Expose private int fsize;
+    @Expose private int resto;
+    @Expose private int bumplimit;
+    @Expose private int imagelimit;
+    @Expose private String semanticUrl;
+    @Expose private int replies;
+    @Expose private int images;
+    @Expose private int omittedPosts;
+    @Expose private int omittedImages;
+    @Expose private String email;
+    @Expose private String trip;
+    @Expose private String id;
+    @Expose private String capcode;
+    @Expose private String country;
+    @Expose private String countryName;
+    @Expose private String trollCountry;
+    @Expose private boolean watched;
     private transient CharSequence displayedName;
 
-    private ArrayList<String> repliesTo = new ArrayList<>();
+    @Expose  private ArrayList<String> repliesTo = new ArrayList<>();
     private ArrayList<ChanPost> repliesFrom = new ArrayList<>();
 
     private String humanReadableFileSize;
@@ -108,6 +102,7 @@ public class ChanPost implements Parcelable, Externalizable {
         this.capcode = other.capcode;
         this.country = other.country;
         this.countryName = other.countryName;
+        this.trollCountry = other.trollCountry;
         this.displayedName = other.displayedName;
         this.repliesTo = other.repliesTo;
         this.repliesFrom = other.repliesFrom;
@@ -115,11 +110,11 @@ public class ChanPost implements Parcelable, Externalizable {
         this.humanReadableFileSize = other.humanReadableFileSize;
     }
 
-    public int getNo() {
+    public long getNo() {
         return no;
     }
 
-    public void setNo(int no) {
+    public void setNo(long no) {
         this.no = no;
     }
 
@@ -347,6 +342,14 @@ public class ChanPost implements Parcelable, Externalizable {
         this.countryName = countryName;
     }
 
+    public void setTrollCountry(String trollCountry) {
+        this.trollCountry = trollCountry;
+    }
+
+    public String getTrollCountry() {
+        return this.trollCountry;
+    }
+
     public String getSub() {
         return sub;
     }
@@ -423,17 +426,80 @@ public class ChanPost implements Parcelable, Externalizable {
         this.humanReadableFileSize = humanReadableFileSize;
     }
 
+//    @Override
+//    public boolean equals(Object o) {
+//        return o instanceof ChanPost && getNo() == ((ChanPost) o).getNo();
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        return no;
+//    }
+
+
     @Override
     public boolean equals(Object o) {
-        return o instanceof ChanPost && getNo() == ((ChanPost) o).getNo();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ChanPost chanPost = (ChanPost) o;
+
+        if (no != chanPost.no) return false;
+        if (closed != chanPost.closed) return false;
+        if (sticky != chanPost.sticky) return false;
+        if (w != chanPost.w) return false;
+        if (h != chanPost.h) return false;
+        if (tnW != chanPost.tnW) return false;
+        if (tnH != chanPost.tnH) return false;
+        if (time != chanPost.time) return false;
+        if (fsize != chanPost.fsize) return false;
+        if (resto != chanPost.resto) return false;
+        if (bumplimit != chanPost.bumplimit) return false;
+        if (imagelimit != chanPost.imagelimit) return false;
+        if (replies != chanPost.replies) return false;
+        if (images != chanPost.images) return false;
+        if (omittedPosts != chanPost.omittedPosts) return false;
+        if (omittedImages != chanPost.omittedImages) return false;
+        if (watched != chanPost.watched) return false;
+        if (now != null ? !now.equals(chanPost.now) : chanPost.now != null) return false;
+        if (name != null ? !name.equals(chanPost.name) : chanPost.name != null) return false;
+        if (com != null ? !com.equals(chanPost.com) : chanPost.com != null) return false;
+        if (comment != null ? !comment.equals(chanPost.comment) : chanPost.comment != null)
+            return false;
+        if (sub != null ? !sub.equals(chanPost.sub) : chanPost.sub != null) return false;
+        if (subject != null ? !subject.equals(chanPost.subject) : chanPost.subject != null)
+            return false;
+        if (filename != null ? !filename.equals(chanPost.filename) : chanPost.filename != null)
+            return false;
+        if (ext != null ? !ext.equals(chanPost.ext) : chanPost.ext != null) return false;
+        if (tim != null ? !tim.equals(chanPost.tim) : chanPost.tim != null) return false;
+        if (md5 != null ? !md5.equals(chanPost.md5) : chanPost.md5 != null) return false;
+        if (semanticUrl != null ? !semanticUrl.equals(chanPost.semanticUrl) : chanPost.semanticUrl != null)
+            return false;
+        if (email != null ? !email.equals(chanPost.email) : chanPost.email != null) return false;
+        if (trip != null ? !trip.equals(chanPost.trip) : chanPost.trip != null) return false;
+        if (id != null ? !id.equals(chanPost.id) : chanPost.id != null) return false;
+        if (capcode != null ? !capcode.equals(chanPost.capcode) : chanPost.capcode != null)
+            return false;
+        if (country != null ? !country.equals(chanPost.country) : chanPost.country != null)
+            return false;
+        if (countryName != null ? !countryName.equals(chanPost.countryName) : chanPost.countryName != null)
+            return false;
+        if (trollCountry != null ? !trollCountry.equals(chanPost.trollCountry) : chanPost.trollCountry != null)
+            return false;
+        if (displayedName != null ? !displayedName.equals(chanPost.displayedName) : chanPost.displayedName != null)
+            return false;
+        return humanReadableFileSize != null ? humanReadableFileSize.equals(chanPost.humanReadableFileSize) : chanPost.humanReadableFileSize == null;
+
     }
 
     @Override
     public int hashCode() {
-        return no;
+        return (int) no;
     }
 
     public ChanPost() {
+        no = -1;
     }
 
     @Override
@@ -443,7 +509,7 @@ public class ChanPost implements Parcelable, Externalizable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(this.no);
+        dest.writeLong(this.no);
         dest.writeByte(closed ? (byte) 1 : (byte) 0);
         dest.writeByte(sticky ? (byte) 1 : (byte) 0);
         dest.writeByte(watched ? (byte) 1 : (byte) 0);
@@ -481,7 +547,7 @@ public class ChanPost implements Parcelable, Externalizable {
     }
 
     protected ChanPost(Parcel in) {
-        this.no = in.readInt();
+        this.no = in.readLong();
         this.closed = in.readByte() != 0;
         this.sticky = in.readByte() != 0;
         this.watched = in.readByte() != 0;
@@ -528,82 +594,6 @@ public class ChanPost implements Parcelable, Externalizable {
         }
     };
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.no = in.readInt();
-        this.closed = in.readByte() != 0;
-        this.sticky = in.readByte() != 0;
-        this.now = in.readUTF();
-        this.name = in.readUTF();
-        this.com = in.readUTF();
-        this.sub = in.readUTF();
-        this.filename = in.readUTF();
-        this.ext = in.readUTF();
-        this.w = in.readInt();
-        this.h = in.readInt();
-        this.tnW = in.readInt();
-        this.tnH = in.readInt();
-        this.tim = in.readUTF();
-        this.time = in.readInt();
-        this.md5 = in.readUTF();
-        this.fsize = in.readInt();
-        this.resto = in.readInt();
-        this.bumplimit = in.readInt();
-        this.imagelimit = in.readInt();
-        this.semanticUrl = in.readUTF();
-        this.replies = in.readInt();
-        this.images = in.readInt();
-        this.omittedPosts = in.readInt();
-        this.omittedImages = in.readInt();
-        this.email = in.readUTF();
-        this.trip = in.readUTF();
-        this.id = in.readUTF();
-        this.capcode = in.readUTF();
-        this.country = in.readUTF();
-        this.countryName = in.readUTF();
-        this.repliesTo = new ArrayList<>();
-        this.repliesFrom = new ArrayList<>();
-        this.humanReadableFileSize = in.readUTF();
-    }
-
-    @Override
-    public void writeExternal(ObjectOutput dest) throws IOException {
-        dest.writeInt(this.no);
-        dest.writeByte(closed ? (byte) 1 : (byte) 0);
-        dest.writeByte(sticky ? (byte) 1 : (byte) 0);
-        dest.writeUTF(getVariableOrEmptyString(this.now));
-        dest.writeUTF(getVariableOrEmptyString(this.name));
-        dest.writeUTF(getVariableOrEmptyString(this.com));
-        dest.writeUTF(getVariableOrEmptyString(this.sub));
-        dest.writeUTF(getVariableOrEmptyString(this.filename));
-        dest.writeUTF(getVariableOrEmptyString(this.ext));
-        dest.writeInt(this.w);
-        dest.writeInt(this.h);
-        dest.writeInt(this.tnW);
-        dest.writeInt(this.tnH);
-        dest.writeUTF(getVariableOrEmptyString(this.tim));
-        dest.writeInt(this.time);
-        dest.writeUTF(getVariableOrEmptyString(this.md5));
-        dest.writeInt(this.fsize);
-        dest.writeInt(this.resto);
-        dest.writeInt(this.bumplimit);
-        dest.writeInt(this.imagelimit);
-        dest.writeUTF(getVariableOrEmptyString(this.semanticUrl));
-        dest.writeInt(this.replies);
-        dest.writeInt(this.images);
-        dest.writeInt(this.omittedPosts);
-        dest.writeInt(this.omittedImages);
-        dest.writeUTF(getVariableOrEmptyString(this.email));
-        dest.writeUTF(getVariableOrEmptyString(this.trip));
-        dest.writeUTF(getVariableOrEmptyString(this.id));
-        dest.writeUTF(getVariableOrEmptyString(this.capcode));
-        dest.writeUTF(getVariableOrEmptyString(this.country));
-        dest.writeUTF(getVariableOrEmptyString(this.countryName));
-//        dest.writeObject(repliesTo);
-//        dest.writeObject(repliesFrom);
-        dest.writeUTF(getVariableOrEmptyString(this.humanReadableFileSize));
-    }
-
     public static class ThreadIdComparator implements Comparator<ChanPost> {
         @Override
         public int compare(ChanPost o1, ChanPost o2) {
@@ -624,4 +614,6 @@ public class ChanPost implements Parcelable, Externalizable {
             return o1.replies < o2.replies ? 1 : (o1.replies > o2.replies ? -1 : 0);
         }
     }
+
+
 }
