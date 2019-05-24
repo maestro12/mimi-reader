@@ -17,7 +17,7 @@ target/
 **/*.iml
 **/BuildConfig.java
 keystore.properties
-*.keystore
+release.keystore
 YouTubeAndroidPlayerApi.jar
 *.apk
 output.json
