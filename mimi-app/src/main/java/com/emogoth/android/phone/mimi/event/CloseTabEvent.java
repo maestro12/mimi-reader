@@ -18,12 +18,12 @@ package com.emogoth.android.phone.mimi.event;
 
 
 public final class CloseTabEvent {
-    private final int id;
+    private final long id;
     private final String boardName;
     private final String boardTitle;
     private final boolean closeOthers;
 
-    public CloseTabEvent(int id, String boardName, String boardTitle, boolean closeOthers) {
+    public CloseTabEvent(long id, String boardName, String boardTitle, boolean closeOthers) {
         this.id = id;
         this.boardName = boardName;
         this.boardTitle = boardTitle;
@@ -37,7 +37,7 @@ public final class CloseTabEvent {
         this.closeOthers = closeOthers;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 

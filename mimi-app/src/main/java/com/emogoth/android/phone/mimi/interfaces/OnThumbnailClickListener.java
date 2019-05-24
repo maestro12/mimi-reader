@@ -22,5 +22,5 @@ import com.mimireader.chanlib.models.ChanPost;
 import java.util.List;
 
 public interface OnThumbnailClickListener {
-    void onThumbnailClick(final List<ChanPost> posts, final int threadId, final int position, final String boardName);
+    void onThumbnailClick(final List<ChanPost> posts, final long threadId, final int position, final String boardName);
 }

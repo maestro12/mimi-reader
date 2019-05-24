@@ -22,20 +22,22 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
@@ -51,6 +53,7 @@ import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.prefs.MimiSettings;
 import com.emogoth.android.phone.mimi.util.BusProvider;
+import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
@@ -60,10 +63,11 @@ import com.emogoth.android.phone.mimi.view.DrawerViewHolder;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.squareup.otto.Subscribe;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 
 
 public class NavDrawerFragment extends Fragment {
@@ -83,8 +87,8 @@ public class NavDrawerFragment extends Fragment {
     private int fontSizeId;
     private String layoutType;
 
-    private Subscription boardInfoSubscription;
-    private Subscription bookmarkSubscription;
+    private Disposable boardInfoSubscription;
+    private Disposable bookmarkSubscription;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -207,9 +211,9 @@ public class NavDrawerFragment extends Fragment {
 //                .subscribe();
         RxUtil.safeUnsubscribe(bookmarkSubscription);
         bookmarkSubscription = HistoryTableConnection.fetchHistory(true, bookmarkCount)
-                .subscribe(new Action1<List<History>>() {
+                .subscribe(new Consumer<List<History>>() {
                     @Override
-                    public void call(List<History> bookmarks) {
+                    public void accept(List<History> bookmarks) {
                         currentBookmarks = bookmarks;
 
                         bookmarksItemContainer.removeAllViews();
@@ -237,9 +241,9 @@ public class NavDrawerFragment extends Fragment {
                             noBookmarksContainer.setVisibility(View.VISIBLE);
                         }
                     }
-                }, new Action1<Throwable>() {
+                }, new Consumer<Throwable>() {
                     @Override
-                    public void call(Throwable throwable) {
+                    public void accept(Throwable throwable) {
                         Log.e(LOG_TAG, "Error loading bookmarks", throwable);
                     }
                 });
@@ -249,10 +253,10 @@ public class NavDrawerFragment extends Fragment {
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(bookmark.boardName)
                 .compose(DatabaseUtils.<ChanBoard>applySchedulers())
-                .subscribe(new Action1<ChanBoard>() {
+                .subscribe(new Consumer<ChanBoard>() {
                     @Override
-                    public void call(ChanBoard chanBoard) {
-                        if (chanBoard != null) {
+                    public void accept(ChanBoard chanBoard) {
+                        if (!TextUtils.isEmpty(chanBoard.getName())) {
                             BusProvider.getInstance().post(new BookmarkClickedEvent(bookmark.threadId, chanBoard.getName(), chanBoard.getTitle(), bookmark.orderId));
                         } else if (getActivity() != null) {
                             Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
@@ -281,7 +285,7 @@ public class NavDrawerFragment extends Fragment {
 
         viewHolder.text.setText(parserBuilder.build().parse());
 
-        if (bookmark.watched) {
+        if (bookmark.watched == 1) {
             final int count = ThreadRegistry.getInstance().getUnreadCount(bookmark.threadId);
 
             if (count > 0) {
@@ -296,11 +300,10 @@ public class NavDrawerFragment extends Fragment {
 
         viewHolder.image.setVisibility(View.INVISIBLE);
         if (!TextUtils.isEmpty(bookmark.tim)) {
-            final String url = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, bookmark.boardName, bookmark.tim);
+            final String url = MimiUtil.https() + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, bookmark.boardName, bookmark.tim);
 
-            Glide.with(activity)
+            GlideApp.with(activity)
                     .load(url)
-                    .crossFade()
                     .error(R.drawable.placeholder_image)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(viewHolder.image);
@@ -313,7 +316,7 @@ public class NavDrawerFragment extends Fragment {
 
         } else {
             viewHolder.image.setVisibility(View.INVISIBLE);
-            Glide.clear(viewHolder.image);
+            GlideApp.with(activity).clear(viewHolder.image);
         }
 
         viewHolder.boardName.setText("/" + bookmark.boardName + "/");

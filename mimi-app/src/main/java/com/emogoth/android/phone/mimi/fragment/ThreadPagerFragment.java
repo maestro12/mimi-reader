@@ -16,8 +16,9 @@
 
 package com.emogoth.android.phone.mimi.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
+import androidx.viewpager.widget.ViewPager;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -71,8 +72,6 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        setHasOptionsMenu(true);
         setRetainInstance(false);
     }
 
@@ -135,8 +134,8 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
                 currentFragment = (MimiFragmentBase) threadPagerAdapter.instantiateItem(threadPager, position);
                 if (getActivity() != null) {
                     final MimiActivity activity = (MimiActivity) getActivity();
-                    activity.getToolbar().setTitle(currentFragment.getTitle());
-                    activity.getToolbar().setSubtitle(currentFragment.getSubtitle());
+                    activity.getSupportActionBar().setTitle(currentFragment.getTitle());
+                    activity.getSupportActionBar().setSubtitle(currentFragment.getSubtitle());
 
                     currentFragment.initMenu();
                 }
@@ -196,8 +195,8 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
             final MimiFragmentBase fragment = (MimiFragmentBase) threadPagerAdapter.instantiateItem(threadPager, threadPager.getCurrentItem());
             if (getActivity() != null) {
                 final MimiActivity activity = (MimiActivity) getActivity();
-                activity.getToolbar().setTitle(fragment.getTitle());
-                activity.getToolbar().setSubtitle(fragment.getSubtitle());
+                activity.getSupportActionBar().setTitle(fragment.getTitle());
+                activity.getSupportActionBar().setSubtitle(fragment.getSubtitle());
             }
         }
 
@@ -209,6 +208,11 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
         super.onDestroy();
 
         threadPager.clearOnPageChangeListeners();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -242,7 +246,9 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
 
     public void setBookmarkCount(final int count) {
         newPostCount = count;
-        getActivity().supportInvalidateOptionsMenu();
+        if (getActivity() != null) {
+            getActivity().supportInvalidateOptionsMenu();
+        }
     }
 
     @Subscribe

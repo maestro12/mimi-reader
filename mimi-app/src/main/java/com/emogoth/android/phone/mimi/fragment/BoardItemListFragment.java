@@ -1,57 +1,38 @@
-/*
- * Copyright (c) 2016. Eli Connelly
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.emogoth.android.phone.mimi.fragment;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v4.widget.Space;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
-import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewStub;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.WebView;
-import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.legacy.widget.Space;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
@@ -65,25 +46,25 @@ import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnBoardsUpdatedCallback;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
 import com.emogoth.android.phone.mimi.util.AppRater;
+import com.emogoth.android.phone.mimi.util.BetterViewAnimator;
 import com.emogoth.android.phone.mimi.util.BusProvider;
+import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RequestQueueUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.DividerItemDecoration;
+import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
 
 
 /**
@@ -95,7 +76,7 @@ import rx.functions.Func1;
  * Activities containing this fragment MUST implement the {@link com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener}
  * interface.
  */
-public class BoardItemListFragment extends MimiFragmentBase implements ListView.OnItemClickListener,
+public class BoardItemListFragment extends MimiFragmentBase implements BoardListAdapter.OnBoardClickListener,
         TabInterface, ContentInterface {
 
     /**
@@ -115,7 +96,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
      */
     private BoardItemClickListener mCallbacks;
 
-    public List<ChanBoard> boards = new ArrayList<>();
     private boolean activateOnItemClick;
 
     /**
@@ -123,14 +103,10 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
      */
     private int mActivatedPosition = ListView.INVALID_POSITION;
     private RecyclerView boardsList;
-    private BoardItemClickListener boardItemClickListener;
-    private OnBoardsUpdatedCallback boardsCallback;
 
     private BoardListAdapter boardListAdapter;
 
-    private boolean dbWasUpdated = false;
-    private MenuItem bookmarkCountMenu;
-    private int newPostCount = 0;
+    private View rootView;
     private ViewGroup boardOrderContainer;
     private TextView showContentButton;
     private TextView boardOrderText;
@@ -145,6 +121,9 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
     private Space actionBarSpacer;
     private ViewGroup boardOrderBackground;
     private Spinner toolbarSpinner;
+    private View errorView;
+
+    private BetterViewAnimator errorSwitcher;
 
     private Animation revealListAnimation;
     private Animation showBoardOrderBackground;
@@ -159,8 +138,12 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
     private ItemTouchHelper itemTouchHelper;
     private ActionMode.Callback actionModeCallback;
 
-    private Subscription boardInfoSubscription;
-    private Subscription fetchBoardsSubscription;
+    private Disposable boardInfoSubscription;
+    private Disposable fetchBoardsSubscription;
+    private Disposable boardFetchDisposable;
+    private Disposable initDatabaseDisposable;
+
+    private MenuItem manageBoardsMenuItem;
 
 
     /**
@@ -189,7 +172,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
                 PreferenceManager.getDefaultSharedPreferences(getActivity()).edit().putString(getString(R.string.user_agent_pref), webViewAgent).apply();
                 webView.destroy();
             } catch (Exception e) {
-                Log.e(LOG_TAG, "Could not set user agent from webview, using default", e);
 
                 if (PreferenceManager.getDefaultSharedPreferences(getActivity()).getString(getString(R.string.user_agent_pref), null) == null) {
                     final String defaultAgent = System.getProperty("http.agent");
@@ -202,40 +184,29 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
             toolbar = ((MimiActivity) getActivity()).getToolbar();
         }
 
-        final View boardsView = inflater.inflate(R.layout.fragment_boards_list, container, false);
-
+        rootView = inflater.inflate(R.layout.fragment_boards_list, container, false);
         listFooter = inflater.inflate(R.layout.footer_board_list, container, false);
 
-        actionBarSpacer = (Space) boardsView.findViewById(R.id.spacer);
+        actionBarSpacer = (Space) rootView.findViewById(R.id.spacer);
+        errorSwitcher = rootView.findViewById(R.id.error_switcher);
 
-        boardListAdapter = new BoardListAdapter(getActivity(), boards);
-
+        boardListAdapter = new BoardListAdapter(getActivity(), new ArrayList<>());
 
         final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        boardsList = (RecyclerView) boardsView.findViewById(R.id.boards_list);
+        boardsList = rootView.findViewById(R.id.boards_list);
         boardsList.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.LIST_VERTICAL));
         boardsList.setLayoutManager(layoutManager);
         boardsList.setAdapter(boardListAdapter);
-        boardListAdapter.setDragListener(new BoardListAdapter.OnStartDragListener() {
-            @Override
-            public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
-                itemTouchHelper.startDrag(viewHolder);
-            }
-        });
-        boardListAdapter.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                if (getActivity() != null) {
+        boardListAdapter.setDragListener(viewHolder -> itemTouchHelper.startDrag(viewHolder));
+        boardListAdapter.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (getActivity() != null) {
 
-                    final MimiActivity activity = ((MimiActivity) getActivity());
-                    final Toolbar toolbar = activity.getToolbar();
-
-                    toolbar.startActionMode(getActionMode());
-                }
-                return false;
+                final MimiActivity activity = ((MimiActivity) getActivity());
+                activity.getToolbar().startActionMode(getActionMode());
             }
+            return false;
         });
-        return boardsView;
+        return rootView;
     }
 
     private ActionMode.Callback getActionMode() {
@@ -265,7 +236,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
                     boardOrderContainer.setVisibility(View.GONE);
 
                     boardsList.setClickable(false);
-                    boardListAdapter.setOnItemClickListener(null);
+                    boardListAdapter.setOnBoardClickListener(null);
 
                     mode.setTitle(R.string.manage_boards);
 
@@ -302,15 +273,13 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
                     boardListAdapter.editMode(false);
                     boardsList.setClickable(true);
-                    boardListAdapter.setOnItemClickListener(BoardItemListFragment.this);
+                    boardListAdapter.setOnBoardClickListener(BoardItemListFragment.this);
 
                     boardOrderContainer.setVisibility(View.VISIBLE);
                     actionBarSpacer.setVisibility(View.VISIBLE);
 
                     final int order = MimiUtil.getBoardOrder(getActivity());
                     boardOrderText.setText(orderByNames[order]);
-
-                    boards = boardListAdapter.getBoards();
 
                     BusProvider.getInstance().post(new ActionModeEvent(false));
                 }
@@ -333,18 +302,8 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
         input.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         alertBuilder.setView(input);
-        alertBuilder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                addBoard(input);
-            }
-        });
-        alertBuilder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-
-            }
-        });
+        alertBuilder.setPositiveButton(R.string.add, (dialog, which) -> addBoard(input.getText().toString()));
+        alertBuilder.setNegativeButton(R.string.cancel, (dialog, which) -> Log.v(LOG_TAG, "Cancelled adding a board"));
 
         alertBuilder.setTitle(R.string.add_board);
 
@@ -352,65 +311,45 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         d.show();
 
-        input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    addBoard(input);
-                    d.dismiss();
-                }
-                return true;
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                addBoard(input.getText().toString());
+                d.dismiss();
             }
+            return true;
         });
     }
 
-    private void addBoard(EditText input) {
-        if (TextUtils.isEmpty(input.getText())) {
+    private void addBoard(String rawBoardName) {
+        if (TextUtils.isEmpty(rawBoardName)) {
             return;
         }
 
-        final String boardName = input.getText().toString().replaceAll("/", "").toLowerCase().trim();
+        errorSwitcher.setDisplayedChildId(boardsList.getId());
 
         RxUtil.safeUnsubscribe(boardInfoSubscription);
+        String boardName = rawBoardName.replaceAll("/", "").toLowerCase().trim();
         boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                .flatMap(new Func1<ChanBoard, Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call(ChanBoard chanBoard) {
-                        return BoardTableConnection.setBoardVisibility(boardName, true);
-                    }
+                .flatMap((Function<ChanBoard, Flowable<ChanBoard>>) chanBoard -> BoardTableConnection.setBoardVisibility(chanBoard.getName(), true))
+                .flatMap((Function<ChanBoard, Flowable<List<Board>>>) success -> {
+                    final int orderId = MimiUtil.getBoardOrder(getActivity());
+                    return BoardTableConnection.fetchBoards(orderId);
                 })
-                .flatMap(new Func1<Boolean, Observable<List<Board>>>() {
-                    @Override
-                    public Observable<List<Board>> call(Boolean success) {
+                .flatMap((Function<List<Board>, Flowable<List<ChanBoard>>>) boards -> Flowable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                .onErrorReturn(throwable -> null)
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(boards -> {
+                    if (boards != null && boards.size() > 0) {
+                        boardListAdapter.setBoards(boards);
 
-                        if (success) {
-                            final int orderId = MimiUtil.getBoardOrder(getActivity());
-                            return BoardTableConnection.fetchBoards(orderId);
+                        if (manageBoardsMenuItem != null) {
+                            manageBoardsMenuItem.setEnabled(true);
                         }
 
-                        return Observable.just(Collections.<Board>emptyList());
-                    }
-                })
-                .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
-                    @Override
-                    public Observable<List<ChanBoard>> call(List<Board> boards) {
-                        return Observable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards));
-                    }
-                })
-                .compose(DatabaseUtils.<List<ChanBoard>>applySchedulers())
-                .subscribe(new Action1<List<ChanBoard>>() {
-                    @Override
-                    public void call(List<ChanBoard> boards) {
-                        if (boards != null && boards.size() > 0) {
-                            boardListAdapter.setBoards(boards);
-                            BoardItemListFragment.this.boards = boards;
-                        } else {
-                            Toast.makeText(getActivity(), R.string.error_adding_board, Toast.LENGTH_SHORT).show();
-                        }
+                    } else {
+                        showError();
                     }
                 });
-
-
     }
 
     @Override
@@ -435,98 +374,84 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
         chanConnector = new FourChanConnector
                 .Builder()
                 .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
-                .setEndpoint(FourChanConnector.getDefaultEndpoint(MimiUtil.isSecureConnection(getActivity())))
+                .setEndpoint(FourChanConnector.getDefaultEndpoint())
+                .setClient(HttpClientFactory.getInstance().getClient())
                 .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
                 .build();
 
-        boardListAdapter.setOnItemClickListener(this);
+        boardListAdapter.setOnBoardClickListener(this);
 
-        loadBoards();
-
+        initDatabase();
 
         // Restore the previously serialized activated item position.
-        if (savedInstanceState != null
-                && savedInstanceState.containsKey(STATE_ACTIVATED_POSITION)) {
-//            setActivatedPosition(savedInstanceState.getInt(STATE_ACTIVATED_POSITION));
-        }
+//        if (savedInstanceState != null
+//                && savedInstanceState.containsKey(STATE_ACTIVATED_POSITION)) {
+////            setActivatedPosition(savedInstanceState.getInt(STATE_ACTIVATED_POSITION));
+//        }
 
     }
 
-    private void loadBoards() {
-        RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-        fetchBoardsSubscription = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()))
-                .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
-                    @Override
-                    public Observable<List<ChanBoard>> call(List<Board> dbBoards) {
-                        Observable<List<ChanBoard>> mappedObservable;
-
-                        if (dbBoards.size() > 0) {
-                            List<ChanBoard> chanBoards = new ArrayList<>(dbBoards.size());
-                            for (Board board : dbBoards) {
-                                chanBoards.add(BoardTableConnection.convertBoardDbModelToBoard(board));
-                            }
-
-                            boards = chanBoards;
-                            mappedObservable = chanConnector.fetchBoards().doOnNext(BoardTableConnection.saveBoards());
-                        } else {
-                            mappedObservable = chanConnector.fetchBoards()
-                                    .map(new Func1<List<ChanBoard>, List<ChanBoard>>() {
-                                        @Override
-                                        public List<ChanBoard> call(List<ChanBoard> chanBoards) {
-                                            BoardTableConnection.saveBoards(chanBoards);
-                                            return chanBoards;
-                                        }
-                                    })
-                                    .flatMap(new Func1<List<ChanBoard>, Observable<List<Boolean>>>() {
-                                        @Override
-                                        public Observable<List<Boolean>> call(List<ChanBoard> chanBoards) {
-                                            return BoardTableConnection.initDefaultBoards(getActivity());
-                                        }
-                                    })
-                                    .flatMap(new Func1<List<Boolean>, Observable<List<Board>>>() {
-                                        @Override
-                                        public Observable<List<Board>> call(List<Boolean> booleen) {
-                                            return BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()));
-                                        }
-                                    })
-                                    .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
-                                        @Override
-                                        public Observable<List<ChanBoard>> call(List<Board> boards) {
-                                            List<ChanBoard> chanBoards = new ArrayList<>(boards.size());
-                                            for (Board board : boards) {
-                                                chanBoards.add(BoardTableConnection.convertBoardDbModelToBoard(board));
-                                            }
-
-                                            return Observable.just(chanBoards);
-                                        }
-                                    });
-                        }
-
-                        return mappedObservable;
+    private void initDatabase() {
+        RxUtil.safeUnsubscribe(initDatabaseDisposable);
+        initDatabaseDisposable = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()))
+                .map(BoardTableConnection::convertBoardDbModelsToChanBoards)
+                .flatMap((Function<List<ChanBoard>, Flowable<List<ChanBoard>>>) chanBoards -> {
+                    if (chanBoards == null || chanBoards.size() == 0) {
+                        return BoardTableConnection.initDefaultBoards(getActivity());
+                    } else {
+                        return Flowable.just(chanBoards);
                     }
                 })
-                .compose(DatabaseUtils.<List<ChanBoard>>applySchedulers())
-                .subscribe(new Action1<List<ChanBoard>>() {
-                    @Override
-                    public void call(List<ChanBoard> chanBoard) {
+                .subscribe(chanBoards -> {
+                    watchDatabase();
+                    loadBoards();
+                }, throwable -> showError());
+    }
 
-                        if (boards == null || boards.size() == 0) {
-                            boards = chanBoard;
-                        }
+    private void loadBoards() {
+        RxUtil.safeUnsubscribe(boardFetchDisposable);
+        boardFetchDisposable = chanConnector.fetchBoards()
+                .doOnNext(BoardTableConnection.saveBoards())
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe();
 
-                        if (boardsList != null) {
-                            boardOrderContainer.setVisibility(View.VISIBLE);
-                            boardListAdapter.setBoards(boards);
-                        }
+    }
+
+    private void watchDatabase() {
+        errorSwitcher.setDisplayedChildId(boardsList.getId());
+        RxUtil.safeUnsubscribe(fetchBoardsSubscription);
+        fetchBoardsSubscription = BoardTableConnection.observeBoards(MimiUtil.getBoardOrder(getActivity()))
+                .onErrorReturn(throwable -> new ArrayList<>())
+                .subscribe(chanBoards -> {
+                    if (manageBoardsMenuItem != null) {
+                        manageBoardsMenuItem.setEnabled(true);
                     }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        if (getActivity() != null) {
-                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
-                        }
+
+                    if (boardsList != null) {
+                        boardOrderContainer.setVisibility(View.VISIBLE);
+                        boardListAdapter.setBoards(chanBoards);
                     }
                 });
+    }
+
+    private void showError() {
+        if (manageBoardsMenuItem != null) {
+            manageBoardsMenuItem.setEnabled(false);
+        }
+
+        if (errorView != null) {
+            errorSwitcher.setDisplayedChildId(errorView.getId());
+            return;
+        }
+
+        ViewStub errorStub = rootView.findViewById(R.id.error_container);
+        errorStub.setOnInflateListener((viewStub, view) -> {
+            view.findViewById(R.id.retry_button).setOnClickListener(view1 -> loadBoards());
+            errorSwitcher.setDisplayedChildId(view.getId());
+            errorView = view;
+        });
+        errorStub.inflate();
+
     }
 
     private void setupTouchListeners() {
@@ -571,23 +496,20 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
     }
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+    public void onBoardClick(ChanBoard board) {
 
-        if (boards == null || boards.size() <= position) {
+        if (board == null) {
             if (boardsList != null) {
                 Snackbar.make(boardsList, R.string.error_occurred, Snackbar.LENGTH_LONG).show();
             }
 
             return;
         }
-        if (boardsCallback != null) {
-            boardsCallback.onBoardsUpdated(boards);
-        }
 
-        BoardTableConnection.incrementAccessCount(boards.get(position).getName())
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
+        BoardTableConnection.incrementAccessCount(board.getName())
+                .compose(DatabaseUtils.applySchedulers())
                 .subscribe();
-        mCallbacks.onBoardItemClick(boards.get(position), true);
+        mCallbacks.onBoardItemClick(board, true);
 
     }
 
@@ -597,6 +519,10 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
         if (toolbar != null) {
             setupToolBar();
+
+            if (getActivity() != null) {
+                getActivity().supportInvalidateOptionsMenu();
+            }
         }
     }
 
@@ -606,6 +532,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
         BusProvider.getInstance().unregister(this);
 
+        RxUtil.safeUnsubscribe(initDatabaseDisposable);
         RxUtil.safeUnsubscribe(fetchBoardsSubscription);
         RxUtil.safeUnsubscribe(boardInfoSubscription);
     }
@@ -647,17 +574,14 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
         final LayoutInflater inflater = LayoutInflater.from(getActivity());
         final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
         final View dialogView = inflater.inflate(R.layout.dialog_manage_boards_tutorial, null, false);
-        final CheckBox dontShow = (CheckBox) dialogView.findViewById(R.id.manage_boards_dont_show);
+        final CheckBox dontShow = dialogView.findViewById(R.id.manage_boards_dont_show);
 
         dialogBuilder.setTitle(R.string.manage_boards)
                 .setView(dialogView)
-                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (getActivity() != null) {
-                            final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                            pref.edit().putBoolean(getString(R.string.show_manage_boards_tutorial), !dontShow.isChecked()).apply();
-                        }
+                .setPositiveButton(R.string.ok, (dialog, which) -> {
+                    if (getActivity() != null) {
+                        final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                        pref.edit().putBoolean(getString(R.string.show_manage_boards_tutorial), !dontShow.isChecked()).apply();
                     }
                 })
                 .show();
@@ -669,25 +593,20 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
     }
 
     private void setupHeader(final View rootView) {
-        showContentButton = (TextView) rootView.findViewById(R.id.board_header_show_content);
-        boardOrderText = (TextView) rootView.findViewById(R.id.board_order_subtitle);
-        orderTypeList = (ViewGroup) rootView.findViewById(R.id.board_order_content);
+        showContentButton = rootView.findViewById(R.id.board_header_show_content);
+        boardOrderText = rootView.findViewById(R.id.board_order_subtitle);
+        orderTypeList = rootView.findViewById(R.id.board_order_content);
 
-        orderByFavorites = (TextView) rootView.findViewById(R.id.board_order_type_favorite);
-        orderByName = (TextView) rootView.findViewById(R.id.board_order_type_name);
-        orderByTitle = (TextView) rootView.findViewById(R.id.board_order_type_title);
-        orderByAccess = (TextView) rootView.findViewById(R.id.board_order_type_access_count);
-        orderByLast = (TextView) rootView.findViewById(R.id.board_order_type_last_access);
-        orderByPost = (TextView) rootView.findViewById(R.id.board_order_type_post_count);
-        orderbyCustom = (TextView) rootView.findViewById(R.id.board_order_type_custom);
+        orderByFavorites = rootView.findViewById(R.id.board_order_type_favorite);
+        orderByName = rootView.findViewById(R.id.board_order_type_name);
+        orderByTitle = rootView.findViewById(R.id.board_order_type_title);
+        orderByAccess = rootView.findViewById(R.id.board_order_type_access_count);
+        orderByLast = rootView.findViewById(R.id.board_order_type_last_access);
+        orderByPost = rootView.findViewById(R.id.board_order_type_post_count);
+        orderbyCustom = rootView.findViewById(R.id.board_order_type_custom);
 
-        boardOrderBackground = (ViewGroup) rootView.findViewById(R.id.board_order_background);
-        boardOrderBackground.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(NO_ORDER_SELECTED);
-            }
-        });
+        boardOrderBackground = rootView.findViewById(R.id.board_order_background);
+        boardOrderBackground.setOnClickListener(v -> hideList(NO_ORDER_SELECTED));
 
         orderByNames = getResources().getStringArray(R.array.orderbyName);
         final int boardOrder = MimiUtil.getBoardOrder(getActivity());
@@ -769,67 +688,29 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
             }
         });
 
-        boardOrderContainer = (ViewGroup) rootView.findViewById(R.id.board_order_container);
+        boardOrderContainer = rootView.findViewById(R.id.board_order_container);
 
         boardOrderText.setText(orderByNames[boardOrder]);
 
-        orderByFavorites.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(6);
-            }
-        });
+        orderByFavorites.setOnClickListener(v -> hideList(6));
 
-        orderByName.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(2);
-            }
-        });
+        orderByName.setOnClickListener(v -> hideList(2));
 
-        orderByTitle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(1);
-            }
-        });
+        orderByTitle.setOnClickListener(v -> hideList(1));
 
-        orderByAccess.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(3);
-            }
-        });
+        orderByAccess.setOnClickListener(v -> hideList(3));
 
-        orderByLast.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(5);
-            }
-        });
+        orderByLast.setOnClickListener(v -> hideList(5));
 
-        orderByPost.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(4);
-            }
-        });
+        orderByPost.setOnClickListener(v -> hideList(4));
 
-        orderbyCustom.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                hideList(7);
-            }
-        });
+        orderbyCustom.setOnClickListener(v -> hideList(7));
 
-        boardOrderContainer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (orderTypeList.getVisibility() == View.VISIBLE) {
-                    hideList(NO_ORDER_SELECTED);
-                } else {
-                    showList();
-                }
+        boardOrderContainer.setOnClickListener(v -> {
+            if (orderTypeList.getVisibility() == View.VISIBLE) {
+                hideList(NO_ORDER_SELECTED);
+            } else {
+                showList();
             }
         });
     }
@@ -858,23 +739,29 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
         if (getActivity() != null) {
             MimiUtil.setBoardOrder(getActivity(), orderType);
 
+            errorSwitcher.setDisplayedChildId(boardsList.getId());
+
             RxUtil.safeUnsubscribe(fetchBoardsSubscription);
             fetchBoardsSubscription = BoardTableConnection.fetchBoards(orderType)
-                    .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
-                        @Override
-                        public Observable<List<ChanBoard>> call(List<Board> boards) {
-                            return Observable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards));
-                        }
-                    })
-                    .compose(DatabaseUtils.<List<ChanBoard>>applySchedulers())
-                    .subscribe(new Action1<List<ChanBoard>>() {
-                        @Override
-                        public void call(List<ChanBoard> boards) {
-                            if (boardListAdapter != null) {
-                                boardListAdapter.setBoards(boards);
-                            }
+                    .flatMap((Function<List<Board>, Flowable<List<ChanBoard>>>) boards -> Flowable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                    .compose(DatabaseUtils.applySchedulers())
+                    .subscribe(orderedBoards -> {
+                        if (orderedBoards.size() > 0) {
+                            updateBoardsAdapter(orderedBoards);
                         }
                     });
+        }
+    }
+
+    private void updateBoardsAdapter(List<ChanBoard> updatedBoards) {
+        if (boardListAdapter != null) {
+            boardListAdapter.setBoards(updatedBoards);
+        } else if (getActivity() != null) {
+            boardListAdapter = new BoardListAdapter(getActivity(), updatedBoards);
+        }
+
+        if (manageBoardsMenuItem != null) {
+            manageBoardsMenuItem.setEnabled(true);
         }
     }
 
@@ -901,23 +788,39 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
     }
 
     private void setupToolBar() {
-        toolbar.setTitle(R.string.app_name);
-        toolbar.setSubtitle(null);
-        toolbar.getMenu().clear();
-        toolbar.inflateMenu(R.menu.board_list);
-        toolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                if (item.getItemId() == R.id.manage_boards_menu) {
-                    toolbar.startActionMode(getActionMode());
-                }
-                return true;
-            }
-        });
-        toolbarSpinner = (Spinner) toolbar.findViewById(R.id.board_spinner);
+        if (getActivity() instanceof MimiActivity) {
+            MimiActivity activity = (MimiActivity) getActivity();
+            activity.getSupportActionBar().setTitle(R.string.app_name);
+            activity.getSupportActionBar().setSubtitle(null);
+        }
+
+        toolbarSpinner = toolbar.findViewById(R.id.board_spinner);
         if (toolbarSpinner != null) {
             toolbarSpinner.setVisibility(View.GONE);
         }
+    }
+
+    @Override
+    public int getMenuRes() {
+        return R.menu.board_list;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        inflater.inflate(getMenuRes(), menu);
+        manageBoardsMenuItem = menu.findItem(R.id.manage_boards_menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.manage_boards_menu) {
+            if (getActivity() != null) {
+                final MimiActivity activity = ((MimiActivity) getActivity());
+                activity.getToolbar().startActionMode(getActionMode());
+            }
+        }
+        return true;
     }
 
     @Override
@@ -944,10 +847,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements ListView.
 
         this.activateOnItemClick = activateOnItemClick;
 
-    }
-
-    public void setBoardsListener(final OnBoardsUpdatedCallback listener) {
-        boardsCallback = listener;
     }
 
     @Override

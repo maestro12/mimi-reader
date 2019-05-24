@@ -19,101 +19,91 @@ package com.emogoth.android.phone.mimi.db;
 
 import android.util.Log;
 
+import com.activeandroid.query.Delete;
 import com.activeandroid.query.From;
 import com.activeandroid.query.Select;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.model.UserPost;
-import com.squareup.sqlbrite.BriteDatabase;
+import com.squareup.sqlbrite3.BriteDatabase;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.functions.Func0;
-import rx.functions.Func1;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
 
 import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
 
 public class UserPostTableConnection {
     public static final String LOG_TAG = UserPostTableConnection.class.getSimpleName();
 
-    public static Observable<List<UserPost>> fetchPosts() {
+    public static Flowable<List<UserPost>> fetchPosts() {
+        return watchPosts().take(1);
+    }
+    public static Flowable<List<UserPost>> watchPosts() {
         From query = new Select()
                 .from(UserPost.class);
 
-        Log.d(LOG_TAG, "SQL=" + query.toSql());
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
 
-        return db.createQuery(UserPost.TABLE_NAME, query.toSql(), query.getArguments())
-                .take(1)
+        return db.createQuery(UserPost.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
+                .toFlowable(BackpressureStrategy.BUFFER)
                 .map(runQuery())
                 .flatMap(UserPost.mapper())
                 .compose(DatabaseUtils.<List<UserPost>>applySchedulers());
     }
 
-    public static Observable<Boolean> addPost(final String boardName, final int threadId, final int postId) {
-        return Observable.defer(new Func0<Observable<Boolean>>() {
-            @Override
-            public Observable<Boolean> call() {
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
-                long val = 0;
+    public static Flowable<Boolean> addPost(final String boardName, final long threadId, final long postId) {
 
-                try {
-                    final UserPost userPost = new UserPost();
-                    userPost.boardName = boardName;
-                    userPost.threadId = threadId;
-                    userPost.postId = postId;
-                    userPost.postTime = System.currentTimeMillis();
+        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+            long val = 0;
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
 
-                    val = DatabaseUtils.update(db, userPost);
-                    if (val <= 0) {
-                        val = DatabaseUtils.insert(db, userPost);
-                    }
+            try {
+                UserPost userPost = new UserPost();
+                userPost.boardName = boardName;
+                userPost.threadId = threadId;
+                userPost.postId = postId;
+                userPost.postTime = System.currentTimeMillis();
 
-                    transaction.markSuccessful();
+                val = DatabaseUtils.insert(db, userPost);
 
-                } catch (Exception e) {
-                    val = 0;
-                    Log.e(LOG_TAG, "Error adding user post data", e);
-                } finally {
-                    transaction.end();
-                }
-
-                return Observable.just(val > 0);
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error saving user post data", e);
+            } finally {
+                transaction.end();
             }
+            return Flowable.just(val > 0);
         });
     }
 
-    public static Observable<Boolean> prune(int days) {
+    public static Flowable<Boolean> prune(int days) {
         final Long deleteTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
-        return Observable.defer(new Func0<Observable<Boolean>>() {
-            @Override
-            public Observable<Boolean> call() {
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
-                long val = -1;
+        From query = new Delete()
+                .from(UserPost.class)
+                .where(UserPost.KEY_POST_TIME + "<?", deleteTime);
 
-                try {
-                    val = db.delete(UserPost.TABLE_NAME, UserPost.KEY_POST_TIME + "<?", deleteTime.toString());
-                    transaction.markSuccessful();
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Error pruning user posts: last update=" + deleteTime, e);
-                } finally {
-                    transaction.end();
-                }
+        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
 
-                return Observable.just(val > 0);
-            }
-        })
-                .onErrorReturn(new Func1<Throwable, Boolean>() {
-                    @Override
-                    public Boolean call(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error pruning user posts: last update=" + deleteTime, throwable);
-                        return false;
-                    }
-                })
-                .compose(DatabaseUtils.<Boolean>applySchedulers());
+        return db.createQuery(UserPost.TABLE_NAME, query.toSql(), query.getArguments())
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .take(1)
+                .map(runQuery())
+                .flatMap(UserPost.mapper())
+                .map(userPosts -> true)
+                .onErrorReturn(throwable -> false);
+    }
 
+    public static List<Long> postIdList(List<UserPost> userPosts) {
+        ArrayList<Long> postIds = new ArrayList<>(userPosts.size());
+        for (UserPost userPost : userPosts) {
+            postIds.add(userPost.postId);
+        }
+
+        return postIds;
     }
 }

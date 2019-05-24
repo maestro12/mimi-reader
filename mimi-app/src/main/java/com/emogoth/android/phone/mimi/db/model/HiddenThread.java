@@ -2,15 +2,18 @@ package com.emogoth.android.phone.mimi.db.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 @Table(name = HiddenThread.TABLE_NAME)
 public class HiddenThread extends BaseModel {
@@ -25,13 +28,13 @@ public class HiddenThread extends BaseModel {
     public String boardName;
 
     @Column(name = THREAD_ID)
-    public int threadId;
+    public long threadId;
 
     @Column(name = TIME)
     public long time;
 
     @Column(name = STICKY)
-    public boolean sticky;
+    public int sticky;
 
     @Override
     public ContentValues toContentValues() {
@@ -54,10 +57,10 @@ public class HiddenThread extends BaseModel {
         return values;
     }
 
-    public static Func1<Cursor, Observable<List<HiddenThread>>> mapper() {
-        return new Func1<Cursor, Observable<List<HiddenThread>>>() {
+    public static Function<Cursor, Flowable<List<HiddenThread>>> mapper() {
+        return new Function<Cursor, Flowable<List<HiddenThread>>>() {
             @Override
-            public Observable<List<HiddenThread>> call(Cursor cursor) {
+            public Flowable<List<HiddenThread>> apply(Cursor cursor) {
                 cursor.moveToPosition(-1);
                 List<HiddenThread> hiddenThreads = new ArrayList<>(cursor.getCount());
                 while (cursor.moveToNext()) {
@@ -66,7 +69,7 @@ public class HiddenThread extends BaseModel {
 
                     hiddenThreads.add(thread);
                 }
-                return Observable.just(hiddenThreads);
+                return Flowable.just(hiddenThreads);
             }
         };
     }
@@ -77,12 +80,26 @@ public class HiddenThread extends BaseModel {
     }
 
     @Override
-    public String whereClause() {
-        return THREAD_ID + "=?";
+    public DatabaseUtils.WhereArg[] where() {
+        DatabaseUtils.WhereArg[] arg = new DatabaseUtils.WhereArg[1];
+        arg[0] = new DatabaseUtils.WhereArg(THREAD_ID + "=?", String.valueOf(threadId));
+        return arg;
     }
 
     @Override
-    public String whereArg() {
-        return String.valueOf(threadId);
+    public void copyValuesFrom(BaseModel model) {
+        if (model instanceof HiddenThread) {
+            HiddenThread hiddenThread = (HiddenThread) model;
+            boardName = hiddenThread.boardName;
+            threadId = hiddenThread.threadId;
+            time = hiddenThread.time;
+            sticky = hiddenThread.sticky;
+
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return TextUtils.isEmpty(boardName);
     }
 }

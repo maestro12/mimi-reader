@@ -16,26 +16,31 @@
 
 package com.emogoth.android.phone.mimi.util;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
+import org.reactivestreams.Subscription;
+
+import io.reactivex.Observable;
+import io.reactivex.ObservableTransformer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
 
 public class RxUtil {
-    public static void safeUnsubscribe(Subscription subscription) {
-        if (subscription != null && !subscription.isUnsubscribed()) {
-            subscription.unsubscribe();
+    public static void safeUnsubscribe(Disposable subscription) {
+        if (subscription != null && !subscription.isDisposed()) {
+            subscription.dispose();
         }
     }
 
-    public static <T> Observable.Transformer<T, T> applyBackgroundSchedulers() {
-        return new Observable.Transformer<T, T>() {
-            @Override
-            public Observable<T> call(Observable<T> observable) {
-                return observable.subscribeOn(Schedulers.io())
-                        .unsubscribeOn(Schedulers.computation())
-                        .observeOn(AndroidSchedulers.mainThread());
-            }
-        };
+    public static void safeUnsubscribe(Subscription subscription) {
+        if (subscription != null) {
+            subscription.cancel();
+        }
+    }
+
+    public static <T> ObservableTransformer<T, T> applyBackgroundSchedulers() {
+        return observable -> observable.subscribeOn(Schedulers.io())
+                .unsubscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread());
     }
 }

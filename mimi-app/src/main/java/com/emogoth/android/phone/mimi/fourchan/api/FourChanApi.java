@@ -24,22 +24,23 @@ import com.emogoth.android.phone.mimi.fourchan.models.FourChanThreads;
 
 import java.util.List;
 
+import io.reactivex.Flowable;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Path;
-import rx.Observable;
+import io.reactivex.Observable;
 
 
 public interface FourChanApi {
     @GET("boards.json")
-    Observable<FourChanBoards> fetchBoards();
+    Flowable<FourChanBoards> fetchBoards();
 
     @GET("{boardName}/{pageNumber}.json")
-    Observable<FourChanThreads> fetchPage(@Path("pageNumber") int page, @Path("boardName") String boardName);
+    Flowable<FourChanThreads> fetchPage(@Path("pageNumber") int page, @Path("boardName") String boardName);
 
     @GET("{boardName}/catalog.json")
-    Observable<List<FourChanThreadPage>> fetchCatalog(@Path("boardName") String boardName);
+    Flowable<List<FourChanThreadPage>> fetchCatalog(@Path("boardName") String boardName);
 
     @GET("{boardName}/thread/{threadId}.json")
-    Observable<FourChanThread> fetchThread(@Path("boardName") String boardName, @Path("threadId") int threadId, @Header("Cache-Control") String cacheControl);
+    Flowable<FourChanThread> fetchThread(@Path("boardName") String boardName, @Path("threadId") long threadId, @Header("Cache-Control") String cacheControl);
 }

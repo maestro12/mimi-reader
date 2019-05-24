@@ -17,8 +17,9 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.content.Context;
-import android.support.v4.view.MotionEventCompat;
-import android.support.v7.widget.RecyclerView;
+import androidx.core.view.MotionEventCompat;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -35,12 +36,11 @@ import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.mimireader.chanlib.models.ChanBoard;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.disposables.Disposable;
 
 
 public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.BoardViewHolder> implements MoveAndDismissable {
@@ -48,20 +48,19 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
     public static final String LOG_TAG = BoardListAdapter.class.getSimpleName();
     public static final boolean LOG_DEBUG = true;
 
-    private LayoutInflater inflater;
-    private List<ChanBoard> boards;
+    private List<ChanBoard> boards = new ArrayList<>();
 
     private boolean editMode;
     private Context context;
 
     private View footer;
-    private AdapterView.OnItemClickListener itemClickListener;
+    private OnBoardClickListener boardClickListener;
     private AdapterView.OnItemLongClickListener itemLongClickListener;
     private OnStartDragListener dragListener;
 
-    private Subscription updateBoardsSubscription;
-    private Subscription favoriteSubscription;
-    private Subscription removeBoardSubscription;
+    private Disposable updateBoardsSubscription;
+    private Disposable favoriteSubscription;
+    private Disposable removeBoardSubscription;
 
     public BoardListAdapter(final Context context, final List<ChanBoard> boards) {
         init(context, boards);
@@ -74,13 +73,38 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
 
         this.context = context;
         this.boards = boards;
-        this.inflater = LayoutInflater.from(context);
     }
 
-    public void setBoards(final List<ChanBoard> boards) {
-        this.boards.clear();
-        this.boards.addAll(boards);
-        notifyDataSetChanged();
+    public void setBoards(final List<ChanBoard> updatedBoards) {
+        if (boards.size() > 0) {
+            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return boards.size();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return updatedBoards.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                    return boards.get(oldItemPosition).equals(updatedBoards.get(newItemPosition));
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return boards.get(oldItemPosition).compareContents(updatedBoards.get(newItemPosition));
+                }
+            }, true);
+            this.boards = updatedBoards;
+            result.dispatchUpdatesTo(this);
+        } else {
+            this.boards.clear();
+            this.boards.addAll(updatedBoards);
+            notifyDataSetChanged();
+        }
     }
 
     public List<ChanBoard> getBoards() {
@@ -95,7 +119,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
 
         RxUtil.safeUnsubscribe(removeBoardSubscription);
         removeBoardSubscription = BoardTableConnection.setBoardVisibility(boardName, false)
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
+                .compose(DatabaseUtils.applySchedulers())
                 .subscribe();
     }
 
@@ -121,17 +145,14 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
         }
 
         if (holder.dragHandle != null) {
-            holder.dragHandle.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (dragListener != null) {
-                        if (MotionEventCompat.getActionMasked(event) ==
-                                MotionEvent.ACTION_DOWN) {
-                            dragListener.onStartDrag(holder);
-                        }
+            holder.dragHandle.setOnTouchListener((v, event) -> {
+                if (dragListener != null) {
+                    if (MotionEventCompat.getActionMasked(event) ==
+                            MotionEvent.ACTION_DOWN) {
+                        dragListener.onStartDrag(holder);
                     }
-                    return false;
                 }
+                return false;
             });
 
             if (editMode) {
@@ -153,56 +174,44 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
             } else {
                 holder.favorite.setText(R.string.ic_favorite_unset);
             }
-            holder.favorite.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View v) {
-                    final TextView checkBox = (TextView) v;
-                    final boolean isFavorite = !checkBox.getText().equals(context.getString(R.string.ic_favorite_set));
+            holder.favorite.setOnClickListener(v -> {
+                final TextView checkBox = (TextView) v;
+                final boolean isFavorite = !checkBox.getText().equals(context.getString(R.string.ic_favorite_set));
 
-                    RxUtil.safeUnsubscribe(favoriteSubscription);
-                    favoriteSubscription = BoardTableConnection.setBoardFavorite(board.getName(), isFavorite)
-                            .onErrorReturn(new Func1<Throwable, Boolean>() {
-                                @Override
-                                public Boolean call(Throwable throwable) {
-                                    Log.e(LOG_TAG, "Error setting board favorite: board=" + board.getName() + ", favorite=" + isFavorite, throwable);
-                                    return false;
+                RxUtil.safeUnsubscribe(favoriteSubscription);
+                favoriteSubscription = BoardTableConnection.setBoardFavorite(board.getName(), isFavorite)
+                        .onErrorReturn(throwable -> {
+                            Log.e(LOG_TAG, "Error setting board favorite: board=" + board.getName() + ", favorite=" + isFavorite, throwable);
+                            return false;
+                        })
+                        .compose(DatabaseUtils.applySchedulers())
+                        .subscribe(success -> {
+                            if (success) {
+                                board.setFavorite(isFavorite);
+                            } else {
+                                if (isFavorite) {
+                                    checkBox.setText(R.string.ic_favorite_unset);
+                                } else {
+                                    checkBox.setText(R.string.ic_favorite_set);
                                 }
-                            })
-                            .compose(DatabaseUtils.<Boolean>applySchedulers())
-                            .subscribe(new Action1<Boolean>() {
-                                @Override
-                                public void call(Boolean success) {
-                                    if (success) {
-                                        board.setFavorite(isFavorite);
-                                    } else {
-                                        if (isFavorite) {
-                                            checkBox.setText(R.string.ic_favorite_unset);
-                                        } else {
-                                            checkBox.setText(R.string.ic_favorite_set);
-                                        }
-                                    }
-                                }
-                            });
+                            }
+                        });
 
-                    if (isFavorite) {
-                        checkBox.setText(R.string.ic_favorite_set);
-                    } else {
-                        checkBox.setText(R.string.ic_favorite_unset);
-                    }
+                if (isFavorite) {
+                    checkBox.setText(R.string.ic_favorite_set);
+                } else {
+                    checkBox.setText(R.string.ic_favorite_unset);
                 }
             });
         }
 
-        if (itemClickListener != null && holder.root != null) {
+        if (boardClickListener != null && holder.root != null) {
             if (editMode) {
                 holder.root.setOnClickListener(null);
             } else {
-                holder.root.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (!editMode) {
-                            itemClickListener.onItemClick(null, holder.root, holder.getAdapterPosition(), 0);
-                        }
+                holder.root.setOnClickListener(v -> {
+                    if (!editMode) {
+                        boardClickListener.onBoardClick(board);
                     }
                 });
             }
@@ -212,14 +221,11 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
             if (editMode) {
                 holder.root.setOnLongClickListener(null);
             } else {
-                holder.root.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        if (!editMode) {
-                            itemLongClickListener.onItemLongClick(null, holder.root, holder.getAdapterPosition(), 0);
-                        }
-                        return true;
+                holder.root.setOnLongClickListener(v -> {
+                    if (!editMode) {
+                        itemLongClickListener.onItemLongClick(null, holder.root, holder.getAdapterPosition(), 0);
                     }
+                    return true;
                 });
             }
         }
@@ -249,13 +255,10 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
         RxUtil.safeUnsubscribe(updateBoardsSubscription);
         updateBoardsSubscription = BoardTableConnection.updateBoardOrder(boards)
                 .delay(500, TimeUnit.MILLISECONDS)
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
-                .subscribe(new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean success) {
-                        if (success) {
-                            MimiUtil.setBoardOrder(context, 7);
-                        }
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(success -> {
+                    if (success) {
+                        MimiUtil.setBoardOrder(context, 7);
                     }
                 });
 
@@ -281,8 +284,8 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
         dragListener = listener;
     }
 
-    public void setOnItemClickListener(AdapterView.OnItemClickListener listener) {
-        itemClickListener = listener;
+    public void setOnBoardClickListener(OnBoardClickListener listener) {
+        boardClickListener = listener;
     }
 
     public void setOnItemLongClickListener(AdapterView.OnItemLongClickListener listener) {
@@ -316,5 +319,9 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
          * @param viewHolder The holder of the view to drag.
          */
         void onStartDrag(RecyclerView.ViewHolder viewHolder);
+    }
+
+    public interface OnBoardClickListener {
+        void onBoardClick(ChanBoard board);
     }
 }

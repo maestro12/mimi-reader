@@ -18,7 +18,7 @@ package com.emogoth.android.phone.mimi.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 
 import com.emogoth.android.phone.mimi.R;
@@ -36,6 +36,7 @@ public class UrlRouterActivity extends AppCompatActivity {
         setTheme(MimiUtil.getInstance().getThemeResourceId());
         super.onCreate(savedInstanceState);
 
+//        Crashlytics.start(this);
         try {
             if (getIntent() != null && getIntent().getAction() != null) {
                 Log.i(LOG_TAG, "Host=" + getIntent().getData().getHost() + ", Intent Action=" + getIntent().getAction());
@@ -60,10 +61,6 @@ public class UrlRouterActivity extends AppCompatActivity {
                         case 2: // probably a link to the catalog
                             intent = new Intent(this, PostItemListActivity.class);
                             intent.putExtra(Extras.EXTRAS_BOARD_NAME, args.get(0).toLowerCase());
-
-                            if ("catalog".equals(args.get(1).toLowerCase())) {
-                                intent.putExtra(Extras.EXTRAS_CATALOG, true);
-                            }
                             intent.putExtra(Extras.EXTRAS_SINGLE_THREAD, true);
                             break;
                         case 3: // probably a link to a specific thread
@@ -77,7 +74,7 @@ public class UrlRouterActivity extends AppCompatActivity {
                                     threadId = threadId.substring(1, threadId.indexOf("#") - 1);
                                 }
 
-                                intent.putExtra(Extras.EXTRAS_THREAD_ID, Integer.valueOf(threadId));
+                                intent.putExtra(Extras.EXTRAS_THREAD_ID, Long.valueOf(threadId));
                             }
 
                             break;
@@ -92,7 +89,7 @@ public class UrlRouterActivity extends AppCompatActivity {
                                     threadId = threadId.substring(1, threadId.indexOf("#") - 1);
                                 }
 
-                                intent.putExtra(Extras.EXTRAS_THREAD_ID, Integer.valueOf(threadId));
+                                intent.putExtra(Extras.EXTRAS_THREAD_ID, Long.valueOf(threadId));
                             }
                             break;
 

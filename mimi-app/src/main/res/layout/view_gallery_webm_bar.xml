@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/webm_bar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:layout_margin="8dp"
+    android:gravity="bottom"
+    android:orientation="horizontal"
+    android:visibility="visible">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/open_button"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:background="#88000000"
+        android:gravity="center"
+        android:padding="10dp"
+        app:srcCompat="@drawable/ic_launch" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/mute_button"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:background="#88000000"
+        android:gravity="center"
+        android:padding="10dp"
+        app:srcCompat="@drawable/ic_audio_off" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/webm_time"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:background="#88000000"
+        android:gravity="center"
+        android:padding="4dp"
+        android:textColor="@color/md_white_1000"
+        android:textSize="?attr/font_label_small"
+        tools:text="test:test" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/webm_play_button"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="#88000000"
+        android:padding="4dp"
+        android:visibility="visible"
+        app:srcCompat="@drawable/ic_pause" />
+
+    <androidx.appcompat.widget.AppCompatSeekBar
+        android:id="@+id/webm_scrubber"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88000000"
+        android:visibility="visible" />
+
+</LinearLayout>

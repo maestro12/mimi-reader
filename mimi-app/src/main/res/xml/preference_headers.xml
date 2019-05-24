@@ -32,7 +32,7 @@
     <header
         android:id="@+id/appearance_prefs_fragment"
         android:fragment="com.emogoth.android.phone.mimi.prefs.AppearancePrefsFragment"
-        android:title="@string/theme_title"
+        android:title="@string/appearance_title"
         android:summary="@string/appearance_summary" />
 
     <header

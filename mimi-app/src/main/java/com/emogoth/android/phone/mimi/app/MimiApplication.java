@@ -16,52 +16,56 @@
 
 package com.emogoth.android.phone.mimi.app;
 
+import android.annotation.SuppressLint;
+import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
 import com.activeandroid.ActiveAndroid;
 import com.activeandroid.Configuration;
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge;
-import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
-import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.db.model.Board;
+import com.emogoth.android.phone.mimi.db.model.CatalogPostModel;
+import com.emogoth.android.phone.mimi.db.model.Filter;
 import com.emogoth.android.phone.mimi.db.model.HiddenThread;
 import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.db.model.PostModel;
+import com.emogoth.android.phone.mimi.db.model.PostOption;
 import com.emogoth.android.phone.mimi.db.model.UserPost;
 import com.emogoth.android.phone.mimi.util.BusProvider;
-import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
-import com.google.android.exoplayer.util.Util;
-import com.squareup.sqlbrite.BriteDatabase;
+import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
+import com.squareup.leakcanary.RefWatcher;
+import com.squareup.sqlbrite3.BriteDatabase;
 
 import java.io.File;
-import java.util.List;
 
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.functions.Function;
 
 
-public class MimiApplication extends MultiDexApplication {
+public class MimiApplication extends Application {
 
     private static final String LOG_TAG = MimiApplication.class.getSimpleName();
     private static MimiApplication app;
     private BriteDatabase briteDatabase;
 
+    private RefWatcher refWatcher = null;
+
+    @SuppressLint("CheckResult")
     @Override
     public void onCreate() {
         super.onCreate();
         app = this;
 
         MimiUtil.getInstance().init(this);
-        HttpClientFactory.getInstance().init();
 
         @SuppressWarnings("unchecked")
         Configuration.Builder configurationBuilder = new Configuration.Builder(this)
@@ -69,16 +73,18 @@ public class MimiApplication extends MultiDexApplication {
                         Board.class,
                         History.class,
                         UserPost.class,
-                        HiddenThread.class
+                        HiddenThread.class,
+                        PostOption.class,
+                        Filter.class,
+                        PostModel.class,
+                        CatalogPostModel.class
                 );
 
         ActiveAndroid.initialize(configurationBuilder.create());
 
-//        Stetho.initializeWithDefaults(this);
-
         try {
             final File fullImageDir = new File(MimiUtil.getInstance().getCacheDir().getAbsolutePath(), "full_images/");
-            deleteRecursive(fullImageDir);
+            MimiUtil.deleteRecursive(fullImageDir, false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -100,48 +106,23 @@ public class MimiApplication extends MultiDexApplication {
         }
 
         final int historyPruneDays = Integer.valueOf(preferences.getString(getString(R.string.history_prune_time_pref), "0"));
-        HistoryTableConnection.pruneHistory(historyPruneDays).subscribe();
-        HiddenThreadTableConnection.prune(5).subscribe();
+
+        MimiUtil.pruneHistory(historyPruneDays)
+        .flatMap((Function<Boolean, Flowable<Boolean>>) aBoolean -> HiddenThreadTableConnection.prune(5))
+        .flatMap((Function<Boolean, Flowable<Boolean>>) aBoolean -> UserPostTableConnection.prune(7))
+        .subscribe(aBoolean -> {
+            if (aBoolean) {
+                Log.d(LOG_TAG, "Pruned history");
+            } else {
+                Log.e(LOG_TAG, "Failed to prune history");
+            }
+        }, throwable -> Log.e(LOG_TAG, "Caught exception while setting up database", throwable));
+
         ThreadRegistry.getInstance().init();
         BusProvider.getInstance();
-//        RefreshScheduler.getInstance();
+        RefreshScheduler.getInstance();
 
-        UserPostTableConnection.fetchPosts()
-                .flatMap(new Func1<List<UserPost>, Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call(List<UserPost> userPosts) {
-                        for (UserPost userPostDbModel : userPosts) {
-                            ThreadRegistry.getInstance().addUserPost(userPostDbModel.boardName, userPostDbModel.threadId, userPostDbModel.postId);
-                        }
-
-                        if (userPosts.size() > 0) {
-                            return UserPostTableConnection.prune(7);
-                        }
-
-                        return Observable.just(false);
-                    }
-                })
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
-                .subscribe(new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean success) {
-                        if (success) {
-                            Log.d(LOG_TAG, "Pruned user post database");
-                        } else {
-                            Log.w(LOG_TAG, "Error pruning user post database");
-                        }
-                    }
-                });
-    }
-
-    private void deleteRecursive(File fileOrDirectory) {
-        if (fileOrDirectory.isDirectory()) {
-            for (File child : fileOrDirectory.listFiles()) {
-                deleteRecursive(child);
-            }
-        }
-
-        fileOrDirectory.delete();
+        SimpleChromeCustomTabs.initialize(this);
     }
 
     public BriteDatabase getBriteDatabase() {
@@ -154,6 +135,14 @@ public class MimiApplication extends MultiDexApplication {
         }
 
         return briteDatabase;
+    }
+
+    public RefWatcher getRefWatcher() {
+        return refWatcher;
+    }
+
+    public void setRefWatcher(RefWatcher refWatcher) {
+        this.refWatcher = refWatcher;
     }
 
     public static MimiApplication getInstance() {

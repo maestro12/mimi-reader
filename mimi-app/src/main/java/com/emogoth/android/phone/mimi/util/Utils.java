@@ -25,6 +25,7 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.os.StrictMode;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import java.io.Closeable;
 import java.io.File;
@@ -46,17 +47,6 @@ public class Utils {
     public static final String SCHEME_CONTENT = ContentResolver.SCHEME_CONTENT;
     public static final String SCHEME_ANDROID_RESOURCE = ContentResolver.SCHEME_ANDROID_RESOURCE;
 
-    private static final Map<String, String> mimeTypes;
-
-    static {
-        mimeTypes = new HashMap<>();
-        mimeTypes.put("webm", "video/webm");
-        mimeTypes.put("jpg", "image/jpeg");
-        mimeTypes.put("jpeg", "image/jpeg");
-        mimeTypes.put("png", "image/png");
-        mimeTypes.put("gif", "image/gif");
-    }
-
     private Utils() {
     }
 
@@ -66,7 +56,7 @@ public class Utils {
             ext = ext.replace(".", "");
         }
 
-        return mimeTypes.get(ext);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
     }
 
     /**
@@ -95,51 +85,12 @@ public class Utils {
 
     @TargetApi(11)
     public static void enableStrictMode() {
-        if (Utils.hasGingerbread()) {
-            StrictMode.ThreadPolicy.Builder threadPolicyBuilder = new StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog();
-            StrictMode.VmPolicy.Builder vmPolicyBuilder = new StrictMode.VmPolicy.Builder().detectAll().penaltyLog();
+        StrictMode.ThreadPolicy.Builder threadPolicyBuilder = new StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog();
+        StrictMode.VmPolicy.Builder vmPolicyBuilder = new StrictMode.VmPolicy.Builder().detectAll().penaltyLog();
 
-            if (Utils.hasHoneycomb()) {
-                threadPolicyBuilder.penaltyFlashScreen();
-            }
-            StrictMode.setThreadPolicy(threadPolicyBuilder.build());
-            StrictMode.setVmPolicy(vmPolicyBuilder.build());
-        }
-    }
-
-    public static boolean hasFroyo() {
-        // Can use static final constants like FROYO, declared in later versions
-        // of the OS since they are inlined at compile time. This is guaranteed
-        // behavior.
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO;
-    }
-
-    public static boolean hasGingerbread() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD;
-    }
-
-    public static boolean hasGingerbreadMR1() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD_MR1;
-    }
-
-    public static boolean hasHoneycomb() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB;
-    }
-
-    public static boolean hasHoneycombMR1() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1;
-    }
-
-    public static boolean hasJellyBean() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN;
-    }
-
-    public static boolean hasJellyBeanMR2() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2;
-    }
-
-    public static boolean hasKitKat() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+        threadPolicyBuilder.penaltyFlashScreen();
+        StrictMode.setThreadPolicy(threadPolicyBuilder.build());
+        StrictMode.setVmPolicy(vmPolicyBuilder.build());
     }
 
     /**
@@ -148,12 +99,7 @@ public class Utils {
      * @param path The path to check
      * @return The space available in bytes
      */
-    @SuppressWarnings("deprecation")
-    @TargetApi(9)
     public static long getUsableSpace(File path) {
-        if (Utils.hasGingerbread()) {
-            return path.getUsableSpace();
-        }
         final StatFs stats = new StatFs(path.getPath());
         return (long) stats.getBlockSize() * (long) stats.getAvailableBlocks();
     }
@@ -208,12 +154,8 @@ public class Utils {
         return context.getExternalCacheDir();
     }
 
-    @SuppressLint("NewApi")
     private static boolean isExternalMounted() {
-        if (Utils.hasGingerbread()) {
-            return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) || !Environment.isExternalStorageRemovable();
-        }
-        return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
+        return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) || !Environment.isExternalStorageRemovable();
     }
 
     public static final Charset US_ASCII = Charset.forName("US-ASCII");

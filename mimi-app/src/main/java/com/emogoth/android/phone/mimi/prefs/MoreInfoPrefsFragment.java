@@ -37,12 +37,15 @@ import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 
 public class MoreInfoPrefsFragment extends PreferenceFragment {
@@ -59,158 +62,120 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
 
     private void setupPrefs() {
         final Handler handler = new Handler();
-        final Runnable countRunnable = new Runnable() {
-            @Override
-            public void run() {
-                aboutCounter = 0;
-            }
-        };
+        final Runnable countRunnable = () -> aboutCounter = 0;
 
         final Preference changelogPreference = findPreference(getString(R.string.changelog_pref));
         if (changelogPreference != null) {
-            changelogPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                @Override
-                public boolean onPreferenceClick(final Preference preference) {
-                    // Create and show the dialog.
-                    LicensesFragment.displayLicensesFragment(getFragmentManager(), R.raw.changelog, "ChangeLog");
-                    return true;
-                }
+            changelogPreference.setOnPreferenceClickListener(preference -> {
+                // Create and show the dialog.
+                LicensesFragment.displayLicensesFragment(getFragmentManager(), R.raw.changelog, "ChangeLog");
+                return true;
             });
         }
 
         final Preference website = findPreference(getString(R.string.website_pref));
-        website.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
+        website.setOnPreferenceClickListener(preference -> {
 
-                try {
-                    final String url = "http://mimireader.com";
-                    Intent i = new Intent(Intent.ACTION_VIEW);
-                    i.setData(Uri.parse(url));
-                    startActivity(i);
-                } catch (final ActivityNotFoundException e) {
-                    Log.e(LOG_TAG, "Could not find browser to open mimireader.com", e);
+            try {
+                final String url = "http://mimireader.com";
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
+            } catch (final ActivityNotFoundException e) {
+                Log.e(LOG_TAG, "Could not find browser to open mimireader.com", e);
 
-                    if (getActivity() != null) {
-                        Toast.makeText(getActivity(), R.string.error_opening_url, Toast.LENGTH_SHORT).show();
-                    }
+                if (getActivity() != null) {
+                    Toast.makeText(getActivity(), R.string.error_opening_url, Toast.LENGTH_SHORT).show();
                 }
-
-                return true;
             }
+
+            return true;
         });
 
         final Preference rate = findPreference(getString(R.string.rate_pref));
-        rate.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                MimiUtil.getInstance().openMarketLink(getActivity());
-                return true;
-            }
+        rate.setOnPreferenceClickListener(preference -> {
+            MimiUtil.getInstance().openMarketLink(getActivity());
+            return true;
         });
 
         final Preference feedback = findPreference(getString(R.string.feedback_pref));
-        feedback.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-                        "mailto", "eli@mimireader.com", null));
-                intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
-                Intent mailer = Intent.createChooser(intent, null);
-                startActivity(mailer);
-                return true;
-            }
+        feedback.setOnPreferenceClickListener(preference -> {
+            final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+                    "mailto", "eli@mimireader.com", null));
+            intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
+            Intent mailer = Intent.createChooser(intent, null);
+            startActivity(mailer);
+            return true;
         });
 
 
         final Preference privacy = findPreference(getString(R.string.privacy_pref));
-        privacy.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                // Create & show a licenses fragment just as you would any other DialogFragment.
-                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                Fragment prev = getFragmentManager().findFragmentByTag("privacyDialogFragment");
-                if (prev != null) {
-                    ft.remove(prev);
-                }
-                ft.addToBackStack(null);
-
-                // Create and show the dialog.
-                DialogFragment newFragment = PrivacyPolicyFragment.newInstance();
-                newFragment.show(ft, "privacyDialogFragment");
-                return true;
+        privacy.setOnPreferenceClickListener(preference -> {
+            // Create & show a licenses fragment just as you would any other DialogFragment.
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            Fragment prev = getFragmentManager().findFragmentByTag("privacyDialogFragment");
+            if (prev != null) {
+                ft.remove(prev);
             }
+            ft.addToBackStack(null);
+
+            // Create and show the dialog.
+            DialogFragment newFragment = PrivacyPolicyFragment.newInstance();
+            newFragment.show(ft, "privacyDialogFragment");
+            return true;
         });
 
         final Preference license = findPreference(getString(R.string.licenses_pref));
-        license.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                // Create & show a licenses fragment just as you would any other DialogFragment.
-                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                Fragment prev = getFragmentManager().findFragmentByTag("licensesDialogFragment");
-                if (prev != null) {
-                    ft.remove(prev);
-                }
-                ft.addToBackStack(null);
-
-                // Create and show the dialog.
-                DialogFragment newFragment = LicensesFragment.newInstance(R.raw.licenses);
-                newFragment.show(ft, "licensesDialogFragment");
-                return true;
+        license.setOnPreferenceClickListener(preference -> {
+            // Create & show a licenses fragment just as you would any other DialogFragment.
+            FragmentTransaction ft = getFragmentManager().beginTransaction();
+            Fragment prev = getFragmentManager().findFragmentByTag("licensesDialogFragment");
+            if (prev != null) {
+                ft.remove(prev);
             }
+            ft.addToBackStack(null);
+
+            // Create and show the dialog.
+            DialogFragment newFragment = LicensesFragment.newInstance(R.raw.licenses);
+            newFragment.show(ft, "licensesDialogFragment");
+            return true;
         });
 
         final Preference version = findPreference(getString(R.string.version_pref));
         version.setSummary(BuildConfig.VERSION_NAME);
-        version.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                aboutCounter++;
+        version.setOnPreferenceClickListener(preference -> {
+            aboutCounter++;
 
-                if (aboutCounter == 7) {
-                    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                    final boolean fullBoardEnabled = prefs.getBoolean(getString(R.string.full_board_list_enabled), false);
+            if (aboutCounter == 7) {
+                final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                final boolean fullBoardEnabled = prefs.getBoolean(getString(R.string.full_board_list_enabled), false);
 
-                    if (fullBoardEnabled) {
-                        Toast.makeText(getActivity(), "Full board list is already active", Toast.LENGTH_SHORT).show();
-                    } else {
-                        BoardTableConnection.fetchBoards(0)
-                                .compose(DatabaseUtils.<List<Board>>applySchedulers())
-                                .flatMap(new Func1<List<Board>, Observable<Boolean>>() {
-                                    @Override
-                                    public Observable<Boolean> call(List<Board> boards) {
-                                        return BoardTableConnection.setBoardVisibility(null, true);
-                                    }
-                                })
-                                .onErrorResumeNext(new Func1<Throwable, Observable<Boolean>>() {
-                                    @Override
-                                    public Observable<Boolean> call(Throwable throwable) {
-                                        Log.w("MoreInfoFragment", "Error setting board visibility", throwable);
-                                        return Observable.just(false);
-                                    }
-                                })
-                                .subscribe(new Action1<Boolean>() {
-                                    @Override
-                                    public void call(Boolean success) {
-
-                                    }
-                                });
-
-                        prefs.edit()
-                                .putBoolean(getString(R.string.show_all_boards), true)
-                                .apply();
-
-                        Toast.makeText(getActivity(), "Full board list is available", Toast.LENGTH_SHORT).show();
-                    }
+                if (fullBoardEnabled) {
+                    Toast.makeText(getActivity(), "Full board list is already active", Toast.LENGTH_SHORT).show();
                 } else {
-                    handler.removeCallbacks(countRunnable);
+                    BoardTableConnection.fetchBoards(0)
+                            .compose(DatabaseUtils.applySchedulers())
+                            .flatMapIterable((Function<List<Board>, Iterable<Board>>) boards -> boards)
+                            .flatMap((Function<Board, Flowable<ChanBoard>>) boards -> BoardTableConnection.setBoardVisibility(null, true))
+                            .onErrorResumeNext((Function<Throwable, Flowable<ChanBoard>>) throwable -> {
+                                Log.w("MoreInfoFragment", "Error setting board visibility", throwable);
+                                return Flowable.just(new ChanBoard());
+                            })
+                            .subscribe();
+
+                    prefs.edit()
+                            .putBoolean(getString(R.string.show_all_boards), true)
+                            .apply();
+
+                    Toast.makeText(getActivity(), "Full board list is available", Toast.LENGTH_SHORT).show();
                 }
-
-                handler.postDelayed(countRunnable, 1000);
-
-                return true;
+            } else {
+                handler.removeCallbacks(countRunnable);
             }
+
+            handler.postDelayed(countRunnable, 1000);
+
+            return true;
         });
     }
 }

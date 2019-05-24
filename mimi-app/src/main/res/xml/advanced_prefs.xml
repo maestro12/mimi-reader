@@ -35,11 +35,13 @@
             android:summaryOff="@string/external_cache_summary_off"
             android:key="@string/cache_external_pref" />
 
-        <SwitchPreference
-            android:title="@string/secure_connection_title"
-            android:defaultValue="false"
-            android:summary="@string/secure_connection_summary"
-            android:key="@string/use_ssl_pref" />
+        <ListPreference
+            android:title="@string/http_buffer_size_title"
+            android:defaultValue="@string/http_buffer_size_default"
+            android:summary="@string/http_buffer_size_summary"
+            android:entries="@array/http_buffer_sizes"
+            android:entryValues="@array/http_buffer_sizes_pref"
+            android:key="@string/http_buffer_size_pref"/>
 
         <SwitchPreference
             android:title="@string/all_boards_visible"

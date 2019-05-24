@@ -18,15 +18,18 @@ package com.emogoth.android.phone.mimi.db.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 @Table(name = UserPost.TABLE_NAME)
 public class UserPost extends BaseModel {
@@ -38,37 +41,28 @@ public class UserPost extends BaseModel {
     public static final String KEY_POST_TIME = "post_time";
 
     @Column(name = KEY_THREAD_ID)
-    public Integer threadId;
+    public long threadId;
 
     @Column(name = KEY_POST_ID)
-    public Integer postId;
+    public long postId;
 
     @Column(name = KEY_PATH)
     public String boardName;
 
     @Column(name = KEY_POST_TIME)
-    public Long postTime;
+    public long postTime;
 
     @Override
     public ContentValues toContentValues() {
         ContentValues values = new ContentValues();
 
-        if (threadId != null) {
-            values.put(KEY_THREAD_ID, threadId);
-        }
-
-        if (postId != null) {
-            values.put(KEY_POST_ID, postId);
-        }
+        values.put(KEY_THREAD_ID, threadId);
+        values.put(KEY_POST_ID, postId);
+        values.put(KEY_POST_TIME, postTime);
 
         if (boardName != null) {
             values.put(KEY_PATH, boardName);
         }
-
-        if (postTime != null) {
-            values.put(KEY_POST_TIME, postTime);
-        }
-
         return values;
     }
 
@@ -78,29 +72,40 @@ public class UserPost extends BaseModel {
     }
 
     @Override
-    public String whereClause() {
-        return KEY_THREAD_ID + "=?";
+    public DatabaseUtils.WhereArg[] where() {
+        DatabaseUtils.WhereArg[] arg = new DatabaseUtils.WhereArg[1];
+        arg[0] = new DatabaseUtils.WhereArg(KEY_THREAD_ID + "=?", String.valueOf(threadId));
+        return arg;
     }
 
     @Override
-    public String whereArg() {
-        return String.valueOf(threadId);
+    public void copyValuesFrom(BaseModel model) {
+        if (model instanceof UserPost) {
+            UserPost userPost = (UserPost) model;
+
+            threadId = userPost.threadId;
+            postId = userPost.postId;
+            boardName = userPost.boardName;
+            postTime = userPost.postTime;
+        }
     }
 
-    public static Func1<Cursor, Observable<List<UserPost>>> mapper() {
-        return new Func1<Cursor, Observable<List<UserPost>>>() {
-            @Override
-            public Observable<List<UserPost>> call(Cursor cursor) {
-                cursor.moveToPosition(-1);
-                List<UserPost> userPostList = new ArrayList<>(cursor.getCount());
-                while (cursor.moveToNext()) {
-                    UserPost userPost = new UserPost();
-                    userPost.loadFromCursor(cursor);
+    @Override
+    public boolean isEmpty() {
+        return TextUtils.isEmpty(boardName) && threadId <= 0 && postId <= 0;
+    }
 
-                    userPostList.add(userPost);
-                }
-                return Observable.just(userPostList);
+    public static Function<Cursor, Flowable<List<UserPost>>> mapper() {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<UserPost> userPostList = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                UserPost userPost = new UserPost();
+                userPost.loadFromCursor(cursor);
+
+                userPostList.add(userPost);
             }
+            return Flowable.just(userPostList);
         };
     }
 }

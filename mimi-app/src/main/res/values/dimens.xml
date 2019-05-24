@@ -56,4 +56,7 @@ http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
     <dimen name="tab_container_height">40dp</dimen>
     <dimen name="circle_size">50dp</dimen>
 
+    <dimen name="thread_find_text_view_height">50dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+
 </resources>

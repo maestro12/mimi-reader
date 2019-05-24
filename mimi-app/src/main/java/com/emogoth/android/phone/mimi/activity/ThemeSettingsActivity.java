@@ -19,8 +19,8 @@ package com.emogoth.android.phone.mimi.activity;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -42,12 +42,14 @@ import com.rarepebble.colorpicker.ColorPickerView;
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
+
 
 public class ThemeSettingsActivity extends MimiActivity {
     private static final String LOG_TAG = ThemeSettingsActivity.class.getSimpleName();
@@ -58,7 +60,7 @@ public class ThemeSettingsActivity extends MimiActivity {
     private int currentColor = 0;
     //    private ColorPickerView colorPickerView;
     private GridLayout pickerContainer;
-    private Subscription demoViewSubscription;
+    private Disposable demoViewSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,13 +73,14 @@ public class ThemeSettingsActivity extends MimiActivity {
         if (toolbar != null) {
             toolbar.setLogo(null);
             toolbar.setTitle(R.string.settings);
-            toolbar.setNavigationIcon(R.drawable.ic_action_arrow_back);
+            toolbar.setNavigationIcon(R.drawable.ic_nav_arrow_back);
             toolbar.setNavigationOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     finish();
                 }
             });
+            setToolbar(toolbar);
         }
 
         final ViewGroup container = (ViewGroup) findViewById(R.id.container);
@@ -179,16 +182,16 @@ public class ThemeSettingsActivity extends MimiActivity {
         demoViewSubscription = Observable.just(postView)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(new Func1<View, ThreadListAdapter.ViewHolder>() {
+                .map(new Function<View, ThreadListAdapter.ViewHolder>() {
                     @Override
-                    public ThreadListAdapter.ViewHolder call(View view) {
-                        List<Integer> highlightedPostIDs = new ArrayList<>();
-                        highlightedPostIDs.add(88765432);
+                    public ThreadListAdapter.ViewHolder apply(View view) {
+                        List<Long> highlightedPostIDs = new ArrayList<>();
+                        highlightedPostIDs.add(88765432L);
 
                         FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
                         parserBuilder.setContext(ThemeSettingsActivity.this)
                                 .setComment(DEMO_COMMENT)
-                                .setThreadId(12345678)
+                                .setThreadId(12345678L)
                                 .setHighlightedPosts(highlightedPostIDs)
                                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
@@ -202,7 +205,7 @@ public class ThemeSettingsActivity extends MimiActivity {
                                 DateUtils.MINUTE_IN_MILLIS,
                                 DateUtils.FORMAT_ABBREV_RELATIVE);
 
-                        ThreadListAdapter.ViewHolder viewHolder = new ThreadListAdapter.ViewHolder(view);
+                        ThreadListAdapter.ViewHolder viewHolder = new ThreadListAdapter.ThreadPostViewHolder(view);
                         viewHolder.userName.setText("Anonymous");
                         viewHolder.flagIcon.setVisibility(View.GONE);
                         viewHolder.thumbnailContainer.setVisibility(View.GONE);
@@ -212,9 +215,9 @@ public class ThemeSettingsActivity extends MimiActivity {
                         return viewHolder;
                     }
                 })
-                .subscribe(new Action1<ThreadListAdapter.ViewHolder>() {
+                .subscribe(new Consumer<ThreadListAdapter.ViewHolder>() {
                     @Override
-                    public void call(ThreadListAdapter.ViewHolder viewHolder) {
+                    public void accept(ThreadListAdapter.ViewHolder viewHolder) {
 
                     }
                 });

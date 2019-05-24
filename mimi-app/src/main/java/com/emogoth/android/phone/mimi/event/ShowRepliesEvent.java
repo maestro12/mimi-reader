@@ -21,8 +21,8 @@ import java.util.List;
 
 public class ShowRepliesEvent {
     private String boardName;
-    private int threadId;
-    private int id;
+    private long threadId;
+    private long id;
     private List<String> replies;
 
     public String getBoardName() {
@@ -33,19 +33,19 @@ public class ShowRepliesEvent {
         this.boardName = boardName;
     }
 
-    public int getThreadId() {
+    public long getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(int threadId) {
+    public void setThreadId(long threadId) {
         this.threadId = threadId;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

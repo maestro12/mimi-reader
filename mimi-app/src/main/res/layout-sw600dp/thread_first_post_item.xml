@@ -19,6 +19,7 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     style="?cardBackgroundSelector"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -38,12 +39,36 @@
             android:orientation="horizontal">
 
             <ImageView
+                android:id="@+id/lock_icon"
+                android:layout_width="22dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:scaleType="fitCenter"
+                android:visibility="visible"
+                android:padding="4dp"
+                app:srcCompat="@drawable/ic_lock"
+                tools:visibility="visible" />
+
+            <ImageView
+                android:id="@+id/pin_icon"
+                android:layout_width="22dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:scaleType="fitCenter"
+                android:visibility="visible"
+                android:padding="4dp"
+                app:srcCompat="@drawable/ic_pin"
+                tools:visibility="visible" />
+
+            <ImageView
                 android:id="@+id/flag_icon"
                 android:layout_width="22dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:adjustViewBounds="true"
-                android:visibility="gone" />
+                android:scaleType="fitCenter"
+                android:visibility="gone"
+                tools:src="@drawable/de"
+                tools:visibility="visible" />
 
             <TextView
                 android:id="@+id/user_name"
@@ -65,13 +90,13 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
+                android:layout_marginBottom="4dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="4dp"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:gravity="left"
                 android:maxLines="1"
-                android:paddingBottom="4dp"
-                android:paddingLeft="8dp"
-                android:paddingTop="4dp"
                 android:visibility="gone" />
 
             <TextView
@@ -174,18 +199,16 @@
 
                 </FrameLayout>
 
-                <!--<TextView-->
-                <!--style="?postCommentText"-->
-                <!--android:id="@+id/thumbnail_info"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="48dp"-->
-                <!--android:layout_gravity="center"-->
-                <!--android:gravity="center"-->
-                <!--android:text="100 KB PNG"-->
-                <!--android:paddingRight="2dp"-->
-                <!--android:paddingLeft="2dp"-->
-                <!--android:textSize="12sp"-->
-                <!--android:background="@drawable/thumbnail_selector"/>-->
+                <TextView
+                    android:id="@+id/file_ext"
+                    style="?postHeaderText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    tools:text="GIF" />
+
             </LinearLayout>
 
             <LinearLayout
@@ -211,6 +234,7 @@
                     android:layout_height="wrap_content"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp"
+                    android:textIsSelectable="true"
                     android:textSize="13sp" />
 
 

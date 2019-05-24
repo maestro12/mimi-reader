@@ -18,15 +18,17 @@ package com.emogoth.android.phone.mimi.db.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 @Table(name = "Boards")
 public class Board extends BaseModel {
@@ -80,10 +82,10 @@ public class Board extends BaseModel {
     public long lastAccessed;
 
     @Column(name = KEY_FAVORITE)
-    public boolean favorite;
+    public int favorite;
 
     @Column(name = KEY_NSFW)
-    public boolean nsfw; // This value is the opposite of nsfw, but requires a schema change
+    public int nsfw; // This value is the opposite of nsfw, but requires a schema change
 
     @Column(name = KEY_POSTS_PER_PAGE)
     public int perPage;
@@ -92,7 +94,7 @@ public class Board extends BaseModel {
     public int pages;
 
     @Column(name = KEY_VISIBLE)
-    public boolean visible = false;
+    public int visible = 0;
 
     @Column(name = KEY_ORDER_INDEX)
     public int orderIndex;
@@ -100,24 +102,36 @@ public class Board extends BaseModel {
     @Column(name = KEY_MAX_FILESIZE)
     public int maxFileSize;
 
-    public ContentValues toContentValues() {
-        ContentValues values = new ContentValues();
+    ContentValues values = null;
 
-        if (id != -1) {
-            values.put(Board.KEY_ID, id);
+    public ContentValues toContentValues() {
+        if (this.values == null) {
+            ContentValues values = new ContentValues();
+
+            if (id != -1) {
+                values.put(Board.KEY_ID, id);
+            }
+
+            values.put(Board.KEY_NAME, name);
+            values.put(Board.KEY_TITLE, title);
+
+            values.put(Board.KEY_CATEGORY, category);
+            values.put(Board.KEY_NSFW, nsfw == 0 ? 1 : 0); // the api reports safe for work
+            values.put(Board.KEY_POSTS_PER_PAGE, perPage);
+            values.put(Board.KEY_NUMBER_OF_PAGES, pages);
+
+            values.put(Board.KEY_MAX_FILESIZE, maxFileSize);
+
+            values.put(Board.KEY_FAVORITE, favorite);
+
+            return values;
         }
 
-        values.put(Board.KEY_NAME, name);
-        values.put(Board.KEY_TITLE, title);
+        return this.values;
+    }
 
-        values.put(Board.KEY_CATEGORY, category);
-        values.put(Board.KEY_NSFW, !nsfw); // the api reports safe for work
-        values.put(Board.KEY_POSTS_PER_PAGE, perPage);
-        values.put(Board.KEY_NUMBER_OF_PAGES, pages);
-
-        values.put(Board.KEY_MAX_FILESIZE, maxFileSize);
-
-        return values;
+    public void setValues(ContentValues values) {
+        this.values = values;
     }
 
     @Override
@@ -126,19 +140,41 @@ public class Board extends BaseModel {
     }
 
     @Override
-    public String whereClause() {
-        return KEY_NAME + "=?";
+    public DatabaseUtils.WhereArg[] where() {
+        DatabaseUtils.WhereArg[] arg = new DatabaseUtils.WhereArg[1];
+        arg[0] = new DatabaseUtils.WhereArg(KEY_NAME + "=?", name);
+        return arg;
     }
 
     @Override
-    public String whereArg() {
-        return name;
+    public void copyValuesFrom(BaseModel model) {
+        if (model instanceof Board) {
+            Board board = (Board) model;
+            title = board.title;
+            name = board.name;
+            accessCount = board.accessCount;
+            postCount = board.postCount;
+            category = board.category;
+            lastAccessed = board.lastAccessed;
+            favorite = board.favorite;
+            nsfw = board.nsfw;
+            perPage = board.perPage;
+            pages = board.pages;
+            visible = board.visible;
+            orderIndex = board.orderIndex;
+            maxFileSize = board.maxFileSize;
+        }
     }
 
-    public static Func1<Cursor, Observable<List<Board>>> mapper() {
-        return new Func1<Cursor, Observable<List<Board>>>() {
+    @Override
+    public boolean isEmpty() {
+        return TextUtils.isEmpty(title) && TextUtils.isEmpty(name);
+    }
+
+    public static Function<Cursor, Observable<List<Board>>> mapper() {
+        return new Function<Cursor, Observable<List<Board>>>() {
             @Override
-            public Observable<List<Board>> call(Cursor cursor) {
+            public Observable<List<Board>> apply(Cursor cursor) {
                 cursor.moveToPosition(-1);
                 List<Board> boards = new ArrayList<>(cursor.getCount());
                 while (cursor.moveToNext()) {
@@ -267,43 +303,4 @@ public class Board extends BaseModel {
             return values;
         }
     }
-
-
-
-    /*
-        public static String sortOrder(int orderBy) {
-        String value;
-        switch (orderBy) {
-            case ORDERBY_NONE:
-                value = Board.KEY_NAME + " ASC";
-                break;
-            case ORDERBY_NAME:
-                value = Board.KEY_TITLE + " ASC";
-                break;
-            case ORDERBY_PATH:
-                value = Board.KEY_NAME + " ASC";
-                break;
-            case ORDERBY_CATEGORY:
-            case ORDERBY_ACCESS_COUNT:
-                value = Board.KEY_ACCESS_COUNT;
-                break;
-            case ORDERBY_POST_COUNT:
-                value = Board.KEY_POST_COUNT;
-                break;
-            case ORDERBY_LAST_ACCESSED:
-                value = Board.KEY_LAST_ACCESSED;
-                break;
-            case ORDERBY_FAVORITE:
-                value = Board.KEY_FAVORITE;
-                break;
-            case 7:
-                value = Board.KEY_ORDER_INDEX + " ASC";
-                break;
-            default:
-                value = Board.KEY_NAME + " ASC";
-        }
-
-        return value;
-    }
-     */
 }

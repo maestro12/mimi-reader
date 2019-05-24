@@ -31,6 +31,12 @@
         mimi:showAsAction="always" />
 
     <item
+        android:id="@+id/save_folder_menu"
+        android:title="@string/save_to_folder"
+        android:icon="@drawable/ic_sd_storage"
+        mimi:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/fullscreen_menu"
         android:title="@string/fullscreen"
         android:icon="@drawable/ic_fullscreen"

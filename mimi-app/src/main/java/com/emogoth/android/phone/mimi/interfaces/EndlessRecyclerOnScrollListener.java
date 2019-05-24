@@ -16,9 +16,9 @@
 
 package com.emogoth.android.phone.mimi.interfaces;
 
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 
 public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScrollListener {

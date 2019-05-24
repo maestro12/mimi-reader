@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2016. Eli Connelly
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.emogoth.android.phone.mimi.async;
 
 
@@ -24,29 +8,35 @@ import android.util.Log;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okhttp3.internal.Util;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.BufferedSource;
+import okio.Okio;
 
 public class DownloadThread extends Thread {
-    private static final int IO_BUFFER_SIZE = 1024;
+    public static final int IO_BUFFER_SIZE = 4 * 1024;
     private static final String LOG_TAG = DownloadThread.class.getSimpleName();
 
     private final File saveDir;
     private final String url;
+    private final long bufferSize;
 
     private ProgressListener progressListener;
     private ErrorListener errorListener;
     private boolean cancelled;
 
-    public DownloadThread(final File saveDir, final String url) {
+    public DownloadThread(final File saveDir, final String url, final long bufferSize) {
         this.saveDir = saveDir;
         this.url = url;
         this.cancelled = false;
+        this.bufferSize = bufferSize;
     }
 
     @Override
@@ -57,7 +47,7 @@ public class DownloadThread extends Thread {
             if (saveDir.exists() && saveDir.length() > 0) {
                 downloadComplete(saveDir.getAbsolutePath());
             } else {
-                final boolean isError = !download(saveDir, url);
+                final boolean isError = !download(saveDir, url, bufferSize);
                 if (!isError) {
                     downloadComplete(saveDir.getAbsolutePath());
                 } else {
@@ -74,94 +64,81 @@ public class DownloadThread extends Thread {
         cancelled = true;
     }
 
-    private boolean download(final File saveDir, final String url) {
-        OkHttpClient httpClient = HttpClientFactory.getInstance().getOkHttpClient();
-        Request.Builder requestBuilder = new Request.Builder();
-        Request request = requestBuilder.addHeader("Accept-Encoding", "gzip")
-                .url(url)
-                .tag(url)
-                .get()
-                .build();
+    private boolean download(final File saveDir, final String url, long bufferSize) {
+        BufferedSink sink = null;
+        BufferedSource source = null;
+
+        boolean useGzip = !url.endsWith("pdf");
+
+        long downloaded = 0;
+        long target = 0;
 
         try {
+            OkHttpClient httpClient = HttpClientFactory.getInstance().getClient();
+            Request.Builder requestBuilder = new Request.Builder();
+            requestBuilder.url(url)
+                    .tag(url)
+                    .get();
+
+            if (useGzip) {
+                requestBuilder.addHeader("Accept-Encoding", "gzip");
+            }
+
+            Request request = requestBuilder.build();
             Response response = httpClient.newCall(request).execute();
+            ResponseBody body = response.body();
             if (response.code() == 200) {
-                final FileOutputStream fos = new FileOutputStream(saveDir);
-                InputStream inputStream = null;
-                try {
-                    inputStream = response.body().byteStream();
-                    byte[] buff = new byte[IO_BUFFER_SIZE * 4];
-                    long downloaded = 0;
-                    long target = response.body().contentLength();
 
-                    downloadProgress(0);
-                    while (true) {
-                        int readed = inputStream.read(buff);
-                        if (readed == -1) {
-                            break;
-                        }
-                        //write buff
-                        fos.write(buff, 0, readed);
-                        downloaded += readed;
-                        downloadProgress(Math.round(downloaded / (float) target * 100));
+                source = body.source();
+                sink = Okio.buffer(Okio.sink(saveDir));
+                Buffer sinkBuffer = sink.buffer();
 
-                        if (cancelled) {
-                            if (saveDir.exists()) {
-                                saveDir.delete();
-                            }
-                            return false;
+                target = body.contentLength();
+                long read;
+
+                downloadProgress(0);
+                while ((read = source.read(sinkBuffer, bufferSize)) != -1) {
+                    sink.emit();
+                    downloaded += read;
+                    downloadProgress(Math.round(downloaded / (float) target * 100));
+                    if (cancelled) {
+                        read = -1;
+                        if (saveDir.exists()) {
+                            saveDir.delete();
                         }
-                    }
-                    return downloaded == target;
-                } catch (IOException ignore) {
-                    return false;
-                } finally {
-                    if (inputStream != null) {
-                        inputStream.close();
                     }
                 }
-            } else {
-                return false;
+
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(LOG_TAG, "Download error!", e);
             return false;
+        } finally {
+            Util.closeQuietly(source);
+            Util.closeQuietly(sink);
         }
+
+        return downloaded > 0 && ((target > 0 && downloaded == target) || !useGzip);
     }
 
     private void downloadProgress(final int progress) {
         if (progressListener != null) {
             final Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    progressListener.onProgressUpdate(progress);
-                }
-            });
+            handler.post(() -> progressListener.onProgressUpdate(progress));
         }
     }
 
     private void downloadComplete(final String downloadFile) {
         if (progressListener != null) {
             final Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    progressListener.onComplete(downloadFile);
-                }
-            });
+            handler.post(() -> progressListener.onComplete(downloadFile));
         }
     }
 
     private void downloadError() {
         if (errorListener != null) {
             final Handler handler = new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    errorListener.onError();
-                }
-            });
+            handler.post(() -> errorListener.onError());
         }
     }
 

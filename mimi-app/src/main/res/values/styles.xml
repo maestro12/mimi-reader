@@ -30,6 +30,7 @@
         <item name="actionModeBackground">@drawable/cab_background_top_thememimidark</item>
         <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimidark</item>
         <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Dark</item>
+        <item name="windowActionModeOverlay">true</item>
 
         <item name="elevation">0dp</item>
         <item name="displayOptions">showHome|homeAsUp|showTitle</item>
@@ -147,5 +148,14 @@
 
         <item name="font_board_height">65dp</item>
     </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Default.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.Toolbar.Default.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.Mimi.Light.Toolbar.Default.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>

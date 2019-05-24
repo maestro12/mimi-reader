@@ -17,11 +17,14 @@
 package com.emogoth.android.phone.mimi.widget;
 
 import android.content.Context;
-import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.util.Log;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 
 public class MimiRecyclerView extends RecyclerView {
+    public static final String LOG_TAG = MimiRecyclerView.class.getSimpleName();
     public MimiRecyclerView(Context context) {
         super(context);
     }
@@ -34,7 +37,16 @@ public class MimiRecyclerView extends RecyclerView {
         super(context, attrs, defStyle);
     }
 
-//    @Override
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        try {
+            super.onLayout(changed, l, t, r, b);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error laying out RecyclerView", e);
+        }
+    }
+
+    //    @Override
 //    public int computeVerticalScrollRange() {
 //        return super.computeVerticalScrollRange();
 //    }

@@ -24,5 +24,5 @@ import java.util.List;
 
 
 public interface OnPostItemClickListener {
-    void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, int threadId);
+    void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, long threadId);
 }

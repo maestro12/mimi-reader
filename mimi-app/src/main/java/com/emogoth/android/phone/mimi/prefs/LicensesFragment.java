@@ -22,7 +22,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.RawRes;
+import androidx.annotation.RawRes;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;

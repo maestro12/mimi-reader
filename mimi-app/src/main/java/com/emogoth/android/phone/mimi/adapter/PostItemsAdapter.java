@@ -16,21 +16,25 @@
 
 package com.emogoth.android.phone.mimi.adapter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.widget.CardView;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.PopupMenu;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
+import androidx.core.util.Pair;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -40,9 +44,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.activity.GalleryActivity;
+import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
@@ -51,9 +60,8 @@ import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
 import com.emogoth.android.phone.mimi.util.BusProvider;
-import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.GridItemImageView;
@@ -64,8 +72,7 @@ import com.mimireader.chanlib.models.ChanPost;
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
 
 
 public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements Filterable {
@@ -79,26 +86,26 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     private final OnPostItemClickListener clickListener;
     private final ChanConnector chanConnector;
-    private final boolean secureConnection;
+
+    private final VectorDrawableCompat pinDrawable;
+    private final VectorDrawableCompat lockDrawable;
 
     protected List<ChanPost> postList;
 
     protected String boardName;
     protected String boardTitle;
-    protected final FragmentActivity activity;
     protected int postCount = 0;
     protected int lastPosition = 0;
     protected String flagUrl;
+    private String trollUrl;
     protected PostFilter postFilter;
     protected boolean searching;
-    protected LayoutInflater inflater;
     private RecyclerView.LayoutManager layoutManager;
 
     private List<View> headers = new ArrayList<>();
     private List<View> footers = new ArrayList<>();
 
-    private Subscription historyInfoSubscription;
-    private Subscription fetchPostSubscription;
+    private Disposable historyInfoSubscription;
 
 
     public enum ManagerType {
@@ -118,8 +125,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     protected ManagerType managerType = ManagerType.LIST;
 
 
-    public PostItemsAdapter(final FragmentActivity activity, final String boardName, final String boardTitle, final ChanCatalog threads, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
-        this.activity = activity;
+    public PostItemsAdapter(final String boardName, final String boardTitle, final ChanCatalog threads, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
         this.boardName = boardName;
         this.boardTitle = boardTitle;
         this.postList = new ArrayList<>();
@@ -130,18 +136,17 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             postList.addAll(threads.getPosts());
         }
 
+        setup();
+
+        Pair<VectorDrawableCompat, VectorDrawableCompat> drawables = initMetadataDrawables();
+        pinDrawable = drawables.first;
+        lockDrawable = drawables.second;
+
         this.postCount = postList.size();
 
-        if (activity != null) {
-            this.secureConnection = MimiUtil.isSecureConnection(activity);
-            setup();
-        } else {
-            this.secureConnection = false;
-        }
     }
 
-    public PostItemsAdapter(final FragmentActivity activity, final String boardName, final String boardTitle, final List<ChanPost> postList, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
-        this.activity = activity;
+    public PostItemsAdapter(final String boardName, final String boardTitle, final List<ChanPost> postList, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
         this.boardName = boardName;
         this.boardTitle = boardTitle;
         this.postList = postList;
@@ -149,26 +154,48 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         this.clickListener = clickListener;
         this.chanConnector = chanConnector;
 
-        if (activity != null) {
-            this.secureConnection = MimiUtil.isSecureConnection(activity);
-            setup();
-        } else {
-            this.secureConnection = false;
+        setup();
+
+        Pair<VectorDrawableCompat, VectorDrawableCompat> drawables = initMetadataDrawables();
+        pinDrawable = drawables.first;
+        lockDrawable = drawables.second;
+    }
+
+    private Pair<VectorDrawableCompat, VectorDrawableCompat> initMetadataDrawables() {
+        final Resources.Theme theme = MimiApplication.getInstance().getTheme();
+        final Resources res = MimiApplication.getInstance().getResources();
+        final int drawableColor = MimiUtil.getInstance().getTheme() == MimiUtil.THEME_LIGHT ? R.color.md_grey_800 : R.color.md_green_50;
+        final VectorDrawableCompat pin;
+        final VectorDrawableCompat lock;
+
+        pin = VectorDrawableCompat.create(res, R.drawable.ic_pin, theme);
+        lock = VectorDrawableCompat.create(res, R.drawable.ic_lock, theme);
+
+        if (pin != null) {
+            pin.setTint(res.getColor(drawableColor));
         }
+
+        if (lock != null) {
+            lock.setTint(res.getColor(drawableColor));
+        }
+
+        return Pair.create(pin, lock);
     }
 
     private void setup() {
-        inflater = activity.getLayoutInflater();
         if (postList.size() == 0) {
             return;
         }
 
-        this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_int_link);
+        Resources res = MimiApplication.getInstance().getResources();
+
+        this.flagUrl = MimiUtil.https() + res.getString(R.string.flag_int_link);
+        this.trollUrl = MimiUtil.https() + res.getString(R.string.flag_pol_link);
     }
 
-
+    @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View v;
         switch (viewType) {
             case VIEW_HEADER:
@@ -214,10 +241,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         }
 
         Log.d(LOG_TAG, "Set manager type: value=" + managerType.name());
-    }
-
-    public ManagerType getLayoutManagerType() {
-        return managerType;
     }
 
     public int getGridSpan(int position) {
@@ -282,7 +305,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     }
 
     @Override
-    public void onBindViewHolder(final RecyclerView.ViewHolder holder, int pos) {
+    public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder holder, int pos) {
 
         if (isHeader(pos)) {
             View v = headers.get(pos);
@@ -296,33 +319,71 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
             final int position = pos - headers.size();
             final ChanPost threadItem = postList.get(position);
-            final int threadId = threadItem.getNo();
+            final long threadId = threadItem.getNo();
             final boolean sticky = threadItem.isSticky();
             final HolderAbstractor viewHolder = new HolderAbstractor(holder);
 
             if (clickListener != null) {
-                viewHolder.cardRoot.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        clickListener.onPostItemClick(v, postList, position, boardTitle, boardName, threadId);
-                    }
-                });
+                viewHolder.cardRoot.setOnClickListener(v -> clickListener.onPostItemClick(v, postList, position, boardTitle, boardName, threadId));
             }
 
             if (viewHolder.flagIcon != null) {
-                final String country = threadItem.getCountry();
-                if (country != null && !"".equals(country)) {
-                    final String url = flagUrl + country.toLowerCase() + ".gif";
+                final String country;
+                final String url;
+                if (threadItem.getCountry() == null) {
+                    country = threadItem.getTrollCountry();
+                    if (country != null) {
+                        url = trollUrl + country.toLowerCase() + ".gif";
+                    } else {
+                        url = null;
+                    }
+                } else {
+                    country = threadItem.getCountry();
+                    if (country != null) {
+                        url = flagUrl + country.toLowerCase() + ".gif";
+                    } else {
+                        url = null;
+                    }
+                }
+                if (country != null) {
                     viewHolder.flagIcon.setVisibility(View.VISIBLE);
 
-                    Glide.with(activity)
-                            .load(url)
-                            .crossFade()
-                            .into(viewHolder.flagIcon);
+                    MimiUtil.loadImageWithFallback(viewHolder.flagIcon.getContext(), viewHolder.flagIcon, url, null, 0, new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object o, Target<Drawable> target, boolean b) {
+                            if (viewHolder.flagIcon != null) {
+                                viewHolder.flagIcon.setVisibility(View.GONE);
+                            }
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable drawable, Object o, Target<Drawable> target, DataSource dataSource, boolean b) {
+                            return false;
+                        }
+                    });
                 } else {
                     viewHolder.flagIcon.setVisibility(View.GONE);
                 }
 
+            }
+
+            if (viewHolder.lockIcon != null) {
+                if (threadItem.isClosed()) {
+                    viewHolder.lockIcon.setImageDrawable(lockDrawable);
+                    viewHolder.lockIcon.setVisibility(View.VISIBLE);
+                } else {
+                    viewHolder.lockIcon.setVisibility(View.GONE);
+                }
+            }
+
+            if (viewHolder.pinIcon != null) {
+                if (threadItem.isSticky()) {
+                    viewHolder.pinIcon.setImageDrawable(pinDrawable);
+                    viewHolder.pinIcon.setVisibility(View.VISIBLE);
+                } else {
+                    viewHolder.pinIcon.setVisibility(View.GONE);
+                }
             }
 
             viewHolder.threadNo.setText("" + threadId);
@@ -334,33 +395,16 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     viewHolder.thumbUrl.setAspectRatioEnabled(false);
                 }
                 viewHolder.thumbUrl.setVisibility(View.VISIBLE);
-                viewHolder.thumbUrl.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        final Bundle args = new Bundle();
-                        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 1);
-                        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-                        args.putInt(Extras.EXTRAS_POSITION, 0);
-                        args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                viewHolder.thumbUrl.setOnClickListener(v -> GalleryActivity2.start(v.getContext(), GalleryActivity2.GALLERY_TYPE_PAGER, 0, boardName, threadId, new long[0]));
 
-                        final Intent galleryIntent = new Intent(activity, GalleryActivity.class);
-                        galleryIntent.putExtras(args);
-                        galleryIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-
-                        activity.startActivity(galleryIntent);
-
-                    }
-                });
-
-                final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim(), secureConnection);
-                Glide.with(activity)
+                final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim());
+                GlideApp.with(viewHolder.thumbUrl.getContext())
                         .load(url)
-                        .crossFade()
                         .into(viewHolder.thumbUrl);
 
             } else {
                 viewHolder.thumbUrl.setVisibility(View.GONE);
-                Glide.clear(viewHolder.thumbUrl);
+                GlideApp.with(viewHolder.thumbUrl.getContext()).clear(viewHolder.thumbUrl);
             }
 
             if (threadItem.getSubject() != null) {
@@ -402,86 +446,74 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 viewHolder.timestamp.setText(threadItem.getNow());
             }
 
-            viewHolder.menuIcon.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View v) {
-                    final PopupMenu menu = new PopupMenu(v.getContext(), v);
-                    menu.inflate(R.menu.catalog_item_menu);
-                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(final MenuItem menuItem) {
-                            if (menuItem.getItemId() == R.id.gallery_menu && activity instanceof GalleryMenuItemClickListener) {
-                                ((GalleryMenuItemClickListener) activity).onGalleryMenuItemClick(boardName, threadId);
-                                return true;
-                            } else if (menuItem.getItemId() == R.id.hide_thread_menu) {
-                                HiddenThreadTableConnection.hideThread(boardName, threadId, sticky)
-                                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                                        .subscribe(new Action1<Boolean>() {
-                                            @Override
-                                            public void call(Boolean success) {
-                                                int msgId = R.string.thread_hidden;
-                                                if (!success) {
-                                                    msgId = R.string.error_hiding_thread;
-                                                } else {
-                                                    int index = -1;
-                                                    for (int i = 0; i < postList.size(); i++) {
-                                                        if (postList.get(i).getNo() == threadId) {
-                                                            index = i;
-                                                            postList.remove(i);
-                                                        }
-                                                    }
-
-                                                    if (index >= 0) {
-                                                        BusProvider.getInstance().post(new RemovePostEvent(index));
-                                                    }
-                                                }
-
-                                                Snackbar.make(viewHolder.cardRoot, msgId, Snackbar.LENGTH_SHORT).show();
-
+            viewHolder.menuIcon.setOnClickListener(v -> {
+                final Context context = v.getContext();
+                final PopupMenu menu = new PopupMenu(v.getContext(), v);
+                final Activity activity = context instanceof Activity ? (Activity) context : null;
+                menu.inflate(R.menu.catalog_item_menu);
+                menu.setOnMenuItemClickListener(menuItem -> {
+                    if (menuItem.getItemId() == R.id.gallery_menu && activity instanceof GalleryMenuItemClickListener) {
+                        ((GalleryMenuItemClickListener) activity).onGalleryMenuItemClick(boardName, threadId);
+                        return true;
+                    } else if (menuItem.getItemId() == R.id.hide_thread_menu) {
+                        Disposable d = HiddenThreadTableConnection.hideThread(boardName, threadId, sticky)
+                                .compose(DatabaseUtils.applySchedulers())
+                                .subscribe(success -> {
+                                    int msgId = R.string.thread_hidden;
+                                    if (!success) {
+                                        msgId = R.string.error_hiding_thread;
+                                    } else {
+                                        int index = -1;
+                                        for (int i = 0; i < postList.size(); i++) {
+                                            if (postList.get(i).getNo() == threadId) {
+                                                index = i;
+                                                postList.remove(i);
                                             }
-                                        }, new Action1<Throwable>() {
-                                            @Override
-                                            public void call(Throwable throwable) {
-                                                Log.w(LOG_TAG, "Error hiding thread", throwable);
-                                            }
-                                        });
-                            } else if (menuItem.getItemId() == R.id.report_menu) {
-                                final String url = "https://" + activity.getString(R.string.sys_link);
-                                final String path = activity.getString(R.string.report_path, boardName, threadId);
-                                final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
+                                        }
 
-                                activity.startActivity(reportIntent);
+                                        if (index >= 0) {
+                                            BusProvider.getInstance().post(new RemovePostEvent(index));
+                                        }
+                                    }
 
-                                return true;
+                                    Snackbar.make(viewHolder.cardRoot, msgId, Snackbar.LENGTH_SHORT).show();
 
-                            } else if (menuItem.getItemId() == R.id.copy_link_menu) {
-                                final String url = "https://" + activity.getString(R.string.board_link);
-                                final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
+                                }, throwable -> Log.w(LOG_TAG, "Error hiding thread", throwable));
+                    } else if (menuItem.getItemId() == R.id.report_menu) {
+                        final String url = "https://" + activity.getString(R.string.sys_link);
+                        final String path = activity.getString(R.string.report_path, boardName, threadId);
+                        final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
 
-                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
-                                android.content.ClipData clip = android.content.ClipData.newPlainText("thread link", url + path);
-                                clipboard.setPrimaryClip(clip);
+                        activity.startActivity(reportIntent);
 
-                                Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                        return true;
 
-                                return true;
+                    } else if (menuItem.getItemId() == R.id.copy_link_menu) {
+                        final String url = "https://" + activity.getString(R.string.board_link);
+                        final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
 
-                            } else if (menuItem.getItemId() == R.id.open_link_menu) {
-                                final String url = "https://" + activity.getString(R.string.board_link);
-                                final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
-                                final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("thread link", url + path);
+                        clipboard.setPrimaryClip(clip);
 
-                                activity.startActivity(openLinkIntent);
+                        Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
 
-                                return true;
+                        return true;
 
-                            }
+                    } else if (menuItem.getItemId() == R.id.open_link_menu) {
+                        final String url = "https://" + activity.getString(R.string.board_link);
+                        final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
+                        final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
 
-                            return false;
-                        }
-                    });
-                    menu.show();
-                }
+                        activity.startActivity(openLinkIntent);
+
+                        return true;
+
+                    }
+
+                    return false;
+                });
+                menu.show();
             });
 
             if (viewHolder.bookmarkButton != null) {
@@ -491,34 +523,27 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
                 }
 
-                viewHolder.bookmarkButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        final boolean watched = threadItem.isWatched();
-                        threadItem.setWatched(!watched);
+                viewHolder.bookmarkButton.setOnClickListener(v -> {
+                    final boolean watched = threadItem.isWatched();
+                    threadItem.setWatched(!watched);
 
-                        if (watched) {
-                            viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
-                            HistoryTableConnection.removeHistory(boardName, threadId)
-                                    .doOnNext(new Action1<Boolean>() {
-                                        @Override
-                                        public void call(Boolean aBoolean) {
-                                            MimiUtil.getInstance().removeBookmark(boardName, threadId);
-                                        }
-                                    })
-                                    .compose(DatabaseUtils.<Boolean>applySchedulers())
-                                    .subscribe();
-                            RefreshScheduler.getInstance().removeThread(boardName, threadId);
-                            ThreadRegistry.getInstance().remove(threadId);
-                        } else {
-                            viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
-                            RefreshScheduler.getInstance().addThread(boardName, threadId, true);
-                            ThreadRegistry.getInstance().add(boardName, threadId, postList.size(), true);
-                        }
-
-                        RxUtil.safeUnsubscribe(historyInfoSubscription);
-                        historyInfoSubscription = HistoryTableConnection.putHistory(boardName, threadItem, postCount, !watched).subscribe();
+                    if (watched) {
+                        viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
+                        HistoryTableConnection.removeHistory(boardName, threadId)
+                                .compose(DatabaseUtils.applySchedulers())
+                                .subscribe();
+                        RefreshScheduler.getInstance().removeThread(boardName, threadId);
+                        ThreadRegistry.getInstance().remove(threadId);
+                    } else {
+                        viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
+                        RefreshScheduler.getInstance().addThread(boardName, threadId, true);
+                        ThreadRegistry.getInstance().add(boardName, threadId, postList.size(), true);
                     }
+
+                    RxUtil.safeUnsubscribe(historyInfoSubscription);
+                    historyInfoSubscription = HistoryTableConnection.putHistory(boardName, threadItem, postCount, 0, !watched)
+                            .compose(DatabaseUtils.applySchedulers())
+                            .subscribe();
                 });
             }
         }
@@ -636,26 +661,30 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         View menuIcon;
         ViewGroup postHeader;
         ImageView flagIcon;
+        ImageView lockIcon;
+        ImageView pinIcon;
         TextView bookmarkButton;
         CardView cardRoot;
 
         private ViewHolderListItem(final View root) {
             super(root);
 
-            name = (TextView) root.findViewById(R.id.user_name);
-            threadNo = (TextView) root.findViewById(R.id.thread_id);
-            userId = (TextView) root.findViewById(R.id.user_id);
-            subject = (TextView) root.findViewById(R.id.subject);
-            comment = (TextView) root.findViewById(R.id.comment);
-            thumbUrl = (GridItemImageView) root.findViewById(R.id.header_thumbnail);
-            replyCount = (TextView) root.findViewById(R.id.reply_count);
-            imageCount = (TextView) root.findViewById(R.id.image_count);
-            timestamp = (TextView) root.findViewById(R.id.timestamp);
+            name = root.findViewById(R.id.user_name);
+            threadNo = root.findViewById(R.id.thread_id);
+            userId = root.findViewById(R.id.user_id);
+            subject = root.findViewById(R.id.subject);
+            comment = root.findViewById(R.id.comment);
+            thumbUrl = root.findViewById(R.id.header_thumbnail);
+            replyCount = root.findViewById(R.id.reply_count);
+            imageCount = root.findViewById(R.id.image_count);
+            timestamp = root.findViewById(R.id.timestamp);
             menuIcon = root.findViewById(R.id.post_item_menu);
-            postHeader = (ViewGroup) root.findViewById(R.id.post_header);
-            flagIcon = (ImageView) root.findViewById(R.id.flag_icon);
-            bookmarkButton = (TextView) root.findViewById(R.id.bookmark_button);
-            cardRoot = (CardView) root.findViewById(R.id.post_card);
+            postHeader = root.findViewById(R.id.post_header);
+            flagIcon = root.findViewById(R.id.flag_icon);
+            lockIcon = root.findViewById(R.id.lock_icon);
+            pinIcon = root.findViewById(R.id.pin_icon);
+            bookmarkButton = root.findViewById(R.id.bookmark_button);
+            cardRoot = root.findViewById(R.id.post_card);
         }
     }
 
@@ -672,26 +701,30 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         View menuIcon;
         ViewGroup postHeader;
         ImageView flagIcon;
+        ImageView lockIcon;
+        ImageView pinIcon;
         TextView bookmarkButton;
         CardView cardRoot;
 
         private ViewHolderGridItem(final View root) {
             super(root);
 
-            name = (TextView) root.findViewById(R.id.user_name);
-            threadNo = (TextView) root.findViewById(R.id.thread_id);
-            userId = (TextView) root.findViewById(R.id.user_id);
-            subject = (TextView) root.findViewById(R.id.subject);
-            comment = (TextView) root.findViewById(R.id.comment);
-            thumbUrl = (GridItemImageView) root.findViewById(R.id.header_thumbnail);
-            replyCount = (TextView) root.findViewById(R.id.reply_count);
-            imageCount = (TextView) root.findViewById(R.id.image_count);
-            timestamp = (TextView) root.findViewById(R.id.timestamp);
+            name = root.findViewById(R.id.user_name);
+            threadNo = root.findViewById(R.id.thread_id);
+            userId = root.findViewById(R.id.user_id);
+            subject = root.findViewById(R.id.subject);
+            comment = root.findViewById(R.id.comment);
+            thumbUrl = root.findViewById(R.id.header_thumbnail);
+            replyCount = root.findViewById(R.id.reply_count);
+            imageCount = root.findViewById(R.id.image_count);
+            timestamp = root.findViewById(R.id.timestamp);
             menuIcon = root.findViewById(R.id.post_item_menu);
-            postHeader = (ViewGroup) root.findViewById(R.id.post_header);
-            flagIcon = (ImageView) root.findViewById(R.id.flag_icon);
-            bookmarkButton = (TextView) root.findViewById(R.id.bookmark_button);
-            cardRoot = (CardView) root.findViewById(R.id.post_card);
+            postHeader = root.findViewById(R.id.post_header);
+            flagIcon = root.findViewById(R.id.flag_icon);
+            lockIcon = root.findViewById(R.id.lock_icon);
+            pinIcon = root.findViewById(R.id.pin_icon);
+            bookmarkButton = root.findViewById(R.id.bookmark_button);
+            cardRoot = root.findViewById(R.id.post_card);
         }
     }
 
@@ -708,6 +741,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         public final View menuIcon;
         public final ViewGroup postHeader;
         public final ImageView flagIcon;
+        public final ImageView lockIcon;
+        public final ImageView pinIcon;
         public final TextView bookmarkButton;
         public final CardView cardRoot;
 
@@ -725,6 +760,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = ((ViewHolderGridItem) item).menuIcon;
                 postHeader = ((ViewHolderGridItem) item).postHeader;
                 flagIcon = ((ViewHolderGridItem) item).flagIcon;
+                lockIcon = ((ViewHolderGridItem) item).lockIcon;
+                pinIcon = ((ViewHolderGridItem) item).pinIcon;
                 bookmarkButton = ((ViewHolderGridItem) item).bookmarkButton;
                 cardRoot = ((ViewHolderGridItem) item).cardRoot;
             } else if (item instanceof ViewHolderListItem) {
@@ -740,6 +777,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = ((ViewHolderListItem) item).menuIcon;
                 postHeader = ((ViewHolderListItem) item).postHeader;
                 flagIcon = ((ViewHolderListItem) item).flagIcon;
+                lockIcon = ((ViewHolderListItem) item).lockIcon;
+                pinIcon = ((ViewHolderListItem) item).pinIcon;
                 bookmarkButton = ((ViewHolderListItem) item).bookmarkButton;
                 cardRoot = ((ViewHolderListItem) item).cardRoot;
             } else {
@@ -755,6 +794,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = null;
                 postHeader = null;
                 flagIcon = null;
+                lockIcon = null;
+                pinIcon = null;
                 bookmarkButton = null;
                 cardRoot = null;
             }

@@ -19,6 +19,7 @@ package com.emogoth.android.phone.mimi.fourchan.api;
 
 import java.util.Map;
 
+import io.reactivex.Single;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
@@ -27,16 +28,16 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.http.Path;
-import rx.Observable;
+import io.reactivex.Observable;
 
 public interface FourChanPostApi {
 
     @Multipart
     @POST("{boardName}/post")
-    Observable<Response<ResponseBody>> post(@Path("boardName") String boardName, @PartMap Map<String, RequestBody> param);
+    Single<Response<ResponseBody>> post(@Path("boardName") String boardName, @PartMap Map<String, RequestBody> param);
 
     @Multipart
     @POST("auth")
-    Observable<Response<ResponseBody>> login(@Part("id") RequestBody token, @Part("pin") RequestBody pin, @Part("long_login") RequestBody longLogin, @Part("act") RequestBody act);
+    Single<Response<ResponseBody>> login(@Part("id") RequestBody token, @Part("pin") RequestBody pin, @Part("long_login") RequestBody longLogin, @Part("act") RequestBody act);
 
 }

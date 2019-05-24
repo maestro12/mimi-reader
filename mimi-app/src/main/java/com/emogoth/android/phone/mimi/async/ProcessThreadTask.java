@@ -17,109 +17,87 @@
 package com.emogoth.android.phone.mimi.async;
 
 import android.content.Context;
-import android.support.v4.content.AsyncTaskLoader;
+import android.content.res.Resources;
 import android.text.Html;
 import android.text.Spannable;
 
+import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
-public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
+public class ProcessThreadTask {
     private static final String LOG_TAG = ProcessThreadTask.class.getSimpleName();
 
     private final ChanThread outThread;
     private final String boardName;
 
-    public ProcessThreadTask(final Context activity, final String boardName, final ChanThread inThread) {
-        super(activity);
-
+    public ProcessThreadTask(final String boardName, final ChanThread inThread) {
         this.boardName = boardName;
         this.outThread = inThread;
     }
 
-    @Override
-    protected void onStartLoading() {
-        forceLoad();
-    }
-
-    @Override
-    public ChanThread loadInBackground() {
-        if (outThread == null) {
-            return null;
-        }
-
-        return processThread(getContext(), outThread.getPosts(), boardName, outThread.getThreadId());
-    }
-
-    public static Func1<ChanThread, ChanThread> processThread(final Context context, final String boardName, final int threadId) {
-        return new Func1<ChanThread, ChanThread>() {
-            @Override
-            public ChanThread call(ChanThread thread) {
-                if (thread == null) {
-                    return null;
-                }
-
-                return processThread(context, thread.getPosts(), boardName, threadId);
+    public static Function<ChanThread, ChanThread> processThread(final List<Long> userPosts, final String boardName, final long threadId) {
+        return thread -> {
+            if (thread == null) {
+                return ChanThread.empty();
             }
+
+            return processThread(thread.getPosts(), userPosts, boardName, threadId);
         };
     }
 
-    public static Func1<ChanThread, Observable<ChanThread>> processThreadFlatMap(final Context context, final String boardName, final int threadId) {
-        return new Func1<ChanThread, Observable<ChanThread>>() {
-            @Override
-            public Observable<ChanThread> call(ChanThread chanThread) {
-                if (chanThread == null) {
-                    return Observable.just(null);
-                }
-
-                return Observable.just(processThread(context, chanThread.getPosts(), boardName, threadId));
+    public static Function<ChanThread, Observable<ChanThread>> processThreadFlatMap(final List<Long> userPosts, final String boardName, final long threadId) {
+        return chanThread -> {
+            if (chanThread == null) {
+                return Observable.just(ChanThread.empty());
             }
+
+            return Observable.just(processThread(chanThread.getPosts(), userPosts, boardName, threadId));
         };
 
     }
 
-    public static ChanThread processThread(final Context context, List<ChanPost> posts, final String boardName, final int threadId) {
-        if (posts == null || context == null) {
-            return null;
+    public static ChanThread processThread(List<ChanPost> posts, final List<Long> userPosts, final String boardName, final long threadId) {
+        return processThread(posts, userPosts, boardName, threadId, 0L);
+    }
+
+    public static ChanThread processThread(List<ChanPost> posts, final List<Long> userPosts, final String boardName, final long threadId, final long highlightedPost) {
+        final Resources res = MimiApplication.getInstance().getResources();
+        if (posts == null || res == null) {
+            return ChanThread.empty();
         }
 
         ChanThread updatedThread = new ChanThread();
         updatedThread.setBoardName(boardName);
         updatedThread.setThreadId(threadId);
 
-        List<ChanPost> updatedPosts = updatePostList(context, posts, boardName, threadId, 0);
+        List<ChanPost> updatedPosts = updatePostList(posts, userPosts, boardName, threadId, highlightedPost);
         updatedThread.setPosts(updatedPosts);
 
         return updatedThread;
     }
 
-    public static Func1<List<ChanPost>, List<ChanPost>> processPostList(final Context context, final List<ChanPost> posts, final ChanThread thread, final int highlightedPost) {
-        return new Func1<List<ChanPost>, List<ChanPost>>() {
-            @Override
-            public List<ChanPost> call(List<ChanPost> postList) {
-                return updatePostList(context, posts, thread.getBoardName(), thread.getThreadId(), highlightedPost);
-            }
-        };
+    public static Function<List<ChanPost>, List<ChanPost>> processPostList(final List<ChanPost> posts, final List<Long> userPosts, final ChanThread thread, final long highlightedPost) {
+        return postList -> updatePostList(posts, userPosts, thread.getBoardName(), thread.getThreadId(), highlightedPost);
     }
 
-    public static Func1<List<ChanPost>, List<ChanPost>> processPostList(final Context context, final List<ChanPost> posts, final ChanThread thread) {
-        return processPostList(context, posts, thread, 0);
+    public static Function<List<ChanPost>, List<ChanPost>> processPostList(final List<ChanPost> posts, final List<Long> userPosts, final ChanThread thread) {
+        return processPostList(posts, userPosts, thread, 0);
     }
 
-    private static List<ChanPost> updatePostList(final Context context, final List<ChanPost> posts, final String boardName, final int threadId, final int highlightedPost) {
+    private static List<ChanPost> updatePostList(final List<ChanPost> posts, List<Long> userPosts, final String boardName, final long threadId, final long highlightedPost) {
+        final Context context = MimiApplication.getInstance().getApplicationContext();
         List<ChanPost> updatedPosts = new ArrayList<>(posts.size());
-        List<Integer> userPosts = new ArrayList<>(ThreadRegistry.getInstance().getUserPosts(boardName, threadId));
-        List<Integer> hightlightedPosts = new ArrayList<>();
+        List<Long> hightlightedPosts = new ArrayList<>();
         if (highlightedPost > 0) {
             hightlightedPosts.add(highlightedPost);
         }
@@ -134,7 +112,7 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
         for (int i = 0; i < posts.size(); i++) {
             final ChanPost post = new ChanPost(posts.get(i));
             final Spannable nameSpan = FourChanUtil.getUserName(
-                    context,
+                    context.getResources(),
                     post.getName(),
                     post.getCapcode()
             );
@@ -151,11 +129,9 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
             }
 
             if (post.getRepliesTo() != null) {
-                final ChanPost searchPost = new ChanPost();
                 for (final String replyPostId : post.getRepliesTo()) {
                     try {
-                        searchPost.setNo(Integer.valueOf(replyPostId));
-                        final int index = posts.indexOf(searchPost);
+                        final int index = MimiUtil.findPostPositionById(Integer.valueOf(replyPostId), posts);
                         if (index >= 0) {
                             if (!posts.get(index).getRepliesFrom().contains(post)) {
                                 posts.get(index).addReplyFrom(post);
@@ -175,10 +151,5 @@ public class ProcessThreadTask extends AsyncTaskLoader<ChanThread> {
         }
 
         return updatedPosts;
-    }
-
-    @Override
-    public void deliverResult(ChanThread data) {
-        super.deliverResult(data);
     }
 }

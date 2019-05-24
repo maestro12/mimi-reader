@@ -20,31 +20,26 @@ import com.mimireader.chanlib.models.ChanThread;
 
 public class UpdateHistoryEvent {
 
-    private ChanThread thread;
     private String boardName;
-    private int newPostCount;
 
-    private int threadId;
+    private long threadId;
     private int threadSize;
 
-    public UpdateHistoryEvent() {
-    }
+    private boolean closed;
 
-    public UpdateHistoryEvent(final String boardName, final ChanThread thread) {
+    public UpdateHistoryEvent(final long threadId, final String boardName, final int size, final boolean closed) {
         this.boardName = boardName;
-        this.thread = thread;
+        this.threadId = threadId;
+        this.threadSize = size;
+        this.closed = closed;
     }
 
-    public ChanThread getThread() {
-        return thread;
+    public boolean isClosed() {
+        return closed;
     }
 
-    public void setThread(ChanThread thread) {
-        this.thread = thread;
-        if (thread != null) {
-            this.threadId = thread.getThreadId();
-            this.threadSize = thread.getPosts().size();
-        }
+    public void setClosed(boolean closed) {
+        this.closed = closed;
     }
 
     public String getBoardName() {
@@ -55,29 +50,15 @@ public class UpdateHistoryEvent {
         this.boardName = boardName;
     }
 
-    public int getNewPostCount() {
-        return newPostCount;
-    }
-
-    public void setNewPostCount(int newPostCount) {
-        this.newPostCount = newPostCount;
-    }
-
-    public int getThreadId() {
-        if (thread != null) {
-            threadId = thread.getThreadId();
-        }
+    public long getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(int threadId) {
+    public void setThreadId(long threadId) {
         this.threadId = threadId;
     }
 
     public int getThreadSize() {
-        if (thread != null) {
-            threadSize = thread.getPosts().size();
-        }
         return threadSize;
     }
 

@@ -19,15 +19,16 @@ package com.emogoth.android.phone.mimi.activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
@@ -52,7 +53,6 @@ import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnBoardsUpdatedCallback;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.model.ThreadInfo;
@@ -71,8 +71,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
 
 
 /**
@@ -94,7 +93,6 @@ import rx.functions.Action1;
 public class PostItemListActivity extends MimiActivity implements BoardItemClickListener,
         Toolbar.OnClickListener,
         OnPostItemClickListener,
-        OnBoardsUpdatedCallback,
         OnThumbnailClickListener,
         GalleryMenuItemClickListener,
         IToolbarContainer {
@@ -118,10 +116,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
 
     private int listType = BOARD_LIST_ID;
 
-    private List<ChanBoard> boards;
-
     private String boardName;
-    private boolean fetchCatalog = false;
 
     private MimiFragmentBase currentFragment;
     private String boardTitle;
@@ -132,7 +127,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
     private MimiFragmentBase homeFragment;
     private Pages openPage = Pages.NONE;
     private AppBarLayout appBarLayout;
-    private Subscription boardInfoSubscription;
+    private Disposable boardInfoSubscription;
 
 
     @Override
@@ -142,27 +137,23 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
 
         fragmentList = new Stack<>();
 
-        appBarLayout = (AppBarLayout) findViewById(R.id.appbar);
+        appBarLayout = findViewById(R.id.appbar);
+        addContentFab = findViewById(R.id.fab_add_content);
+        addContentFab.setOnClickListener(v -> {
+            if (currentFragment instanceof ContentInterface) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    int centerX = Math.round((float) (v.getRight() - v.getLeft()) / 2.0F);
+                    int centerY = Math.round((float) (v.getBottom() - v.getTop()) / 2.0F);
+                    int radius = v.getRight() - v.getLeft();
 
-        addContentFab = (FloatingActionButton) findViewById(R.id.fab_add_content);
-        addContentFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentFragment instanceof ContentInterface) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        int centerX = Math.round((float) (v.getRight() - v.getLeft()) / 2.0F);
-                        int centerY = Math.round((float) (v.getBottom() - v.getTop()) / 2.0F);
-                        int radius = v.getRight() - v.getLeft();
-
-                        ViewAnimationUtils.createCircularReveal(v, centerX, centerY, radius, radius * 2).start();
-                    }
-                    ((ContentInterface) currentFragment).addContent();
+                    ViewAnimationUtils.createCircularReveal(v, centerX, centerY, radius, radius * 2).start();
                 }
+                ((ContentInterface) currentFragment).addContent();
             }
         });
         addContentFab.hide();
 
-        final Toolbar toolbar = (Toolbar) findViewById(R.id.mimi_toolbar);
+        final Toolbar toolbar = findViewById(R.id.mimi_toolbar);
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(this);
             setToolbar(toolbar);
@@ -177,10 +168,6 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
                 listType = extras.getInt(Extras.EXTRAS_LIST_TYPE);
             }
 
-            if (extras.containsKey(Extras.EXTRAS_CATALOG)) {
-                fetchCatalog = true;
-            }
-
             if (extras.containsKey(Extras.OPEN_PAGE)) {
                 final String page = extras.getString(Extras.OPEN_PAGE);
 
@@ -191,7 +178,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
         }
 
         if (listType == BOARD_LIST_ID) {
-            rateAppContainer = (ViewGroup) findViewById(R.id.app_rater_container);
+            rateAppContainer = findViewById(R.id.app_rater_container);
             AppRatingUtil.init(rateAppContainer);
         }
 
@@ -220,13 +207,10 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
             if (boardName != null) {
                 RxUtil.safeUnsubscribe(boardInfoSubscription);
                 boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                        .compose(DatabaseUtils.<ChanBoard>applySchedulers())
-                        .subscribe(new Action1<ChanBoard>() {
-                            @Override
-                            public void call(ChanBoard board) {
-                                if (board != null) {
-                                    onBoardItemClick(board, false);
-                                }
+                        .compose(DatabaseUtils.applySchedulers())
+                        .subscribe(board -> {
+                            if (!TextUtils.isEmpty(board.getName())) {
+                                onBoardItemClick(board, false);
                             }
                         });
             }
@@ -252,7 +236,6 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
 
         if (listType == BOARD_LIST_ID) {
             final BoardItemListFragment fragment = new BoardItemListFragment();
-            fragment.setBoardsListener(this);
             ft.add(R.id.postitem_list, fragment, TAG_BOARD_LIST);
 
             ft.commit();
@@ -294,19 +277,17 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
         }
     }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//
-//        switch(item.getItemId()) {
-//            case android.R.id.home:
-//
-//
-//                return true;
-//
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch(item.getItemId()) {
+            case android.R.id.home:
+                toggleNavDrawer();
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -321,11 +302,10 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
         arguments.putString(Extras.EXTRAS_BOARD_NAME, board.getName());
         arguments.putString(Extras.EXTRAS_BOARD_TITLE, board.getTitle());
         arguments.putBoolean(Extras.EXTRAS_TWOPANE, mTwoPane);
-        arguments.putBoolean(Extras.EXTRAS_CATALOG, true);
 
         PostItemsListFragment fragment = new PostItemsListFragment();
         fragment.setArguments(arguments);
-        fragment.setBoards(boards);
+//        fragment.setBoards(boards);
 
         final FragmentManager fm = getSupportFragmentManager();
         final FragmentTransaction ft = fm.beginTransaction();
@@ -347,11 +327,6 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
 
         currentFragment = fragment;
         setFabVisibility(currentFragment.showFab());
-    }
-
-    @Override
-    public void onBoardsUpdated(List<ChanBoard> boards) {
-        this.boards = boards;
     }
 
     @Override
@@ -417,17 +392,19 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
-    public void onGalleryMenuItemClick(String boardPath, int threadId) {
-        final Bundle args = new Bundle();
+    public void onGalleryMenuItemClick(String boardPath, long threadId) {
+//        final Bundle args = new Bundle();
+//
+//        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 0);
+//        args.putString(Extras.EXTRAS_BOARD_NAME, boardPath);
+//        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+//
+//        final Intent intent = new Intent(this, GalleryActivity2.class);
+//        intent.putExtras(args);
+//        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+//        startActivity(intent);
 
-        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 0);
-        args.putString(Extras.EXTRAS_BOARD_NAME, boardPath);
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-
-        final Intent intent = new Intent(this, GalleryActivity.class);
-        intent.putExtras(args);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        startActivity(intent);
+        GalleryActivity2.start(this, GalleryActivity2.GALLERY_TYPE_GRID, 0, boardPath, threadId, new long[0]);
     }
 
     @Override
@@ -475,43 +452,41 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
 
     @Subscribe
     public void openBookmark(final BookmarkClickedEvent event) {
-        HistoryTableConnection.fetchHistory(true)
-                .subscribe(new Action1<List<History>>() {
-                    @Override
-                    public void call(List<History> bookmarks) {
-                        final Bundle args = new Bundle();
-                        final Class clazz;
+        Disposable sub = HistoryTableConnection.fetchHistory(true)
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(bookmarks -> {
+                    final Bundle args = new Bundle();
+                    final Class clazz;
 
-                        args.putBoolean(Extras.EXTRAS_USE_BOOKMARKS, true);
-                        args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_BOOKMARKS);
+                    args.putBoolean(Extras.EXTRAS_USE_BOOKMARKS, true);
+                    args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_BOOKMARKS);
 
-                        if (!TextUtils.isEmpty(event.getBoardTitle())) {
-                            args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardTitle());
-                        }
-
-                        args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardName());
-                        args.putInt(Extras.EXTRAS_THREAD_ID, event.getThreadId());
-                        args.putInt(Extras.EXTRAS_POSITION, event.getPosition());
-
-                        final ArrayList<ThreadInfo> threadList = new ArrayList<>(bookmarks.size());
-
-                        for (final History post : bookmarks) {
-                            final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched);
-                            threadList.add(threadInfo);
-                        }
-
-                        args.putParcelableArrayList(Extras.EXTRAS_THREAD_LIST, threadList);
-
-                        if (getResources().getBoolean(R.bool.two_pane)) {
-                            clazz = PostItemListActivity.class;
-                        } else {
-                            clazz = PostItemDetailActivity.class;
-                        }
-
-                        final Intent intent = new Intent(PostItemListActivity.this, clazz);
-                        intent.putExtras(args);
-                        startActivity(intent);
+                    if (!TextUtils.isEmpty(event.getBoardTitle())) {
+                        args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardTitle());
                     }
+
+                    args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardName());
+                    args.putLong(Extras.EXTRAS_THREAD_ID, event.getThreadId());
+                    args.putInt(Extras.EXTRAS_POSITION, event.getPosition());
+
+                    final ArrayList<ThreadInfo> threadList = new ArrayList<>(bookmarks.size());
+
+                    for (final History post : bookmarks) {
+                        final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched == 1);
+                        threadList.add(threadInfo);
+                    }
+
+                    args.putParcelableArrayList(Extras.EXTRAS_THREAD_LIST, threadList);
+
+                    if (getResources().getBoolean(R.bool.two_pane)) {
+                        clazz = PostItemListActivity.class;
+                    } else {
+                        clazz = PostItemDetailActivity.class;
+                    }
+
+                    final Intent intent = new Intent(PostItemListActivity.this, clazz);
+                    intent.putExtras(args);
+                    startActivity(intent);
                 });
     }
 
@@ -537,7 +512,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
-    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, int threadId) {
+    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, long threadId) {
         openThread(posts, position, boardName, boardTitle);
     }
 

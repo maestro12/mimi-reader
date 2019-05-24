@@ -17,11 +17,13 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.content.Context;
+import androidx.annotation.StringRes;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 
 import com.emogoth.android.phone.mimi.R;
@@ -32,12 +34,10 @@ import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.List;
 
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.disposables.Disposable;
 
 
-public class BoardDropDownAdapter extends BaseAdapter {
+public class BoardDropDownAdapter extends BaseAdapter implements SpinnerAdapter {
 
     public static final String LOG_TAG = BoardDropDownAdapter.class.getSimpleName();
     public static final boolean LOG_DEBUG = true;
@@ -53,8 +53,10 @@ public class BoardDropDownAdapter extends BaseAdapter {
     private boolean editMode;
 
     private Context context;
-    private Subscription favoriteSubscription;
-    private Subscription removeBoardSubscription;
+    private Disposable favoriteSubscription;
+    private Disposable removeBoardSubscription;
+    private boolean promptEnabled;
+    private int promptTextRes = R.string.select_a_board;
 
     public BoardDropDownAdapter(final Context context, final int textViewResourceId, final List<ChanBoard> boards, final int type) {
         init(context, textViewResourceId, boards, type);
@@ -92,12 +94,16 @@ public class BoardDropDownAdapter extends BaseAdapter {
 
         RxUtil.safeUnsubscribe(removeBoardSubscription);
         removeBoardSubscription = BoardTableConnection.setBoardVisibility(boardName, false)
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
+                .compose(DatabaseUtils.applySchedulers())
                 .subscribe();
     }
 
     @Override
     public int getCount() {
+        if (promptEnabled) {
+            return boards.size() + 1;
+        }
+
         return boards.size();
     }
 
@@ -129,7 +135,14 @@ public class BoardDropDownAdapter extends BaseAdapter {
     @Override
     public View getView(final int position, View convertView, final ViewGroup parent) {
 
-        if (position < boards.size()) {
+        final int pos;
+        if (promptEnabled) {
+            pos = position - 1;
+        } else {
+            pos = position;
+        }
+
+        if (pos < boards.size()) {
 
             final ViewHolder viewHolder;
             if (convertView == null) {
@@ -141,8 +154,8 @@ public class BoardDropDownAdapter extends BaseAdapter {
                 viewHolder = (ViewHolder) convertView.getTag();
             }
 
-            final ChanBoard board = boards.get(position);
-            if (viewHolder.boardName != null) {
+            final ChanBoard board = pos >= 0 ? boards.get(pos) : null;
+            if (viewHolder.boardName != null && board != null) {
                 if (viewType != MODE_ACTIONBAR) {
                     viewHolder.boardName.setText("/" + board.getName() + "/");
                 } else {
@@ -151,7 +164,11 @@ public class BoardDropDownAdapter extends BaseAdapter {
             }
 
             if (viewHolder.boardTitle != null) {
-                viewHolder.boardTitle.setText(board.getTitle());
+                if (pos < 0) {
+                    viewHolder.boardTitle.setText(promptTextRes);
+                } else {
+                    viewHolder.boardTitle.setText(board.getTitle());
+                }
             }
 
             if (viewHolder.dragHandle != null) {
@@ -162,7 +179,7 @@ public class BoardDropDownAdapter extends BaseAdapter {
                 }
             }
 
-            if (viewHolder.favorite != null) {
+            if (viewHolder.favorite != null && board != null) {
                 if (editMode) {
                     viewHolder.favorite.setVisibility(View.VISIBLE);
                 } else {
@@ -174,41 +191,32 @@ public class BoardDropDownAdapter extends BaseAdapter {
                 } else {
                     viewHolder.favorite.setText(R.string.ic_favorite_unset);
                 }
-                viewHolder.favorite.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(final View v) {
-                        final TextView checkBox = (TextView) v;
-                        final boolean isFavorite = !checkBox.getText().equals(context.getString(R.string.ic_favorite_set));
+                viewHolder.favorite.setOnClickListener(v -> {
+                    final TextView checkBox = (TextView) v;
+                    final boolean isFavorite = !checkBox.getText().equals(context.getString(R.string.ic_favorite_set));
 
-                        RxUtil.safeUnsubscribe(favoriteSubscription);
-                        favoriteSubscription = BoardTableConnection.setBoardFavorite(board.getName(), isFavorite)
-                                .onErrorReturn(new Func1<Throwable, Boolean>() {
-                                    @Override
-                                    public Boolean call(Throwable throwable) {
-                                        Log.e(LOG_TAG, "Error setting board favorite: board=" + board.getName() + ", favorite=" + isFavorite, throwable);
-                                        return false;
+                    RxUtil.safeUnsubscribe(favoriteSubscription);
+                    favoriteSubscription = BoardTableConnection.setBoardFavorite(board.getName(), isFavorite)
+                            .onErrorReturn(throwable -> {
+                                Log.e(LOG_TAG, "Error setting board favorite: board=" + board.getName() + ", favorite=" + isFavorite, throwable);
+                                return false;
+                            })
+                            .subscribe(success -> {
+                                if (success) {
+                                    board.setFavorite(isFavorite);
+                                } else {
+                                    if (isFavorite) {
+                                        checkBox.setText(R.string.ic_favorite_unset);
+                                    } else {
+                                        checkBox.setText(R.string.ic_favorite_set);
                                     }
-                                })
-                                .subscribe(new Action1<Boolean>() {
-                                    @Override
-                                    public void call(Boolean success) {
-                                        if (success) {
-                                            board.setFavorite(isFavorite);
-                                        } else {
-                                            if (isFavorite) {
-                                                checkBox.setText(R.string.ic_favorite_unset);
-                                            } else {
-                                                checkBox.setText(R.string.ic_favorite_set);
-                                            }
-                                        }
-                                    }
-                                });
+                                }
+                            });
 
-                        if (isFavorite) {
-                            checkBox.setText(R.string.ic_favorite_set);
-                        } else {
-                            checkBox.setText(R.string.ic_favorite_unset);
-                        }
+                    if (isFavorite) {
+                        checkBox.setText(R.string.ic_favorite_set);
+                    } else {
+                        checkBox.setText(R.string.ic_favorite_unset);
                     }
                 });
             }
@@ -221,6 +229,13 @@ public class BoardDropDownAdapter extends BaseAdapter {
     @Override
     public View getDropDownView(int position, View convertView, ViewGroup parent) {
 
+        final int pos;
+        if (promptEnabled) {
+            pos = position - 1;
+        } else {
+            pos = position;
+        }
+
         final ViewHolder viewHolder;
         if (convertView == null) {
             convertView = inflater.inflate(layoutResource, parent, false);
@@ -231,44 +246,29 @@ public class BoardDropDownAdapter extends BaseAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        final ChanBoard board = boards.get(position);
-        if (viewHolder.boardName != null) {
+        final ChanBoard board = pos >= 0 ? boards.get(pos) : null;
+        if (viewHolder.boardName != null && board != null) {
             viewHolder.boardName.setText("/" + board.getName() + "/");
         }
 
         if (viewHolder.boardTitle != null) {
-            viewHolder.boardTitle.setText(board.getTitle());
+            if (pos < 0) {
+                viewHolder.boardTitle.setText(promptTextRes);
+            } else {
+                viewHolder.boardTitle.setText(board.getTitle());
+            }
         }
 
-//        if (position == 0) {
-//            if (viewHolder.boardName != null) {
-//                viewHolder.boardName.setVisibility(View.GONE);
-//            }
-//
-//            if (viewHolder.boardTitle != null) {
-//                viewHolder.boardTitle.setText(R.string.history_tab);
-//            }
-//        } else if (position == 1) {
-//            if (viewHolder.boardName != null) {
-//                viewHolder.boardName.setVisibility(View.GONE);
-//            }
-//
-//            if (viewHolder.boardTitle != null) {
-//                viewHolder.boardTitle.setText(R.string.bookmarks_tab);
-//            }
-//        } else {
-//            final ChanBoard board = boards.get(position - 2);
-//            if (viewHolder.boardName != null) {
-//                viewHolder.boardName.setVisibility(View.VISIBLE);
-//                viewHolder.boardName.setText("/" + board.getName() + "/");
-//            }
-//
-//            if (viewHolder.boardTitle != null) {
-//                viewHolder.boardTitle.setText(board.getTitle());
-//            }
-//        }
-
         return convertView;
+    }
+
+    public void setPromptEnabled(boolean enabled) {
+        this.promptEnabled = enabled;
+    }
+
+    public void setPromptText(@StringRes int promptTextRes) {
+        this.promptTextRes = promptTextRes;
+        notifyDataSetChanged();
     }
 
 

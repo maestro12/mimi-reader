@@ -125,6 +125,10 @@ public class FourChanPost implements PostConverter {
     @Expose
     private String countryName;
 
+    @SerializedName("troll_country")
+    @Expose
+    private String trollCountry;
+
     private Spannable comment;
 
     public int getNo() {
@@ -391,7 +395,15 @@ public class FourChanPost implements PostConverter {
         this.sub = sub;
     }
 
-//    public Spanned getSubject() {
+    public String getTrollCountry() {
+        return trollCountry;
+    }
+
+    public void setTrollCountry(String trollCountry) {
+        this.trollCountry = trollCountry;
+    }
+
+    //    public Spanned getSubject() {
 //        return subject;
 //    }
 //
@@ -433,11 +445,12 @@ public class FourChanPost implements PostConverter {
         post.setCapcode(capcode);
         post.setCountry(country);
         post.setCountryName(countryName);
+        post.setTrollCountry(trollCountry);
 
         return post;
     }
 
-    public void processComment(Context context, String boardName, int threadId) {
+    public void processComment(Context context, String boardName, long threadId) {
         if (com != null) {
             FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
             parserBuilder.setContext(context)

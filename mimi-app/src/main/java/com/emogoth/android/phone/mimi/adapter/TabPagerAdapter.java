@@ -17,9 +17,11 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.os.Parcel;
+import android.os.Parcelable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentStatePagerAdapter;
 import android.util.Log;
 
 import com.emogoth.android.phone.mimi.R;
@@ -50,11 +52,11 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
         tabItems.add(new TabItem(TabType.BOARDS, null, BoardItemListFragment.TAB_ID, title, null));
     }
 
-    public TabPagerAdapter(FragmentManager fm, TabItem item) {
+    public TabPagerAdapter(FragmentManager fm, List<TabItem> items) {
         super(fm);
         this.fm = fm;
 
-        tabItems.add(item);
+        tabItems.addAll(items);
     }
 
     private void setup() {
@@ -148,7 +150,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
     public TabItem getTabItem(int pos) {
         TabItem item = null;
-        if (tabItems != null && pos >= 0 && pos < tabItems.size() - 1) {
+        if (tabItems != null && pos >= 0 && pos < tabItems.size()) {
             item = tabItems.get(pos);
         }
 
@@ -165,7 +167,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
         tabItems.remove(index);
     }
 
-    public int getPositionById(int id) {
+    public int getPositionById(long id) {
         int index = -1;
         for (int i = 0; i < tabItems.size(); i++) {
             if (tabItems.get(i).getId() == id) {
@@ -176,7 +178,7 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
         return index;
     }
 
-    public void removeItemById(int id) {
+    public void removeItemById(long id) {
         int i = getPositionById(id);
         if (i < 0) {
             return;
@@ -194,11 +196,15 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
     }
 
+    public List<TabItem> getItems() {
+        return tabItems;
+    }
+
     public enum TabType {
         BOARDS, POSTS, THREAD, HISTORY
     }
 
-    public static class TabItem {
+    public static class TabItem implements Parcelable {
         private final TabType tabType;
         private final long id;
         private final Bundle bundle;
@@ -290,5 +296,40 @@ public class TabPagerAdapter extends FragmentStatePagerAdapter {
 
             return true;
         }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeInt(this.tabType == null ? -1 : this.tabType.ordinal());
+            dest.writeLong(this.id);
+            dest.writeBundle(this.bundle);
+            dest.writeString(this.title);
+            dest.writeString(this.subtitle);
+        }
+
+        protected TabItem(Parcel in) {
+            int tmpTabType = in.readInt();
+            this.tabType = tmpTabType == -1 ? null : TabType.values()[tmpTabType];
+            this.id = in.readLong();
+            this.bundle = in.readBundle(getClass().getClassLoader());
+            this.title = in.readString();
+            this.subtitle = in.readString();
+        }
+
+        public static final Parcelable.Creator<TabItem> CREATOR = new Parcelable.Creator<TabItem>() {
+            @Override
+            public TabItem createFromParcel(Parcel source) {
+                return new TabItem(source);
+            }
+
+            @Override
+            public TabItem[] newArray(int size) {
+                return new TabItem[size];
+            }
+        };
     }
 }

@@ -14,16 +14,166 @@
   ~    limitations under the License.
   -->
 
-<html><head><style> body { font-family: sans-serif; } pre { background-color: #eeeeee; padding: 1em; white-space: pre-wrap; } </style></head><body>
-<h3>Mimi 5.1.1 ChangeLog:</h3>
+<html>
+<head>
+    <style>
+         body { font-family: sans-serif; } pre { background-color: #eeeeee; padding: 1em; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h3>Mimi 5.9.10 ChangeLog:</h3>
 
-<ul>
-    <li>Now works with Android N</li>
-    <li>Bug fixes</li>
-</ul>
+    <ul>
+        <li>Several attempts to fix stability issues</li>
 
-<pre>
-To change layouts, open <i>settings</i> -&gt; <i>appearance</i> -&gt; <i>layout type</i> and choose the layout you would like
-</pre>
+    </ul>
+    <h3>Mimi 5.9.9 ChangeLog:</h3>
+
+    <ul>
+        <li>Fix images not loading after using the app for a while</li>
+        <li>Update libraries</li>
+
+    </ul>
+    <h3>Mimi 5.9.8.6 ChangeLog:</h3>
+
+    <ul>
+        <li>Fix save to folder not saving the gallery item properly (again)</li>
+        <li>Fix opening the gallery from a reply</li>
+        <li>Fix a crash when opening the gallery from within a thread</li>
+        <li>Fix a crash after posting</li>
+        <li>Fix a crash when loading a thread</li>
+        <li>Various smaller bug fixes</li>
+        <li>Update libraries</li>
+
+    </ul>
+    <h3>Mimi 5.9.8.5 ChangeLog:</h3>
+
+    <ul>
+        <li>Fix the gallery opening the wrong image if an image had been deleted from the thread</li>
+        <li>Fix save to folder not saving the gallery item properly</li>
+        <li>Update libraries</li>
+
+    </ul>
+    <h3>Mimi 5.9.8.4 ChangeLog:</h3>
+
+    <ul>
+        <li>Reduce thread jitter</li>
+        <li>Attempt to fix a gallery crash</li>
+        <li>Update libraries</li>
+
+    </ul>
+    <h3>Mimi 5.9.8.3 ChangeLog:</h3>
+
+    <ul>
+        <li>Reduce lag caused by the preloader</li>
+        <li>Fix scrolling thread from reply dialog</li>
+        <li>Fix crash when removing a filter</li>
+        <li>Reduce the number of corrupt files when saving from the gallery</li>
+        <li>Bug fixes</li>
+    </ul>
+    <pre>
+        Saving from the gallery should be a lot more reliable. If saves to the SD card are corrupted, make sure your SD card is still good. To test, try saving to internal memory.
+    </pre>
+    <h3>Mimi 5.9.8.2 ChangeLog:</h3>
+
+    <ul>
+        <li>Fix batch downloads</li>
+        <li>Gallery loading more reliable</li>
+        <li>Attempt to fix random crashes</li>
+    </ul>
+    <pre>
+        This release has a big overhaul to the gallery. At worst, things should work the same. I'm hoping that gallery preloading was worth the effort.
+    </pre>
+    <h3>Mimi 5.9.8.1 ChangeLog:</h3>
+
+    <ul>
+        <li>Fix crash when clicking links to boards from within a thread</li>
+        <li>Fix issue when there are multiple images (or videos) with the same filename in the gallery</li>
+        <li>Re-added the option to close the gallery when an image is clicked</li>
+    </ul>
+    <pre>
+        This release has a big overhaul to the gallery. At worst, things should work the same. I'm hoping that gallery preloading was worth the effort.
+    </pre>
+    <h3>Mimi 5.9.8 ChangeLog:</h3>
+
+    <ul>
+        <li>Media is preloaded when on wifi. Cell data will work the same as it always has.</li>
+        <li>Added setting to always turn on or off preloading or keep the default of enabled on wifi</li>
+        <li>Muting/unmuting a video will no longer restart the video</li>
+        <li>Gallery preview grid is now square instead of waterfall</li>
+        <li>Gallery preview grid may have higher resolution images if preloading is enabled </li>
+        <li>Attempted to fix the issue where images would stop loading in the gallery after browsing for a while</li>
+        <li>Replaced legacy components in the gallery with more modern ones</li>
+        <li>Replaced legacy components in the replies dialog with more modern ones</li>
+        <li>Fixed post highlighting in the replies dialog when there are multiple posts referenced</li>
+        <li>Changed the logic on when unread posts notification is displayed</li>
+        <li>Changed the logic for displaying the number of unread posts in bookmarked threads</li>
+    </ul>
+    <pre>
+        This release has a big overhaul to the gallery. At worst, things should work the same. I'm hoping that gallery preloading was worth the effort.
+    </pre>
+    <h3>Mimi 5.9.7 ChangeLog:</h3>
+
+    <ul>
+        <li>Fixed crash when selecting files from the downloads folder</li>
+        <li>Fixed save location dialog showing repeatedly</li>
+        <li>Update libraries</li>
+    </ul>
+    <pre>
+        The Android system has a tendency to delete directories on the SD card after a reboot. If that happens to you, try saving to internal storage instead.
+    </pre>
+    <h3>Mimi 5.9.6 ChangeLog:</h3>
+
+    <ul>
+        <li>Batch download should open directory chooser more reliably</li>
+        <li>Hopefully corrupted directories are a thing of the past</li>
+        <li>Added lock and pin icons to locked and pinned threads (finally)</li>
+        <li>Fixed bad aspect ratio of the flag icon</li>
+        <li>Fixed threads being deleted from the database prematurely</li>
+        <li>Fixed loading watched 404 threads from the database</li>
+        <li>Fixed notifications not showing at all and showing too often</li>
+        <li>Update libraries</li>
+    </ul>
+    <h3>Mimi 5.9.5 ChangeLog:</h3>
+
+    <ul>
+        <li>Fixed issue where saved media would only show up after a device reboot (again)</li>
+        <li>Fixed batch download notification sticking around forever</li>
+        <li>Update libraries</li>
+    </ul>
+    <h3>Mimi 5.9.4 ChangeLog:</h3>
+
+    <ul>
+        <li>Fixed issue where saved media would only show up after a device reboot</li>
+        <li>Fixed long save times on some devices</li>
+        <li>Fixed duplicate toolbars shown when selecting media for a batch download</li>
+    </ul>
+    <h3>Mimi 5.9.3 ChangeLog:</h3>
+
+    <ul>
+        <li>Fixed duplicate file extensions when saving to your device</li>
+        <li>Fixed a rare crash that started with the previous version</li>
+    </ul>
+
+    <h3>Mimi 5.9.2 ChangeLog:</h3>
+
+    <ul>
+        <li>Fixed potential issue with SSL connections</li>
+        <li>Fixed post issues with chan pass</li>
+        <li>Fixed an issue with saving files</li>
+        <li>Attempted fix for saving files on Samsung devices</li>
+        <li>Attempted fix for corrupted files</li>
+    </ul>
+
+    <h3>Mimi 5.9.1 ChangeLog:</h3>
+
+    <ul>
+        <li>Images and videos can be saved to the SD card (if available)</li>
+        <li>Removed the option to turn off SSL</li>
+        <li>Removed option for legacy captcha since it is no longer supported</li>
+        <li>Fixed crashes with the free version</li>
+        <li>Updated libraries</li>
+    </ul>
+
 </body>
 </html>

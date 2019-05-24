@@ -16,48 +16,67 @@
 
 package com.emogoth.android.phone.mimi.dialog;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.ListView;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.DialogFragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.adapter.RepliesListAdapter;
+import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
+import com.emogoth.android.phone.mimi.activity.PostItemDetailActivity;
+import com.emogoth.android.phone.mimi.activity.PostItemListActivity;
+import com.emogoth.android.phone.mimi.adapter.RepliesListAdapter2;
 import com.emogoth.android.phone.mimi.async.ProcessThreadTask;
+import com.emogoth.android.phone.mimi.db.PostTableConnection;
+import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
+import com.emogoth.android.phone.mimi.db.model.UserPost;
 import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.emogoth.android.phone.mimi.view.gallery.GalleryPagerAdapter;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.schedulers.Schedulers;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class RepliesDialog extends DialogFragment {
+    public static final String LOG_TAG = RepliesDialog.class.getSimpleName();
     public static final String DIALOG_TAG = "reply_dialog_tag";
 
     private String boardName;
-    private List<ChanPost> replies;
+    private ArrayList<String> replies;
     private List<OutsideLink> outsideLinks;
     private ChanThread thread;
-    private int id;
-    private Subscription repliesSubscription;
+    private long id;
+    private Disposable repliesSubscription;
+
+
+    public RepliesDialog() {
+        Log.d(LOG_TAG, "New replies dialog created");
+    }
 
     public static RepliesDialog newInstance(ChanThread thread, ChanPost postItem) {
         final String boardName = thread.getBoardName();
@@ -66,19 +85,16 @@ public class RepliesDialog extends DialogFragment {
 
         args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
 
-        final ArrayList<ChanPost> posts = new ArrayList<>(postItem.getRepliesFrom().size());
+        final ArrayList<String> postNumbers = new ArrayList<>(postItem.getRepliesFrom().size());
         for (ChanPost post : postItem.getRepliesFrom()) {
-            final int i = thread.getPosts().indexOf(post);
-
-            if (i >= 0) {
-                final ChanPost p = thread.getPosts().get(i);
-                posts.add(p);
-            }
-
+            postNumbers.add(String.valueOf(post.getNo()));
         }
-        args.putInt(Extras.EXTRAS_POST_ID, postItem.getNo());
-        args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, posts);
-        args.putParcelable(Extras.EXTRAS_SINGLE_THREAD, thread);
+
+        args.putLong(Extras.EXTRAS_POST_ID, postItem.getNo());
+        args.putStringArrayList(Extras.EXTRAS_POST_LIST, postNumbers);
+        args.putLong(Extras.EXTRAS_THREAD_ID, thread.getThreadId());
+
+        ThreadRegistry.getInstance().setPosts(thread.getThreadId(), thread.getPosts());
         dialog.setArguments(args);
         return dialog;
     }
@@ -89,18 +105,24 @@ public class RepliesDialog extends DialogFragment {
             final String boardName = thread.getBoardName();
             final RepliesDialog dialog = new RepliesDialog();
             final Bundle args = new Bundle();
-            final ArrayList<ChanPost> posts = new ArrayList<>();
+            final ArrayList<String> postNumbers = new ArrayList<>();
 
             for (ChanPost post : thread.getPosts()) {
                 if (id.equals(post.getId())) {
-                    posts.add(post);
+                    postNumbers.add(String.valueOf(post.getNo()));
                 }
             }
 
             args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-            args.putInt(Extras.EXTRAS_POST_ID, thread.getThreadId());
-            args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, posts);
-            args.putParcelable(Extras.EXTRAS_SINGLE_THREAD, thread);
+
+            if (TextUtils.isDigitsOnly(id)) {
+                args.putLong(Extras.EXTRAS_POST_ID, Long.valueOf(id));
+            }
+
+            args.putStringArrayList(Extras.EXTRAS_POST_LIST, postNumbers);
+            args.putLong(Extras.EXTRAS_THREAD_ID, thread.getThreadId());
+
+            ThreadRegistry.getInstance().setPosts(thread.getThreadId(), thread.getPosts());
             dialog.setArguments(args);
             return dialog;
         }
@@ -128,32 +150,89 @@ public class RepliesDialog extends DialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         final View closeButton = view.findViewById(R.id.close_button);
-        final ListView listView = (ListView) view.findViewById(R.id.replies_list);
-        final Toolbar toolbar = (Toolbar) view.findViewById(R.id.reply_dialog_toolbar);
+        final RecyclerView listView = view.findViewById(R.id.replies_list);
+        final Toolbar toolbar = view.findViewById(R.id.reply_dialog_toolbar);
 
         toolbar.setNavigationIcon(null);
         toolbar.setLogo(null);
 
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final ReplyClickEvent event = new ReplyClickEvent(null, -1);
-                BusProvider.getInstance().post(event);
-                dismiss();
-            }
+        closeButton.setOnClickListener(v -> {
+            final ReplyClickEvent event = new ReplyClickEvent(null, -1);
+            BusProvider.getInstance().post(event);
+            dismiss();
         });
 
         RxUtil.safeUnsubscribe(repliesSubscription);
-        repliesSubscription = Observable.just(replies)
+
+        repliesSubscription = Flowable.zip(UserPostTableConnection.fetchPosts(),
+                PostTableConnection.watchThread(thread.getThreadId()), (userPosts, chanThread) -> {
+                    List<Long> posts = new ArrayList<>();
+                    for (UserPost userPost : userPosts) {
+                        if (userPost.boardName.equals(thread.getBoardName()) && userPost.threadId == thread.getThreadId()) {
+                            posts.add(userPost.postId);
+                        }
+                    }
+
+                    List<ChanPost> chanPosts = new ArrayList<>();
+                    List<ChanPost> postModels = PostTableConnection.convertDbPostsToChanThread(boardName, thread.getThreadId(), chanThread).getPosts();
+                    List<ChanPost> processedPosts = ProcessThreadTask.processThread(postModels, posts, thread.getBoardName(), thread.getThreadId(), id).getPosts();
+
+                    for (String reply : replies) {
+                        for (ChanPost postModel : processedPosts) {
+                            if (postModel.getNo() == Integer.valueOf(reply)) {
+                                chanPosts.add(postModel);
+                            }
+                        }
+                    }
+
+                    return chanPosts;
+//                    return ProcessThreadTask.processThread(chanPosts, posts, thread.getBoardName(), thread.getThreadId(), id).getPosts();
+                })
+                .first(Collections.emptyList())
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(ProcessThreadTask.processPostList(getActivity(), replies, thread, id))
-                .subscribe(new Action1<List<ChanPost>>() {
-                    @Override
-                    public void call(List<ChanPost> posts) {
-                        final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
-                        listView.setAdapter(adapter);
-                    }
+                .subscribe(posts -> {
+//                    final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
+                    final RepliesListAdapter2 adapter = new RepliesListAdapter2(posts, outsideLinks, thread);
+                    adapter.setLinkClickListener(outsideLink -> {
+                        final Intent intent;
+                        final String id = outsideLink.getThreadId();
+
+                        if (id != null && TextUtils.isDigitsOnly(id)) {
+                            intent = new Intent(getActivity(), PostItemDetailActivity.class);
+                            intent.putExtra(Extras.EXTRAS_THREAD_ID, Long.valueOf(id));
+                            intent.putExtra(Extras.EXTRAS_SINGLE_THREAD, true);
+                        } else {
+                            intent = new Intent(getActivity(), PostItemListActivity.class);
+                        }
+
+                        intent.putExtra(Extras.EXTRAS_BOARD_NAME, outsideLink.getBoardName());
+                        getActivity().startActivity(intent);
+
+                        return null;
+                    });
+                    adapter.setRepliesTextClickListener(chanPost -> {
+                        if (getActivity() != null) {
+                            RepliesDialog.newInstance(thread, chanPost).show(getActivity().getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
+                        }
+
+                        return null;
+                    });
+                    adapter.setThumbClickListener(chanPost -> {
+                        if (getActivity() != null) {
+                            final ArrayList<ChanPost> postsWithImages = GalleryPagerAdapter.getPostsWithImages(posts);
+
+                            ThreadRegistry.getInstance().setPosts(chanPost.getNo(), postsWithImages);
+                            long[] ids = new long[postsWithImages.size()];
+                            for (int i = 0; i < postsWithImages.size(); i++) {
+                                ids[i] = postsWithImages.get(i).getNo();
+                            }
+                            GalleryActivity2.start(getActivity(), GalleryActivity2.GALLERY_TYPE_PAGER, chanPost.getNo(), boardName, thread.getThreadId(), ids);
+                        }
+                        return null;
+                    });
+                    listView.setLayoutManager(new LinearLayoutManager(getActivity()));
+                    listView.setAdapter(adapter);
                 });
     }
 
@@ -162,17 +241,25 @@ public class RepliesDialog extends DialogFragment {
             boardName = bundle.getString(Extras.EXTRAS_BOARD_NAME);
         }
         if (bundle.containsKey(Extras.EXTRAS_POST_ID)) {
-            id = bundle.getInt(Extras.EXTRAS_POST_ID);
+            id = bundle.getLong(Extras.EXTRAS_POST_ID);
         }
         if (bundle.containsKey(Extras.EXTRAS_POST_LIST)) {
-            bundle.setClassLoader(ChanPost.class.getClassLoader());
-            replies = bundle.getParcelableArrayList(Extras.EXTRAS_POST_LIST);
+            replies = bundle.getStringArrayList(Extras.EXTRAS_POST_LIST);
         }
         if (bundle.containsKey(Extras.EXTRAS_OUTSIDE_LINK_LIST)) {
             outsideLinks = bundle.getParcelableArrayList(Extras.EXTRAS_OUTSIDE_LINK_LIST);
+        } else {
+            outsideLinks = Collections.emptyList();
         }
         if (bundle.containsKey(Extras.EXTRAS_SINGLE_THREAD)) {
             thread = bundle.getParcelable(Extras.EXTRAS_SINGLE_THREAD);
+        }
+        if (bundle.containsKey(Extras.EXTRAS_THREAD_ID)) {
+            long id = bundle.getLong(Extras.EXTRAS_THREAD_ID);
+            List<ChanPost> threadPosts = ThreadRegistry.getInstance().getPosts(id);
+            thread = new ChanThread(boardName, id, threadPosts);
+
+            ThreadRegistry.getInstance().clearPosts(id);
         }
     }
 

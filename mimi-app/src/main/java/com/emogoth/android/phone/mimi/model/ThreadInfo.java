@@ -19,16 +19,32 @@ package com.emogoth.android.phone.mimi.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.emogoth.android.phone.mimi.autorefresh.GsonConverter;
+import com.google.gson.Gson;
+import com.google.gson.annotations.Expose;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
 public class ThreadInfo implements Parcelable {
     public static final String BUNDLE_KEY = "thread_bundle";
 
-    public int threadId;
+    @Expose
+    public long threadId;
+    @Expose
     public String boardName;
+    @Expose
     public String boardTitle;
+    @Expose
     public boolean watched;
+    @Expose
     public long refreshTimestamp;
 
-    public ThreadInfo(final int threadId, final String boardName, final String boardTitle, final boolean watched) {
+    public ThreadInfo() {
+
+    }
+
+    public ThreadInfo(final long threadId, final String boardName, final String boardTitle, final boolean watched) {
         this.threadId = threadId;
         this.boardName = boardName;
         this.boardTitle = boardTitle;
@@ -36,7 +52,7 @@ public class ThreadInfo implements Parcelable {
         this.refreshTimestamp = 0;
     }
 
-    public ThreadInfo(final int threadId, final String boardName, final long lastRefreshTime, final boolean watched) {
+    public ThreadInfo(final long threadId, final String boardName, final long lastRefreshTime, final boolean watched) {
         this.threadId = threadId;
         this.boardName = boardName;
         this.boardTitle = null;
@@ -66,9 +82,9 @@ public class ThreadInfo implements Parcelable {
 
     @Override
     public int hashCode() {
-        int result = threadId;
+        long result = threadId;
         result = 31 * result + boardName.hashCode();
-        return result;
+        return (int) result;
     }
 
     @Override
@@ -78,7 +94,7 @@ public class ThreadInfo implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(this.threadId);
+        dest.writeLong(this.threadId);
         dest.writeString(this.boardName);
         dest.writeString(this.boardTitle);
         dest.writeByte(watched ? (byte) 1 : (byte) 0);
@@ -86,7 +102,7 @@ public class ThreadInfo implements Parcelable {
     }
 
     protected ThreadInfo(Parcel in) {
-        this.threadId = in.readInt();
+        this.threadId = in.readLong();
         this.boardName = in.readString();
         this.boardTitle = in.readString();
         this.watched = in.readByte() != 0;
@@ -102,4 +118,34 @@ public class ThreadInfo implements Parcelable {
             return new ThreadInfo[size];
         }
     };
+
+//    @Override
+//    public void writeExternal(ObjectOutput out) throws IOException {
+//        out.writeInt(this.threadId);
+//        out.writeUTF(this.boardName);
+//        out.writeUTF(this.boardTitle == null ? "" : boardTitle);
+//        out.writeByte(this.watched ? 1 : 0);
+//        out.writeLong(this.refreshTimestamp);
+//    }
+//
+//    @Override
+//    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+//        this.threadId = in.readInt();
+//        this.boardName = in.readUTF();
+//        this.boardTitle = in.readUTF();
+//        this.watched = in.readByte() != 0;
+//        this.refreshTimestamp = in.readLong();
+//    }
+
+    public static ThreadInfo from(byte[] bytes) throws IOException {
+        Gson gson = new Gson();
+        GsonConverter<ThreadInfo> converter = new GsonConverter<>(gson, ThreadInfo.class);
+        return converter.from(bytes);
+    }
+
+    public void toStream(OutputStream bytes) throws IOException {
+        Gson gson = new Gson();
+        GsonConverter<ThreadInfo> converter = new GsonConverter<>(gson, ThreadInfo.class);
+        converter.toStream(this, bytes);
+    }
 }

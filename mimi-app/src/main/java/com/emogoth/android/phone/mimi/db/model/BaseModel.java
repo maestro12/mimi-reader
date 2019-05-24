@@ -17,16 +17,74 @@
 package com.emogoth.android.phone.mimi.db.model;
 
 import android.content.ContentValues;
+import android.database.Cursor;
+import android.text.TextUtils;
+import android.util.Log;
 
 import com.activeandroid.Model;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 public abstract class BaseModel extends Model {
+    public static final String LOG_TAG = BaseModel.class.getSimpleName();
+
     public abstract ContentValues toContentValues();
 
     public abstract String getTableName();
 
-    public abstract String whereClause();
+    public abstract DatabaseUtils.WhereArg[] where();
 
-    public abstract String whereArg();
+    public abstract void copyValuesFrom(BaseModel model);
+
+    public abstract boolean isEmpty();
+
+    public static <K extends BaseModel>  Function<Cursor, List<K>> mapper(final Class<K> c) {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<K> data = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                try {
+                    K obj = c.newInstance();
+                    obj.loadFromCursor(cursor);
+                    data.add(obj);
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Error mapping database model", e);
+                    e.printStackTrace();
+                }
+
+            }
+            return data;
+        };
+    }
+
+    public String clause() {
+        StringBuilder clauseBuilder = new StringBuilder(where()[0].where);
+
+        DatabaseUtils.WhereArg[] args = where();
+        for (int i = 1; i < args.length; i++) {
+            clauseBuilder.append(" AND ").append(args[i].where);
+        }
+
+        return clauseBuilder.toString();
+    }
+
+    public String[] vals() {
+        ArrayList<String> clauseVals = new ArrayList<>();
+        DatabaseUtils.WhereArg[] args = where();
+        int size = 0;
+        for (DatabaseUtils.WhereArg arg : args) {
+            for (int i = 0; i < arg.args.length; i++) {
+                clauseVals.add(arg.args[i].toString());
+                size++;
+            }
+        }
+
+        return clauseVals.toArray(new String[size]);
+    }
 }

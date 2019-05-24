@@ -17,9 +17,6 @@
 package com.emogoth.android.phone.mimi.util;
 
 
-import java.io.File;
-
-
 public class RequestQueueUtil {
 
     private static RequestQueueUtil instance = new RequestQueueUtil();
@@ -40,15 +37,5 @@ public class RequestQueueUtil {
 
     public String getUserAgent() {
         return this.userAgent;
-    }
-
-    private void deleteRecursive(File fileOrDirectory) {
-        if (fileOrDirectory.isDirectory()) {
-            for (File child : fileOrDirectory.listFiles()) {
-                deleteRecursive(child);
-            }
-        }
-
-        fileOrDirectory.delete();
     }
 }

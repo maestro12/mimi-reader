@@ -38,6 +38,12 @@
         mimi:showAsAction="always" />
 
     <item
+        android:id="@+id/find_menu"
+        android:icon="@drawable/ic_search"
+        android:title="@string/find"
+        mimi:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/quick_top"
         android:title="@string/quick_scroll_to_top"
         mimi:showAsAction="never"/>

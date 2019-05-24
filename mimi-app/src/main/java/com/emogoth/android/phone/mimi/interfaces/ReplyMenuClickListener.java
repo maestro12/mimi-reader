@@ -22,7 +22,9 @@ import com.mimireader.chanlib.models.ChanPost;
 
 
 public interface ReplyMenuClickListener {
-    void onReply(final View view, final int postId);
+    void onReply(final View view, final long postId);
 
-    void onQuote(final View view, final int postId, final ChanPost post);
+    void onQuote(final View view, final ChanPost post);
+
+    void onQuoteSelection(final View view, final ChanPost post, final int start, final int end);
 }

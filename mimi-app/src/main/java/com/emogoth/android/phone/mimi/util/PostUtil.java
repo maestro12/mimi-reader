@@ -17,14 +17,26 @@
 package com.emogoth.android.phone.mimi.util;
 
 
-import android.content.ContentUris;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.text.TextUtils;
+import android.util.Log;
+
+import androidx.core.util.Pair;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 
 public class PostUtil {
@@ -49,66 +61,42 @@ public class PostUtil {
      * @param uri     The Uri to query.
      * @author paulburke
      */
-    public static String getPath(final Context context, final Uri uri) {
-
-        final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+    public static Pair<String, Boolean> getPath(final Context context, final Uri uri) {
 
         // DocumentProvider
-        if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
-            // ExternalStorageProvider
-            if (isExternalStorageDocument(uri)) {
-                final String docId = DocumentsContract.getDocumentId(uri);
-                final String[] split = docId.split(":");
-                final String type = split[0];
 
-                if ("primary".equalsIgnoreCase(type)) {
-                    return Environment.getExternalStorageDirectory() + "/" + split[1];
-                }
+        // ExternalStorageProvider
+        if (isExternalStorageDocument(uri)) {
+            final String docId = DocumentsContract.getDocumentId(uri);
+            final String[] split = docId.split(":");
+            final String type = split[0];
 
-                // TODO handle non-primary volumes
+            if ("primary".equalsIgnoreCase(type)) {
+                return new Pair<>(Environment.getExternalStorageDirectory() + "/" + split[1], false);
             }
-            // DownloadsProvider
-            else if (isDownloadsDocument(uri)) {
+        } else if (isMediaDocument(uri)) { // MediaProvider
+            final String docId = DocumentsContract.getDocumentId(uri);
+            final String[] split = docId.split(":");
+            final String type = split[0];
 
-                final String id = DocumentsContract.getDocumentId(uri);
-                final Uri contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
-
-                return getDataColumn(context, contentUri, null, null);
+            Uri contentUri = null;
+            if ("image".equals(type)) {
+                contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            } else if ("video".equals(type)) {
+                contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+            } else if ("audio".equals(type)) {
+                contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
             }
-            // MediaProvider
-            else if (isMediaDocument(uri)) {
-                final String docId = DocumentsContract.getDocumentId(uri);
-                final String[] split = docId.split(":");
-                final String type = split[0];
 
-                Uri contentUri = null;
-                if ("image".equals(type)) {
-                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-                } else if ("video".equals(type)) {
-                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-                } else if ("audio".equals(type)) {
-                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-                }
+            final String selection = "_id=?";
+            final String[] selectionArgs = new String[]{
+                    split[1]
+            };
 
-                final String selection = "_id=?";
-                final String[] selectionArgs = new String[]{
-                        split[1]
-                };
-
-                return getDataColumn(context, contentUri, selection, selectionArgs);
-            }
-        }
-        // MediaStore (and general)
-        else if ("content".equalsIgnoreCase(uri.getScheme())) {
-            return getDataColumn(context, uri, null, null);
-        }
-        // File
-        else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
+            return new Pair<>(getDataColumn(context, contentUri, selection, selectionArgs), false);
         }
 
-        return null;
+        return new Pair<>(getImagePathFromInputStreamUri(uri), true);
     }
 
     /**
@@ -144,6 +132,28 @@ public class PostUtil {
         return null;
     }
 
+    public static String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = MimiApplication.getInstance().getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
+
 
     /**
      * @param uri The Uri to check.
@@ -167,5 +177,67 @@ public class PostUtil {
      */
     public static boolean isMediaDocument(Uri uri) {
         return "com.android.providers.media.documents".equals(uri.getAuthority());
+    }
+
+    public static String getImagePathFromInputStreamUri(Uri uri) {
+        InputStream inputStream = null;
+        String filePath = null;
+
+        if (uri.getAuthority() != null) {
+            try {
+                inputStream = MimiApplication.getInstance().getContentResolver().openInputStream(uri); // context needed
+
+                String fileName = getFileName(uri);
+                File photoFile = createTemporalFileFrom(inputStream, fileName);
+
+                filePath = photoFile.getPath();
+
+            } catch (Exception e) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(LOG_TAG, "Error getting input stream from URI", e);
+                }
+                // log
+            } finally {
+                IOUtils.closeQuietly(inputStream);
+            }
+        }
+
+        return filePath;
+    }
+
+    private static File createTemporalFileFrom(InputStream inputStream, String filename) throws IOException {
+        File targetFile = null;
+
+        if (inputStream != null) {
+            int read;
+            byte[] buffer = new byte[8 * 1024];
+
+            targetFile = createTemporalFile(filename);
+            OutputStream outputStream = new FileOutputStream(targetFile);
+
+            while ((read = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, read);
+            }
+            outputStream.flush();
+
+            try {
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return targetFile;
+    }
+
+    private static File createTemporalFile(String filename) {
+        final String name;
+        if (TextUtils.isEmpty(filename)) {
+            name = "temp_file.jpg";
+        } else {
+            name = filename;
+        }
+
+        return new File(MimiUtil.getInstance().getCacheDir(), name); // context needed
     }
 }

@@ -17,24 +17,47 @@
 package com.emogoth.android.phone.mimi.span;
 
 import android.graphics.Color;
+import androidx.appcompat.app.AlertDialog;
+import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.style.ClickableSpan;
 import android.view.View;
+import android.widget.TextView;
 
-public class SpoilerSpan extends LongClickableSpan {
-    static final int SPOILER_COLOR = Color.parseColor("#505050");
-    static final int PREVSPOILER_COLOR = Color.parseColor("#E1E1E1");
+import com.emogoth.android.phone.mimi.R;
 
-    boolean spoiled = true;
+public class SpoilerSpan extends ClickableSpan {
+    private static final int SPOILER_COLOR = Color.parseColor("#505050");
+    private static final int PREVSPOILER_COLOR = Color.parseColor("#E1E1E1");
+
+    private boolean hidden = true;
 
     @Override
     public void onClick(View widget) {
-        spoiled = !spoiled;
-        widget.invalidate();
+//        hidden = !hidden;
+//        widget.invalidate();
+
+        if (widget instanceof TextView) {
+            TextView tv = (TextView) widget;
+            CharSequence text = tv.getText();
+
+            if (text instanceof Spanned) {
+                Spanned s = (Spanned) text;
+                int start = s.getSpanStart(this);
+                int end = s.getSpanEnd(this);
+
+                new AlertDialog.Builder(widget.getContext())
+                        .setTitle(R.string.spoiler)
+                        .setMessage(s.subSequence(start, end).toString())
+                        .setCancelable(true)
+                        .show();
+            }
+        }
     }
 
     @Override
     public void updateDrawState(TextPaint ds) {
-        if (spoiled) {
+        if (hidden) {
             ds.bgColor = SPOILER_COLOR;
             ds.setColor(SPOILER_COLOR);
         } else {

@@ -19,190 +19,99 @@ package com.emogoth.android.phone.mimi.db;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 import android.util.Log;
 
-import com.activeandroid.query.From;
-import com.activeandroid.query.Select;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.model.BaseModel;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.mimireader.chanlib.models.ChanBoard;
-import com.squareup.sqlbrite.BriteDatabase;
+import com.squareup.sqlbrite3.BriteDatabase;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func0;
-import rx.functions.Func1;
-
-import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 public class BoardTableConnection {
     public static final String LOG_TAG = BoardTableConnection.class.getSimpleName();
 
-    public static Observable<List<Board>> fetchBoards(int orderBy) {
-        From query = new Select()
-                .all()
-                .from(Board.class)
-                .orderBy(Board.sortOrder(orderBy))
-                .and(Board.KEY_VISIBLE + "=?", true);
+    public static Flowable<List<Board>> fetchBoards(int orderBy) {
+        return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, Board.sortOrder(orderBy), Board.KEY_VISIBLE + "=?", true);
+    }
 
-        Log.d(LOG_TAG, "SQL=" + query.toSql());
+    public static Flowable<List<ChanBoard>> observeBoards(int orderBy) {
+        return DatabaseUtils.observeTable(Board.class, Board.TABLE_NAME, Board.sortOrder(orderBy), Board.KEY_VISIBLE + "=?", true)
+                .map(BoardTableConnection::convertBoardDbModelsToChanBoards);
+    }
 
-        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-
-        return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
-                .take(1)
-                .map(runQuery())
-                .flatMap(Board.mapper())
-                .onErrorReturn(new Func1<Throwable, List<Board>>() {
-                    @Override
-                    public List<Board> call(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error loading boards from the database", throwable);
-                        return Collections.emptyList();
+    public static Flowable<ChanBoard> fetchBoard(final String boardName) {
+        if (TextUtils.isEmpty(boardName)) {
+            return Flowable.just(new ChanBoard());
+        }
+        return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, null, Board.KEY_NAME + "=?", boardName)
+                .flatMap((Function<List<Board>, Flowable<ChanBoard>>) boards -> {
+                    if (boards != null && boards.size() > 0) {
+                        return Flowable.just(convertBoardDbModelToBoard(boards.get(0)));
                     }
+                    return Flowable.just(new ChanBoard());
                 });
     }
 
-    public static Observable<ChanBoard> fetchBoard(final String boardName) {
-        From query = new Select()
-                .all()
-                .from(Board.class)
-                .where(Board.KEY_NAME + "=?", boardName);
+    public static Flowable<Boolean> setBoardFavorite(final String boardName, final boolean favorite) {
+        Board b = new Board();
+        b.name = boardName;
 
-        Log.d(LOG_TAG, "SQL=" + query.toSql());
+        Board.Builder builder = new Board.Builder();
+        builder.favorite(favorite);
 
-        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
-                .take(1)
-                .map(runQuery())
-                .flatMap(new Func1<Cursor, Observable<ChanBoard>>() {
-                    @Override
-                    public Observable<ChanBoard> call(Cursor cursor) {
-                        ChanBoard chanBoard = null;
-                        while (cursor.moveToNext()) {
-                            Board board = new Board();
-                            board.loadFromCursor(cursor);
+        b.setValues(builder.build());
 
-                            chanBoard = convertBoardDbModelToBoard(board);
-                        }
-
-                        return Observable.just(chanBoard);
-                    }
-                })
-                .onErrorReturn(new Func1<Throwable, ChanBoard>() {
-                    @Override
-                    public ChanBoard call(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error getting board info", throwable);
-                        return null;
-                    }
-                });
+        return DatabaseUtils.updateTable(b);
     }
 
-    public static Observable<Boolean> setBoardFavorite(final String boardName, final boolean favorite) {
-        return Observable.defer(new Func0<Observable<Boolean>>() {
-            @Override
-            public Observable<Boolean> call() {
-                int val = 0;
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
-                ContentValues values = new ContentValues();
-
-                try {
-                    values.put(Board.KEY_FAVORITE, favorite);
-                    val = db.update(Board.TABLE_NAME, values, Board.KEY_NAME + "=?", boardName);
-                    transaction.markSuccessful();
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Error setting favorite: board=" + boardName + ", favorite=" + favorite);
-                } finally {
-                    transaction.end();
-                }
-
-                return Observable.just(val > 0);
-            }
-        });
-    }
-
-    public static Observable<Boolean> incrementAccessCount(final String boardName) {
+    public static Flowable<Boolean> incrementAccessCount(final String boardName) {
         return updateBoard(boardName, 2);
     }
 
-    public static Observable<Boolean> incrementPostCount(final String boardName) {
+    public static Flowable<Boolean> incrementPostCount(final String boardName) {
         return updateBoard(boardName, 1);
     }
 
-    public static Observable<Boolean> updateLastAccess(final String boardName) {
+    public static Flowable<Boolean> updateLastAccess(final String boardName) {
         return updateBoard(boardName, 0);
     }
 
-    private static Observable<Boolean> updateBoard(final String boardName, final int type) {
-        From query = new Select()
-                .all()
-                .from(Board.class)
-                .where(Board.KEY_NAME + "=?", boardName);
-
-        Log.d(LOG_TAG, "SQL=" + query.toSql());
-
-        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(Board.TABLE_NAME, query.toSql(), query.getArguments())
-                .take(1)
-                .map(runQuery())
-                .flatMap(new Func1<Cursor, Observable<Board>>() {
-                    @Override
-                    public Observable<Board> call(Cursor cursor) {
-                        Board board = new Board();
-                        while (cursor.moveToNext()) {
-                            board.loadFromCursor(cursor);
+    private static Flowable<Boolean> updateBoard(final String boardName, final int type) {
+        return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, null, Board.KEY_NAME + "=?", boardName)
+                .flatMap((Function<List<Board>, Flowable<Boolean>>) boards -> {
+                    if (boards != null && boards.size() > 0) {
+                        Board board = boards.get(0);
+                        ContentValues values = null;
+                        if (type == 0) {
+                            values = updateLastAccessed();
+                        } else if (type == 1) {
+                            values = updatePostCount(board);
+                        } else if (type == 2) {
+                            values = updateAccessCount(board);
                         }
 
-                        return Observable.just(board);
-                    }
-                })
-                .flatMap(new Func1<Board, Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call(Board board) {
-                        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                        BriteDatabase.Transaction transaction = db.newTransaction();
-
-                        int val = 0;
-                        try {
-
-                            ContentValues values = null;
-                            if (type == 0) {
-                                values = updateLastAccessed();
-                            } else if (type == 1) {
-                                values = updatePostCount(board);
-                            } else if (type == 2) {
-                                values = updateAccessCount(board);
-                            }
-
-                            if (values != null) {
-                                val = db.update(Board.TABLE_NAME, values, board.whereClause(), board.whereArg());
-                            }
-                            transaction.markSuccessful();
-                        } catch (Exception e) {
-                            Log.e(LOG_TAG, "Error updating access count", e);
-                        } finally {
-                            transaction.end();
+                        if (values != null) {
+                            board.setValues(values);
+                            return DatabaseUtils.updateTable(board);
                         }
+                    }
 
-                        return Observable.just(val > 0);
-                    }
-                })
-                .onErrorReturn(new Func1<Throwable, Boolean>() {
-                    @Override
-                    public Boolean call(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error updating access count", throwable);
-                        return null;
-                    }
-                })
-                .compose(DatabaseUtils.<Boolean>applySchedulers());
+                    return Flowable.just(false);
+                });
     }
 
     private static ContentValues updateLastAccessed() {
@@ -230,42 +139,36 @@ public class BoardTableConnection {
         return values;
     }
 
-    public static Observable<Boolean> updateBoardOrder(final List<ChanBoard> boards) {
-        return Observable.defer(new Func0<Observable<Boolean>>() {
-            @Override
-            public Observable<Boolean> call() {
-                int val;
-                boolean success = false;
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
-                ContentValues values = new ContentValues();
+    public static Flowable<Boolean> updateBoardOrder(final List<ChanBoard> boards) {
+        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+            int val;
+            boolean success = false;
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
+            ContentValues values = new ContentValues();
 
-                try {
-                    for (int i = 0; i < boards.size(); i++) {
-                        values.put(Board.KEY_ORDER_INDEX, i);
-                        val = db.update(Board.TABLE_NAME, values, Board.KEY_NAME + "=?", boards.get(i).getName());
+            try {
+                for (int i = 0; i < boards.size(); i++) {
+                    values.put(Board.KEY_ORDER_INDEX, i);
+                    val = db.update(Board.TABLE_NAME, SQLiteDatabase.CONFLICT_REPLACE, values, Board.KEY_NAME + "=?", boards.get(i).getName());
 
-                        success = val > 0;
-                        values.clear();
-                    }
-
-                    transaction.markSuccessful();
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Error updating board order", e);
-                } finally {
-                    transaction.end();
-                    return Observable.just(success).onErrorReturn(new Func1<Throwable, Boolean>() {
-                        @Override
-                        public Boolean call(Throwable throwable) {
-                            Log.e(LOG_TAG, "Error updating board order", throwable);
-                            return false;
-                        }
-                    });
+                    success = val > 0;
+                    values.clear();
                 }
 
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error updating board order", e);
+            } finally {
+                transaction.end();
+                return Flowable.just(success).onErrorReturn(throwable -> {
+                    Log.e(LOG_TAG, "Error updating board order", throwable);
+                    return false;
+                });
             }
+
         })
-                .compose(DatabaseUtils.<Boolean>applySchedulers());
+                .compose(DatabaseUtils.applySchedulers());
     }
 
     public static ChanBoard convertBoardDbModelToBoard(final Board oldBoard) {
@@ -274,10 +177,10 @@ public class BoardTableConnection {
         final String boardName = oldBoard.name; // Path is now Name
         final String boardTitle = oldBoard.title; // Name is now Title
         int ws = 1;
-        if (oldBoard.nsfw) {
+        if (oldBoard.nsfw == 1) {
             ws = 0;
         }
-        final boolean favorite = oldBoard.favorite;
+        final boolean favorite = oldBoard.favorite == 1;
         final int postsPerPage = oldBoard.perPage;
         final int pages = oldBoard.pages;
 
@@ -308,8 +211,8 @@ public class BoardTableConnection {
         Board board = new Board();
         board.title = chanBoard.getTitle();
         board.name = chanBoard.getName();
-        board.favorite = chanBoard.isFavorite();
-        board.nsfw = chanBoard.getWsBoard() == 1;
+        board.favorite = (byte) (chanBoard.isFavorite() ? 1 : 0);
+        board.nsfw = (byte) (chanBoard.getWsBoard() == 1 ? 1 : 0);
         board.pages = chanBoard.getPages();
         board.perPage = chanBoard.getPerPage();
         board.maxFileSize = chanBoard.getMaxFilesize();
@@ -341,57 +244,51 @@ public class BoardTableConnection {
         return Collections.emptyList();
     }
 
-    public static Observable<List<Boolean>> initDefaultBoards(final Context context) {
-        return Observable
-                .defer(new Func0<Observable<String[]>>() {
-                    @Override
-                    public Observable<String[]> call() {
-                        return Observable.just(context.getResources().getStringArray(R.array.boards));
+    public static Flowable<List<ChanBoard>> initDefaultBoards(final Context context) {
+        return Flowable
+                .defer((Callable<Flowable<String[]>>) () -> Flowable.just(context.getResources().getStringArray(R.array.boards)))
+                .map(strings -> {
+                    List<ChanBoard> boards = new ArrayList<>(strings.length);
+                    for (String boardName : strings) {
+                        ChanBoard board = new ChanBoard();
+                        board.setName(boardName);
+                        board.setTitle("TEMPORARY");
+                        board.setWsBoard(0);
+                        boards.add(board);
                     }
+                    return boards;
                 })
-                .flatMapIterable(new Func1<String[], Iterable<String>>() {
-                    @Override
-                    public Iterable<String> call(String[] strings) {
-                        return Arrays.asList(strings);
-                    }
-                })
-                .flatMap(new Func1<String, Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call(String s) {
-                        return setBoardVisibility(s, true);
-                    }
-                })
-                .toList();
+                .doOnNext(BoardTableConnection.saveBoards())
+                .flatMapIterable((Function<List<ChanBoard>, Iterable<ChanBoard>>) board -> board)
+                .flatMap((Function<ChanBoard, Flowable<ChanBoard>>) s -> setBoardVisibility(s.getName(), true))
+                .toList()
+                .toFlowable();
     }
 
-    public static Action1<? extends BaseModel> saveToDatabase() {
-        return new Action1<BaseModel>() {
-            @Override
-            public void call(BaseModel baseModel) {
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
-                try {
-                    DatabaseUtils.update(db, baseModel);
-                    transaction.markSuccessful();
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Database update failed", e);
-                } finally {
-                    transaction.end();
-                }
+    public static Consumer<? extends BaseModel> saveToDatabase() {
+        return (Consumer<BaseModel>) baseModel -> {
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
+            try {
+                DatabaseUtils.update(db, baseModel);
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Database update failed", e);
+            } finally {
+                transaction.end();
             }
         };
     }
 
-    public static Action1<List<ChanBoard>> saveBoards() {
-        return new Action1<List<ChanBoard>>() {
-            @Override
-            public void call(List<ChanBoard> chanBoards) {
-                saveBoards(chanBoards);
-            }
-        };
+    public static Consumer<List<ChanBoard>> saveBoards() {
+        return BoardTableConnection::saveBoards;
     }
 
     public static void saveBoards(List<ChanBoard> chanBoards) {
+        if (chanBoards == null || chanBoards.size() == 0) {
+            return;
+        }
+
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         BriteDatabase.Transaction transaction = db.newTransaction();
 
@@ -411,37 +308,41 @@ public class BoardTableConnection {
         }
     }
 
-    public static Observable<Boolean> setBoardVisibility(final String boardPath, final Boolean visible) {
-        return Observable.defer(new Func0<Observable<Boolean>>() {
-            @Override
-            public Observable<Boolean> call() {
-                BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-                BriteDatabase.Transaction transaction = db.newTransaction();
+    public static Flowable<ChanBoard> setBoardVisibility(final String boardPath, final Boolean visible) {
+        if (TextUtils.isEmpty(boardPath)) {
+            return Flowable.just(new ChanBoard());
+        }
 
-                int val = 0;
+        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
 
-                try {
-                    ContentValues contentValues = new ContentValues();
-                    contentValues.put(Board.KEY_VISIBLE, visible);
+            int val = 0;
 
-                    if (boardPath != null) {
-                        String name = boardPath.replaceAll("/", "");
+            try {
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(Board.KEY_VISIBLE, visible ? 1 : 0);
 
-                        val = db.update(Board.TABLE_NAME, contentValues, Board.KEY_NAME + "=?", name);
-                    } else {
-                        val = db.update(Board.TABLE_NAME, contentValues, null);
-                    }
-                    transaction.markSuccessful();
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Database update failed", e);
-                } finally {
-                    transaction.end();
-                }
+                String name = boardPath.replaceAll("/", "");
+                val = db.update(Board.TABLE_NAME, SQLiteDatabase.CONFLICT_REPLACE, contentValues, Board.KEY_NAME + "=?", name);
 
-                return Observable.just(val > 0);
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Database update failed", e);
+            } finally {
+                transaction.end();
             }
+
+            return Flowable.just(val > 0);
         })
-                .compose(DatabaseUtils.<Boolean>applySchedulers());
+                .flatMap((Function<Boolean, Flowable<ChanBoard>>) success -> {
+                    if (success) {
+                        return fetchBoard(boardPath);
+                    }
+
+                    return Flowable.just(new ChanBoard());
+                })
+                .compose(DatabaseUtils.applySchedulers());
     }
 
 }

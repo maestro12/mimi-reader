@@ -54,7 +54,6 @@
     <attr name="mimiPrimaryColor" format="color|reference" />
     <attr name="mimiPrimaryColorDark" format="color|reference" />
     <attr name="mimiAccentColor" format="color|reference" />
-
     <attr name="mimiAccentTextColor" format="color|reference" />
 
     <declare-styleable name="panel_layout_attributes">

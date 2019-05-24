@@ -19,9 +19,9 @@
 
     <string-array name="boards">
 
-        <item>/an/</item>
-        <item>/ck/</item>
-        <item>/diy/</item>
+        <item>an</item>
+        <item>ck</item>
+        <item>diy</item>
 
     </string-array>
 

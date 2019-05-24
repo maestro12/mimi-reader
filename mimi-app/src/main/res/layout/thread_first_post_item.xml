@@ -19,6 +19,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/post_container"
     style="?cardBackgroundSelector"
     android:layout_width="match_parent"
@@ -29,18 +30,44 @@
         android:id="@+id/post_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
+        android:layout_gravity="center_vertical"
         android:layout_marginLeft="4dp"
         android:layout_marginRight="4dp"
         android:orientation="horizontal">
 
         <ImageView
+            android:id="@+id/lock_icon"
+            android:layout_width="22dp"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:scaleType="fitCenter"
+            android:visibility="visible"
+            android:padding="4dp"
+            app:srcCompat="@drawable/ic_lock"
+            tools:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/pin_icon"
+            android:layout_width="22dp"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:scaleType="fitCenter"
+            android:visibility="visible"
+            android:padding="4dp"
+            android:layout_toRightOf="@id/lock_icon"
+            app:srcCompat="@drawable/ic_pin"
+            tools:visibility="visible" />
+
+        <ImageView
             android:id="@+id/flag_icon"
             android:layout_width="22dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:adjustViewBounds="true"
-            android:visibility="gone" />
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone"
+            android:layout_toRightOf="@id/pin_icon"
+            tools:src="@drawable/de"
+            tools:visibility="visible" />
 
         <TextView
             android:id="@+id/user_name"
@@ -53,10 +80,10 @@
             android:ellipsize="end"
             android:gravity="center"
             android:maxLines="1"
+            android:paddingLeft="6dp"
+            android:paddingTop="1dp"
+            android:paddingRight="6dp"
             android:paddingBottom="4dp"
-            android:paddingLeft="8dp"
-            android:paddingRight="8dp"
-            android:paddingTop="4dp"
             android:textSize="?attr/font_xsmall"
             tools:text="Anonymous" />
 
@@ -67,15 +94,14 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_gravity="center_vertical"
-            android:layout_marginRight="2dp"
+            android:layout_marginLeft="4dp"
+            android:layout_marginTop="1dp"
+            android:layout_marginRight="6dp"
+            android:layout_marginBottom="4dp"
             android:layout_toRightOf="@+id/user_name"
             android:ellipsize="end"
             android:gravity="left|center_vertical"
             android:maxLines="1"
-            android:paddingBottom="4dp"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp"
-            android:paddingTop="4dp"
             android:textSize="?attr/font_xxsmall"
             android:visibility="gone"
             tools:text="User ID" />
@@ -91,9 +117,9 @@
             android:ellipsize="end"
             android:gravity="left|center_vertical"
             android:maxLines="1"
+            android:paddingLeft="6dp"
+            android:paddingTop="1dp"
             android:paddingBottom="4dp"
-            android:paddingLeft="8dp"
-            android:paddingTop="4dp"
             android:textSize="?attr/font_xxsmall"
             android:visibility="gone"
             tools:text="Tripcode" />
@@ -102,7 +128,7 @@
             android:id="@+id/spacer"
             style="?postHeaderDecoration"
             android:layout_width="1px"
-            android:layout_height="12dp"
+            android:layout_height="8dp"
             android:layout_centerVertical="true"
             android:layout_toRightOf="@+id/tripcode" />
 
@@ -115,9 +141,9 @@
             android:layout_centerVertical="true"
             android:layout_gravity="center_vertical"
             android:layout_toRightOf="@+id/spacer"
-            android:paddingBottom="4dp"
             android:paddingLeft="8dp"
-            android:paddingTop="4dp"
+            android:paddingTop="1dp"
+            android:paddingBottom="4dp"
             android:textSize="?attr/font_xxsmall"
             android:textStyle="normal"
             tools:text="123456" />
@@ -125,8 +151,8 @@
         <com.emogoth.android.phone.mimi.view.IconTextView
             android:id="@+id/menu_button"
             style="?postHeaderIcon"
-            android:layout_width="48dp"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:layout_gravity="right"
@@ -145,13 +171,16 @@
             android:id="@+id/timestamp"
             style="?postHeaderText"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="30dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
             android:layout_gravity="center"
+            android:layout_toStartOf="@+id/menu_button"
             android:layout_toLeftOf="@+id/menu_button"
             android:gravity="center"
+            android:paddingLeft="6dp"
+            android:paddingTop="1dp"
             android:paddingBottom="4dp"
-            android:paddingLeft="8dp"
-            android:paddingTop="4dp"
             android:textSize="?attr/font_xxsmall"
             tools:text="the time" />
 
@@ -182,7 +211,7 @@
                 android:layout_height="@dimen/thumbnail_image_large"
                 android:layout_gravity="top">
 
-                <ImageView
+                <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/thumbnail"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -198,6 +227,16 @@
 
             </FrameLayout>
 
+            <TextView
+                android:id="@+id/file_ext"
+                style="?postHeaderText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                tools:text="GIF" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -210,10 +249,10 @@
                 style="?postSubjectText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="4dp"
                 android:paddingLeft="8dp"
-                android:paddingRight="8dp"
                 android:paddingTop="2dp"
+                android:paddingRight="8dp"
+                android:paddingBottom="4dp"
                 android:textSize="?attr/font_medium" />
 
             <TextView
@@ -223,6 +262,7 @@
                 android:layout_height="wrap_content"
                 android:paddingLeft="8dp"
                 android:paddingRight="8dp"
+                android:textIsSelectable="true"
                 android:textSize="?attr/font_label_small" />
 
 
@@ -258,7 +298,7 @@
             android:layout_gravity="bottom"
             android:layout_toRightOf="@+id/replies_number"
             android:gravity="center"
-            android:padding="8dp"
+            android:padding="6dp"
             android:textAllCaps="true"
             android:textSize="?attr/font_xsmall"
             android:textStyle="bold"
@@ -271,7 +311,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:gravity="center"
-            android:padding="8dp"
+            android:padding="6dp"
             android:text="@string/reply_menu_item"
             android:textAllCaps="true"
             android:textSize="?attr/font_label_small" />

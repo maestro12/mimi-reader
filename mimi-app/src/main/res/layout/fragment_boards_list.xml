@@ -21,25 +21,37 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v4.widget.Space
+    <androidx.legacy.widget.Space
         android:id="@+id/spacer"
         android:layout_width="wrap_content"
         android:layout_height="45dp" />
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/boards_list"
-        style="?rowItemBackground"
+    <com.emogoth.android.phone.mimi.util.BetterViewAnimator
+        android:id="@+id/error_switcher"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/spacer"
-        android:layout_gravity="bottom"
-        android:layout_marginLeft="2dp"
-        android:layout_marginRight="2dp"
-        android:drawSelectorOnTop="true"
-        android:fadingEdge="none"
-        android:paddingLeft="2dp"
-        android:paddingRight="2dp"
-        android:paddingTop="4dp" />
+        android:layout_below="@+id/spacer">
+
+        <com.emogoth.android.phone.mimi.widget.MimiRecyclerView
+            android:id="@+id/boards_list"
+            style="?rowItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="2dp"
+            android:drawSelectorOnTop="true"
+            android:fadingEdge="none"
+            android:paddingLeft="2dp"
+            android:paddingRight="2dp"
+            android:paddingTop="4dp" />
+
+        <ViewStub
+            android:id="@+id/error_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/boards_loading_error" />
+    </com.emogoth.android.phone.mimi.util.BetterViewAnimator>
 
     <FrameLayout
         android:id="@+id/board_order_background"
@@ -49,6 +61,7 @@
         android:visibility="gone" />
 
     <RelativeLayout
+        android:id="@+id/boards_list_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
@@ -66,9 +79,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_favorite"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/board_order_item_height"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_favorites"
@@ -77,9 +90,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_name"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_board_name"
@@ -88,9 +101,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_title"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_board_title"
@@ -99,9 +112,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_access_count"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_access_count"
@@ -110,9 +123,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_post_count"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_post_count"
@@ -121,9 +134,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_last_access"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_last_access"
@@ -132,9 +145,9 @@
 
             <TextView
                 android:id="@+id/board_order_type_custom"
-                android:background="?attr/mimiPrimaryColorDark"
                 android:layout_width="match_parent"
                 android:layout_height="40dp"
+                android:background="?attr/mimiPrimaryColorDark"
                 android:gravity="center_vertical"
                 android:paddingLeft="8dp"
                 android:text="@string/board_order_custom"
@@ -148,8 +161,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:orientation="horizontal"
             android:background="?attr/mimiPrimaryColor"
+            android:orientation="horizontal"
             android:visibility="invisible">
 
             <LinearLayout
@@ -167,8 +180,8 @@
                     android:text="@string/sort_by"
                     android:textAllCaps="true"
                     android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    android:textSize="?attr/font_label_xsmall" />
+                    android:textSize="?attr/font_label_xsmall"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/board_order_subtitle"

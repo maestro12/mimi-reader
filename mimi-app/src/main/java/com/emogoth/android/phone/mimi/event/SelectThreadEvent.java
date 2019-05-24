@@ -19,10 +19,10 @@ package com.emogoth.android.phone.mimi.event;
 
 public class SelectThreadEvent {
     final public String boardName;
-    final public int threadId;
+    final public long threadId;
     final public int position;
 
-    public SelectThreadEvent(String boardName, int threadId, int position) {
+    public SelectThreadEvent(String boardName, long threadId, int position) {
         this.boardName = boardName;
         this.threadId = threadId;
         this.position = position;

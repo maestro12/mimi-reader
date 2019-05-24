@@ -1,25 +1,25 @@
 package com.emogoth.android.phone.mimi.db;
 
+import androidx.sqlite.db.SupportSQLiteOpenHelper;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteOpenHelper;
 
-import com.squareup.sqlbrite.BriteDatabase;
-import com.squareup.sqlbrite.SqlBrite;
+import com.squareup.sqlbrite3.BriteDatabase;
+import com.squareup.sqlbrite3.SqlBrite;
 
 import java.lang.reflect.Field;
 
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class ActiveAndroidSqlBriteBridge {
 
     // From: https://github.com/pardom/ActiveAndroid/issues/153
-    private static SQLiteOpenHelper getSQLiteOpenHelper() {
+    private static SupportSQLiteOpenHelper getSQLiteOpenHelper() {
         try {
             Field dhField = com.activeandroid.Cache.class.getDeclaredField("sDatabaseHelper");
             dhField.setAccessible(true);
-            SQLiteOpenHelper helper = (SQLiteOpenHelper) dhField.get(null);
+            SupportSQLiteOpenHelper helper = (SupportSQLiteOpenHelper) dhField.get(null);
             if (helper == null) {
                 throw new IllegalStateException("Could not get SQLiteOpenHelper from Active Android");
             } else {
@@ -35,21 +35,18 @@ public class ActiveAndroidSqlBriteBridge {
     }
 
     public static BriteDatabase getBriteDatabase() {
-        SQLiteOpenHelper helper = getSQLiteOpenHelper();
+        SupportSQLiteOpenHelper helper = getSQLiteOpenHelper();
 
         if (helper != null) {
-            return SqlBrite.create().wrapDatabaseHelper(helper, Schedulers.io());
+            SqlBrite.Builder builder = new SqlBrite.Builder();
+            SqlBrite sqlBrite = builder.build();
+            return sqlBrite.wrapDatabaseHelper(helper, Schedulers.io());
         }
 
         return null;
     }
 
-    public static Func1<SqlBrite.Query, Cursor> runQuery() {
-        return new Func1<SqlBrite.Query, Cursor>() {
-            @Override
-            public Cursor call(SqlBrite.Query query) {
-                return query.run();
-            }
-        };
+    public static Function<SqlBrite.Query, Cursor> runQuery() {
+        return SqlBrite.Query::run;
     }
 }

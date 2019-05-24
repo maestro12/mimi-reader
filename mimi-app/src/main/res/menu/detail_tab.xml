@@ -38,6 +38,12 @@
         mimi:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/find_menu"
+        android:icon="@drawable/ic_search"
+        android:title="@string/find"
+        mimi:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/close_tab"
         android:title="@string/close_tab"
         mimi:showAsAction="never" />

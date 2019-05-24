@@ -17,13 +17,13 @@
 package com.emogoth.android.phone.mimi.event;
 
 public class GalleryPagerScrolledEvent {
-    final int postNumber;
+    final long postNumber;
 
-    public GalleryPagerScrolledEvent(int postNumber) {
+    public GalleryPagerScrolledEvent(long postNumber) {
         this.postNumber = postNumber;
     }
 
-    public int getPostNumber() {
+    public long getPostNumber() {
         return postNumber;
     }
 }

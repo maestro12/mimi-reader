@@ -17,6 +17,7 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/full_reply_panel"
     style="?attr/replyFormBackground"
@@ -46,8 +47,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
-                    <android.support.v7.widget.AppCompatTextView
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/edit_user_info"
+                        style="?defaultSubtextColor"
                         android:layout_width="wrap_content"
                         android:layout_height="40dp"
                         android:layout_gravity="left"
@@ -97,8 +99,9 @@
                         android:textColor="?colorAccent"
                         android:textSize="26sp" />
 
-                    <android.support.v7.widget.AppCompatEditText
+                    <androidx.appcompat.widget.AppCompatEditText
                         android:id="@+id/comment_input"
+                        style="?postCommentText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="top"
@@ -115,8 +118,9 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_weight="1">
 
-                    <android.support.v7.widget.AppCompatTextView
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/attach_image_button"
+                        style="?defaultSubtextColor"
                         android:layout_width="wrap_content"
                         android:layout_height="50dp"
                         android:layout_gravity="left"
@@ -165,8 +169,9 @@
                 android:layout_gravity="center_horizontal"
                 android:orientation="horizontal">
 
-                <android.support.v7.widget.AppCompatTextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/clear_info"
+                    style="?postCommentText"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="center_horizontal"
@@ -174,41 +179,60 @@
                     android:gravity="center"
                     android:text="@string/clear_info" />
 
-                <android.support.v7.widget.AppCompatTextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/sage_info"
+                    style="?postCommentText"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:gravity="center"
                     android:text="@string/sage_info" />
 
-                <android.support.v7.widget.AppCompatTextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/done_info"
+                    style="?postCommentText"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:text="@string/done_info" />
             </LinearLayout>
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatAutoCompleteTextView
                 android:id="@+id/name_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/name" />
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/options_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:hint="@string/options" />
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/subject_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:hint="@string/subject" />
+
+            <androidx.appcompat.widget.AppCompatSpinner
+                android:id="@+id/flag_selector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/spoiler_selection"
+                style="?postCommentText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/spoiler"
+                android:visibility="gone" />
 
         </LinearLayout>
 

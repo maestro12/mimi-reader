@@ -21,4 +21,13 @@
     <string name="start_activity_pref">start_activity_pref</string>
 
     <string name="fileprovider_authority">com.mimireader.fileprovider</string>
+
+    <string name="http_buffer_size_default">0</string>
+    <string-array name="http_buffer_sizes_pref">
+        <item name="http_buffer_size_off_pref">0</item>
+        <item name="http_buffer_size_512_pref">512</item>
+        <item name="http_buffer_size_1k_pref">1024</item>
+        <item name="http_buffer_size_2k_pref">2048</item>
+        <item name="http_buffer_size_4k_pref">4096</item>
+    </string-array>
 </resources>

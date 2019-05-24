@@ -20,13 +20,17 @@ package com.emogoth.android.phone.mimi.activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.SlidingPaneLayout;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.core.content.res.ResourcesCompat;
+import androidx.slidingpanelayout.widget.SlidingPaneLayout;
+import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -44,7 +48,6 @@ import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnBoardsUpdatedCallback;
 import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.util.AppRatingUtil;
 import com.emogoth.android.phone.mimi.util.Extras;
@@ -52,13 +55,13 @@ import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.Pages;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
+import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
 import com.squareup.otto.Subscribe;
 
 import java.util.List;
 
 public class SlidingPanelActivity extends MimiActivity implements BoardItemClickListener,
         Toolbar.OnClickListener,
-        OnBoardsUpdatedCallback,
         OnThumbnailClickListener,
         GalleryMenuItemClickListener,
         IToolbarContainer {
@@ -73,15 +76,12 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
     private int listType = BOARD_LIST_ID;
 
-    private List<ChanBoard> boards;
-
     private String boardName;
     private String boardTitle;
     private MimiFragmentBase listFragment;
     private MimiFragmentBase detailFragment;
     private MimiFragmentBase boardsFragment;
 
-    private boolean fetchCatalog = false;
     private Pages openPage = Pages.NONE;
 
     private FloatingActionButton addContentFab;
@@ -94,9 +94,9 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
         int sliderFadeColor;
         if (MimiUtil.getInstance().getTheme() == MimiUtil.THEME_LIGHT) {
-            sliderFadeColor = getResources().getColor(R.color.background_light);
+            sliderFadeColor = ResourcesCompat.getColor(getResources(), R.color.background_light, getTheme());
         } else {
-            sliderFadeColor = getResources().getColor(R.color.background_dark);
+            sliderFadeColor = ResourcesCompat.getColor(getResources(), R.color.background_dark, getTheme());
         }
 
         int coverFadeColor = sliderFadeColor;
@@ -171,7 +171,10 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
         if (listType == BOARD_LIST_ID) {
             final BoardItemListFragment fragment = new BoardItemListFragment();
-            fragment.setBoardsListener(this);
+            final Bundle extras = new Bundle();
+            extras.putBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, false);
+
+            fragment.setArguments(extras);
             ft.add(R.id.postitem_list, fragment, TAG_BOARD_LIST);
 
             ft.commit();
@@ -187,6 +190,7 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
             args.putInt(Extras.EXTRAS_HISTORY_QUERY_TYPE, HistoryTableConnection.BOOKMARKS);
             args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_BOOKMARKS);
+            args.putBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, false);
 
             fragment.setArguments(args);
 
@@ -202,6 +206,7 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
             args.putInt(Extras.EXTRAS_HISTORY_QUERY_TYPE, HistoryTableConnection.HISTORY);
             args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_HISTORY);
+            args.putBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, false);
 
             fragment.setArguments(args);
 
@@ -220,10 +225,6 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
 
             if (extras.containsKey(Extras.EXTRAS_LIST_TYPE)) {
                 listType = extras.getInt(Extras.EXTRAS_LIST_TYPE);
-            }
-
-            if (extras.containsKey(Extras.EXTRAS_CATALOG)) {
-                fetchCatalog = true;
             }
 
             if (extras.containsKey(Extras.OPEN_PAGE)) {
@@ -245,6 +246,44 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
+    protected void onPause() {
+        SimpleChromeCustomTabs.getInstance().disconnectFrom(this);
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        SimpleChromeCustomTabs.getInstance().connectTo(this);
+        super.onResume();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        if (panelLayout.isOpen()) {
+            listFragment.onCreateOptionsMenu(menu, inflater);
+        } else {
+            detailFragment.onCreateOptionsMenu(menu, inflater);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            toggleNavDrawer();
+            return true;
+        }
+
+        if (panelLayout.isOpen()) {
+            return listFragment.onOptionsItemSelected(item);
+        } else {
+            return detailFragment.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
     protected String getPageName() {
         return "sliding_drawer_activity";
     }
@@ -259,21 +298,14 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
-    public void onBoardsUpdated(List<ChanBoard> boards) {
-        this.boards = boards;
-    }
-
-    @Override
     public void onBoardItemClick(ChanBoard board, boolean saveBackStack) {
         final Bundle arguments = new Bundle();
         arguments.putString(Extras.EXTRAS_BOARD_NAME, board.getName());
         arguments.putString(Extras.EXTRAS_BOARD_TITLE, board.getTitle());
-//        arguments.putBoolean(Extras.EXTRAS_TWOPANE, mTwoPane);
-        arguments.putBoolean(Extras.EXTRAS_CATALOG, true);
+        arguments.putBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, false);
 
         PostItemsListFragment fragment = new PostItemsListFragment();
         fragment.setArguments(arguments);
-        fragment.setBoards(boards);
 
         final FragmentManager fm = getSupportFragmentManager();
         final FragmentTransaction ft = fm.beginTransaction();
@@ -301,17 +333,19 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
-    public void onGalleryMenuItemClick(String boardPath, int threadId) {
-        final Bundle args = new Bundle();
+    public void onGalleryMenuItemClick(String boardPath, long threadId) {
+//        final Bundle args = new Bundle();
+//
+//        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 0);
+//        args.putString(Extras.EXTRAS_BOARD_NAME, boardPath);
+//        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+//
+//        final Intent intent = new Intent(this, GalleryActivity2.class);
+//        intent.putExtras(args);
+//        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+//        startActivity(intent);
 
-        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 0);
-        args.putString(Extras.EXTRAS_BOARD_NAME, boardPath);
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-
-        final Intent intent = new Intent(this, GalleryActivity.class);
-        intent.putExtras(args);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        startActivity(intent);
+        GalleryActivity2.start(this, GalleryActivity2.GALLERY_TYPE_GRID, 0, boardPath, threadId, new long[0]);
     }
 
     @Override
@@ -320,19 +354,18 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
     }
 
     @Override
-    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, int threadId) {
+    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, long threadId) {
         openThread(posts, position, boardName, boardTitle, threadId);
     }
 
-    public void openThread(final List<ChanPost> posts, final int position, final String boardName, final String boardTitle, int threadId) {
+    public void openThread(final List<ChanPost> posts, final int position, final String boardName, final String boardTitle, long threadId) {
         this.boardName = boardName;
         this.boardTitle = boardTitle;
 
         if (posts != null && posts.size() > position) {
-//            detailFragment = ThreadDetailFragment.newInstance(posts.get(position).getNo(), boardName, boardTitle, null, true);
-            detailFragment = ThreadDetailFragment.newInstance(posts.get(position).getNo(), boardName, boardTitle, posts.get(position), true);
+            detailFragment = ThreadDetailFragment.newInstance(posts.get(position).getNo(), boardName, boardTitle, posts.get(position), true, false);
         } else {
-            detailFragment = ThreadDetailFragment.newInstance(threadId, boardName, boardTitle, null, true);
+            detailFragment = ThreadDetailFragment.newInstance(threadId, boardName, boardTitle, null, true, false);
         }
 
         final FragmentManager fm = getSupportFragmentManager();
@@ -370,8 +403,8 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
         final FragmentManager fm = getSupportFragmentManager();
         final FragmentTransaction ft = fm.beginTransaction();
 
-        int threadId = event.getThreadId();
-        detailFragment = ThreadDetailFragment.newInstance(threadId, boardName, boardTitle, null, false);
+        long threadId = event.getThreadId();
+        detailFragment = ThreadDetailFragment.newInstance(threadId, boardName, boardTitle, null, false, false);
         ft.replace(R.id.postitem_detail, detailFragment, TAG_THREAD_DETAIL);
         ft.commit();
 
@@ -409,5 +442,22 @@ public class SlidingPanelActivity extends MimiActivity implements BoardItemClick
     @Subscribe
     public void onAutoRefresh(final UpdateHistoryEvent event) {
         super.onAutoRefresh(event);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        String page = intent.getStringExtra(Extras.OPEN_PAGE);
+        if (!TextUtils.isEmpty(page)) {
+            try {
+                Pages pageEnum = Pages.valueOf(page);
+                boolean watched;
+                watched = pageEnum == Pages.BOOKMARKS;
+
+                openHistoryPage(new OpenHistoryEvent(watched));
+            } catch (Exception e) {
+
+            }
+        }
     }
 }

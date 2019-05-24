@@ -19,15 +19,18 @@ package com.emogoth.android.phone.mimi.db.model;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.Spanned;
+import android.text.TextUtils;
 
 import com.activeandroid.annotation.Column;
 import com.activeandroid.annotation.Table;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Observable;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.functions.Function;
 
 @Table(name = "History")
 public class History extends BaseModel {
@@ -45,6 +48,7 @@ public class History extends BaseModel {
     public static final String KEY_SIZE = "thread_size";
     public static final String KEY_REPLIES = "post_replies";
     public static final String KEY_THREAD_REMOVED = "thread_removed";
+    public static final String KEY_LAST_READ_POS = "last_read_position";
 
     @Column(name = KEY_ID, index = true)
     public Integer id;
@@ -53,7 +57,7 @@ public class History extends BaseModel {
     public Integer orderId;
 
     @Column(name = KEY_THREAD_ID)
-    public Integer threadId;
+    public Long threadId;
 
     @Column(name = KEY_NAME)
     public String boardName;
@@ -71,7 +75,7 @@ public class History extends BaseModel {
     public String text;
 
     @Column(name = KEY_WATCHED)
-    public boolean watched;
+    public int watched;
 
     @Column(name = KEY_SIZE)
     public int threadSize;
@@ -80,9 +84,18 @@ public class History extends BaseModel {
     public String replies;
 
     @Column(name = KEY_THREAD_REMOVED)
-    public boolean removed;
+    public int removed;
+
+    @Column(name = KEY_LAST_READ_POS)
+    public int lastReadPosition;
 
     public Spanned comment;
+
+    public History() {
+        this.threadId = -1L;
+        this.lastReadPosition = 0;
+        this.threadSize = 0;
+    }
 
     @Override
     public ContentValues toContentValues() {
@@ -114,23 +127,21 @@ public class History extends BaseModel {
         }
 
         values.put(KEY_THREAD_REMOVED, removed);
+        values.put(KEY_LAST_READ_POS, lastReadPosition);
         return values;
     }
 
-    public static Func1<Cursor, Observable<List<History>>> mapper() {
-        return new Func1<Cursor, Observable<List<History>>>() {
-            @Override
-            public Observable<List<History>> call(Cursor cursor) {
-                cursor.moveToPosition(-1);
-                List<History> historyList = new ArrayList<>(cursor.getCount());
-                while (cursor.moveToNext()) {
-                    History history = new History();
-                    history.loadFromCursor(cursor);
+    public static Function<Cursor, Flowable<List<History>>> mapper() {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<History> historyList = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                History history = new History();
+                history.loadFromCursor(cursor);
 
-                    historyList.add(history);
-                }
-                return Observable.just(historyList);
+                historyList.add(history);
             }
+            return Flowable.just(historyList);
         };
     }
 
@@ -140,12 +151,33 @@ public class History extends BaseModel {
     }
 
     @Override
-    public String whereClause() {
-        return KEY_THREAD_ID + "=?";
+    public DatabaseUtils.WhereArg[] where() {
+        DatabaseUtils.WhereArg[] arg = new DatabaseUtils.WhereArg[1];
+        arg[0] = new DatabaseUtils.WhereArg(KEY_THREAD_ID + "=?", String.valueOf(threadId));
+        return arg;
     }
 
     @Override
-    public String whereArg() {
-        return String.valueOf(threadId);
+    public void copyValuesFrom(BaseModel model) {
+        if (model instanceof History) {
+            History history = (History) model;
+
+            orderId = history.orderId;
+            threadId = history.threadId;
+            boardName = history.boardName;
+            userName = history.userName;
+            lastAccess = history.lastAccess;
+            tim = history.tim;
+            text = history.text;
+            watched = history.watched;
+            threadSize = history.threadSize;
+            replies = history.replies;
+            removed = history.removed;
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return TextUtils.isEmpty(boardName) && threadId <= 0;
     }
 }

@@ -21,10 +21,9 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.LinearLayout;
 
 import com.emogoth.android.phone.mimi.R;
@@ -45,13 +44,10 @@ public class MimiSettings extends AppCompatPreferenceActivity implements OnShare
         if (toolbar != null) {
             toolbar.setLogo(null);
             toolbar.setTitle(R.string.settings);
-            toolbar.setNavigationIcon(R.drawable.ic_action_arrow_back);
-            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    finish();
-                }
-            });
+            toolbar.setNavigationIcon(R.drawable.ic_nav_arrow_back);
+            toolbar.setNavigationOnClickListener(v -> finish());
+
+            setSupportActionBar(toolbar);
         }
 
         MimiUtil.setScreenOrientation(this);

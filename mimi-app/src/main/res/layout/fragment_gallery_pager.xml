@@ -62,7 +62,7 @@
                 android:textColor="#F0F0F0" />
         </LinearLayout>
 
-        <android.support.v7.widget.AppCompatImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/grid_button"
             android:layout_width="50dp"
             android:layout_height="50dp"
@@ -80,7 +80,7 @@
         android:layout_height="match_parent"
         android:layout_above="@id/gallery_toolbar" />
 
-    <android.support.v7.widget.AppCompatImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/exit_fullscreen_button"
         android:layout_width="45dp"
         android:layout_height="45dp"

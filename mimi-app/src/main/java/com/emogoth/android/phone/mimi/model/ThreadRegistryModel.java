@@ -21,21 +21,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThreadRegistryModel {
-    private int threadId;
+    private long threadId;
     private String boardName;
     private int threadSize;
     private int unreadCount = 0;
     private int lastReadPosition = 0;
     private boolean bookmarked = false;
     private boolean active;
-    private List<Integer> userPosts;
+    private List<Long> userPosts;
 
 
-    public int getThreadId() {
+    public long getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(int threadId) {
+    public void setThreadId(long threadId) {
         this.threadId = threadId;
     }
 
@@ -85,7 +85,7 @@ public class ThreadRegistryModel {
         }
     }
 
-    public List<Integer> getUserPosts() {
+    public List<Long> getUserPosts() {
         if (userPosts == null) {
             userPosts = new ArrayList<>();
         }
@@ -93,7 +93,7 @@ public class ThreadRegistryModel {
         return userPosts;
     }
 
-    public void setUserPosts(List<Integer> userPosts) {
+    public void setUserPosts(List<Long> userPosts) {
         this.userPosts = userPosts;
     }
 

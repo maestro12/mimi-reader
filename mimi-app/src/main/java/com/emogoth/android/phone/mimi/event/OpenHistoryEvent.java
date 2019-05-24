@@ -19,11 +19,11 @@ package com.emogoth.android.phone.mimi.event;
 public class OpenHistoryEvent {
     public final boolean watched;
     public final String boardName;
-    public final int threadId;
+    public final long threadId;
     public final int position;
     public final int unreadCount;
 
-    public OpenHistoryEvent(String boardName, int threadId, boolean watched, int position, int unreadCount) {
+    public OpenHistoryEvent(String boardName, long threadId, boolean watched, int position, int unreadCount) {
         this.watched = watched;
         this.boardName = boardName;
         this.threadId = threadId;
@@ -34,7 +34,7 @@ public class OpenHistoryEvent {
     public OpenHistoryEvent(boolean watched) {
         this.watched = watched;
         this.boardName = null;
-        this.threadId = 0;
+        this.threadId = 0L;
         this.position = 0;
         this.unreadCount = 0;
     }

@@ -20,29 +20,25 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
 import android.text.TextPaint;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.activity.YoutubeActivity;
-import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 
 
 public class YoutubeLinkSpan extends LongClickableSpan {
-    private final Context context;
     private final String videoId;
     private final int linkColor;
 
-    public YoutubeLinkSpan(final Context context, final String videoId, int linkColor) {
-        this.context = context;
+    public YoutubeLinkSpan(final String videoId, int linkColor) {
         this.videoId = videoId;
         this.linkColor = linkColor;
     }
@@ -56,48 +52,31 @@ public class YoutubeLinkSpan extends LongClickableSpan {
 
     @Override
     public void onClick(View widget) {
-
-        if (MimiUtil.handleYouTubeLinks(context)) {
-            final Intent browselink = new Intent(context, YoutubeActivity.class);
-
-            browselink.putExtra(Extras.EXTRAS_YOUTUBE_ID, videoId);
-            browselink.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            context.startActivity(browselink);
-        } else {
-            openLink();
-        }
+        openLink(widget.getContext());
     }
 
-    private void showChoiceDialog() {
-        final String url = MimiUtil.httpOrHttps(context) + "youtube.com/watch?v=" + videoId;
+    private void showChoiceDialog(final Context context) {
+        final String url = MimiUtil.https() + "youtube.com/watch?v=" + videoId;
         final Handler handler = new Handler(Looper.getMainLooper());
 
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                new AlertDialog.Builder(context)
-                        .setTitle(R.string.youtube_link)
-                        .setItems(R.array.youtube_dialog_list, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                if (which == 0) {
-                                    openLink();
-                                } else {
-                                    ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-                                    clipboardManager.setPrimaryClip(ClipData.newPlainText("youtube_link", url));
-                                    Toast.makeText(context, R.string.link_copied_to_clipboard, Toast.LENGTH_SHORT).show();
-                                }
-                            }
-                        })
-                        .setCancelable(true)
-                        .show()
-                        .setCanceledOnTouchOutside(true);
-            }
-        });
+        handler.post(() -> new AlertDialog.Builder(context)
+                .setTitle(R.string.youtube_link)
+                .setItems(R.array.youtube_dialog_list, (dialog, which) -> {
+                    if (which == 0) {
+                        openLink(context);
+                    } else {
+                        ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        clipboardManager.setPrimaryClip(ClipData.newPlainText("youtube_link", url));
+                        Toast.makeText(context, R.string.link_copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setCancelable(true)
+                .show()
+                .setCanceledOnTouchOutside(true));
     }
 
-    private void openLink() {
-        final String url = MimiUtil.httpOrHttps(context) + "youtube.com/watch?v=" + videoId;
+    private void openLink(Context context) {
+        final String url = MimiUtil.https() + "youtube.com/watch?v=" + videoId;
         final Intent openIntent = new Intent(Intent.ACTION_VIEW);
 
         openIntent.setData(Uri.parse(url));
@@ -106,7 +85,7 @@ public class YoutubeLinkSpan extends LongClickableSpan {
 
     @Override
     public boolean onLongClick(View v) {
-        showChoiceDialog();
+        showChoiceDialog(v.getContext());
         return true;
     }
 }

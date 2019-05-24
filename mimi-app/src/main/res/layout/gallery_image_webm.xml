@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v7.widget.AppCompatImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/preview_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -14,16 +14,16 @@
         android:scaleType="fitCenter"
         android:visibility="visible" />
 
-    <android.support.v7.widget.AppCompatImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/play_button"
         android:layout_width="65dp"
         android:layout_height="65dp"
         android:layout_gravity="center"
         android:background="#88000000"
-        app:srcCompat="@drawable/ic_play_circle_outline"
-        android:visibility="gone" />
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_play_circle_outline" />
 
-    <com.google.android.exoplayer.AspectRatioFrameLayout
+    <com.google.android.exoplayer2.ui.AspectRatioFrameLayout
         android:id="@+id/video_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:keepScreenOn="true" />
-    </com.google.android.exoplayer.AspectRatioFrameLayout>
+    </com.google.android.exoplayer2.ui.AspectRatioFrameLayout>
 
     <LinearLayout
         android:id="@+id/webm_bar"
@@ -47,7 +47,7 @@
         android:orientation="horizontal"
         android:visibility="visible">
 
-        <android.support.v7.widget.AppCompatImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/open_button"
             android:layout_width="45dp"
             android:layout_height="45dp"
@@ -56,7 +56,7 @@
             android:padding="10dp"
             app:srcCompat="@drawable/ic_launch" />
 
-        <android.support.v7.widget.AppCompatImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/mute_button"
             android:layout_width="45dp"
             android:layout_height="45dp"
@@ -76,6 +76,22 @@
             android:textColor="@color/md_white_1000"
             android:textSize="?attr/font_label_small"
             tools:text="test:test" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/webm_play_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="#88000000"
+            android:padding="4dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_play_arrow" />
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/webm_scrubber"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:background="#88000000" />
 
     </LinearLayout>
 

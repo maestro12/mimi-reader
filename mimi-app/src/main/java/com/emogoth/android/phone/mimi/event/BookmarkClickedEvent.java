@@ -18,19 +18,19 @@ package com.emogoth.android.phone.mimi.event;
 
 
 public final class BookmarkClickedEvent {
-    private final int threadId;
+    private final long threadId;
     private final String boardName;
     private final String boardTitle;
     private final int position;
 
-    public BookmarkClickedEvent(int threadId, String boardName, String boardTitle, int position) {
+    public BookmarkClickedEvent(long threadId, String boardName, String boardTitle, int position) {
         this.threadId = threadId;
         this.boardName = boardName;
         this.boardTitle = boardTitle;
         this.position = position;
     }
 
-    public int getThreadId() {
+    public long getThreadId() {
         return threadId;
     }
 

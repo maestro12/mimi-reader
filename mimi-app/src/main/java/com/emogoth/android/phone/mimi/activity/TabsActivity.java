@@ -20,12 +20,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.design.widget.TabLayout;
-import android.support.v4.view.ViewPager;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.tabs.TabLayout;
+import androidx.viewpager.widget.ViewPager;
+import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -37,6 +37,7 @@ import android.widget.Toast;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.TabPagerAdapter;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.event.ActionModeEvent;
 import com.emogoth.android.phone.mimi.event.BookmarkClickedEvent;
@@ -53,25 +54,24 @@ import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnBoardsUpdatedCallback;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.model.ThreadRegistryModel;
 import com.emogoth.android.phone.mimi.util.AppRatingUtil;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.Pages;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
+import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
 import com.squareup.otto.Subscribe;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 public class TabsActivity extends MimiActivity implements BoardItemClickListener,
         Toolbar.OnClickListener,
         OnPostItemClickListener,
-        OnBoardsUpdatedCallback,
         IToolbarContainer,
         GalleryMenuItemClickListener {
 
@@ -111,7 +111,14 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             }
         });
 
-        tabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
+        final ArrayList<TabPagerAdapter.TabItem> tabItems;
+        if (savedInstanceState != null && savedInstanceState.containsKey("tabItems")) {
+            tabItems = savedInstanceState.getParcelableArrayList("tabItems");
+            tabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager(), tabItems);
+        } else {
+            tabItems = null;
+            tabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
+        }
 
         tabPager.setAdapter(tabPagerAdapter);
         tabPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
@@ -157,13 +164,38 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
         // Hack to stop crashing
         // https://code.google.com/p/android/issues/detail?id=201827
-        TabLayout.Tab uselessTab;
-        for (int j = 0; j < 17; j++) {
-            uselessTab = tabLayout.newTab();
-        }
+//        TabLayout.Tab uselessTab;
+//        for (int j = 0; j < 17; j++) {
+//            uselessTab = tabLayout.newTab();
+//        }
 
+        tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
         tabLayout.setupWithViewPager(tabPager);
         tabLayout.setTabsFromPagerAdapter(tabPagerAdapter);
+
+        if (savedInstanceState != null && tabItems != null) {
+            int count = tabLayout.getTabCount();
+            for (int i = 1; i < count; i++) {
+                TabLayout.Tab tab = tabLayout.getTabAt(i);
+                if (tab != null) {
+                    TabPagerAdapter.TabItem item = tabItems.get(i);
+
+                    if (i == 1 && item.getTabType() == TabPagerAdapter.TabType.POSTS) {
+                        tab.setText("/" + item.getTitle() + "/");
+                    } else if (i == 1 && item.getTabType() == TabPagerAdapter.TabType.HISTORY) {
+                        tab.setText(item.getTitle());
+                    } else {
+                        Bundle args = item.getBundle();
+                        if (args != null) {
+                            long threadId = args.getLong(Extras.EXTRAS_THREAD_ID, 0);
+                            String boardName = args.getString(Extras.EXTRAS_BOARD_NAME, "");
+                            View tabView = createTabView(threadId, boardName);
+                            tab.setCustomView(tabView);
+                        }
+                    }
+                }
+            }
+        }
 
         final TabLayout.Tab boardsTab = tabLayout.getTabAt(0);
         if (boardsTab != null) {
@@ -217,10 +249,25 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
     @Override
     protected void onResume() {
         super.onResume();
+        SimpleChromeCustomTabs.getInstance().connectTo(this);
 
         if (currentFragment != null) {
             setFabVisibility(currentFragment.showFab());
         }
+    }
+
+    @Override
+    protected void onPause() {
+        SimpleChromeCustomTabs.getInstance().disconnectFrom(this);
+        super.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        ArrayList<TabPagerAdapter.TabItem> tabItems = new ArrayList<>(tabPagerAdapter.getItems());
+        outState.putParcelableArrayList("tabItems", tabItems);
     }
 
     @Override
@@ -234,7 +281,6 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         arguments.putString(Extras.EXTRAS_BOARD_NAME, board.getName());
         arguments.putString(Extras.EXTRAS_BOARD_TITLE, board.getTitle());
         arguments.putBoolean(Extras.EXTRAS_TWOPANE, false);
-        arguments.putBoolean(Extras.EXTRAS_CATALOG, true);
         arguments.putBoolean(Extras.EXTRAS_STICKY_AUTO_REFRESH, true);
 
         final TabPagerAdapter.TabItem tabItem = new TabPagerAdapter.TabItem(TabPagerAdapter.TabType.POSTS, arguments, PostItemsListFragment.TAB_ID, board.getName(), null);
@@ -285,11 +331,6 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
     }
 
     @Override
-    public void onBoardsUpdated(List<ChanBoard> boards) {
-
-    }
-
-    @Override
     public void onClick(View v) {
 
     }
@@ -323,12 +364,12 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
     }
 
     @Override
-    public void onPostItemClick(View v, List<ChanPost> posts, final int position, final String boardTitle, final String boardName, final int threadId) {
+    public void onPostItemClick(View v, List<ChanPost> posts, final int position, final String boardTitle, final String boardName, final long threadId) {
         final TabLayout.Tab threadTab = tabLayout.newTab();
         final TabPagerAdapter.TabItem threadTabItem;
         final Bundle args = new Bundle();
 
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+        args.putLong(Extras.EXTRAS_THREAD_ID, threadId);
         args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
         args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
         args.putBoolean(Extras.EXTRAS_STICKY_AUTO_REFRESH, true);
@@ -340,6 +381,22 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             }
         }
 
+        View tabView = createTabView(threadId, boardName);
+        threadTab.setCustomView(tabView);
+
+        threadTabItem = new TabPagerAdapter.TabItem(TabPagerAdapter.TabType.THREAD, args, threadId, boardName, String.valueOf(threadId));
+        final int itemCount = tabPagerAdapter.getCount();
+        final int pos = tabPagerAdapter.addItem(threadTabItem);
+
+        if (pos < 0) {
+            return;
+        } else if (pos >= itemCount) {
+            tabLayout.addTab(threadTab);
+        }
+        tabPager.setCurrentItem(pos, true);
+    }
+
+    private View createTabView(final long threadId, final String boardName) {
         final View tabView = View.inflate(this, R.layout.tab_default, null);
         final TextView title = (TextView) tabView.findViewById(R.id.title);
         final TextView subTitle = (TextView) tabView.findViewById(R.id.subtitle);
@@ -380,18 +437,8 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
         title.setText("/" + boardName.toLowerCase() + "/");
         subTitle.setText(String.valueOf(threadId));
-        threadTab.setCustomView(tabView);
 
-        threadTabItem = new TabPagerAdapter.TabItem(TabPagerAdapter.TabType.THREAD, args, threadId, boardName, String.valueOf(threadId));
-        final int itemCount = tabPagerAdapter.getCount();
-        final int pos = tabPagerAdapter.addItem(threadTabItem);
-
-        if (pos < 0) {
-            return;
-        } else if (pos >= itemCount) {
-            tabLayout.addTab(threadTab);
-        }
-        tabPager.setCurrentItem(pos, true);
+        return tabView;
     }
 
     private void closeOtherTabs(int position) {
@@ -409,7 +456,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         }
     }
 
-    private void closeTab(int threadId, String boardName, boolean showSnackbar) {
+    private void closeTab(long threadId, String boardName, boolean showSnackbar) {
         final int pos = tabPagerAdapter.getPositionById(threadId);
         closeTab(pos, threadId, boardName, showSnackbar);
     }
@@ -419,7 +466,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         closeTab(pos, -1, null, showSnackbar);
     }
 
-    private void closeTab(int pos, int threadId, String boardName, boolean showSnackbar) {
+    private void closeTab(int pos, long threadId, String boardName, boolean showSnackbar) {
         try {
 
             final int pagerPos = tabPager.getCurrentItem();
@@ -430,7 +477,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                 newPos = pagerPos - 1;
             }
 
-            int id = threadId;
+            long id = threadId;
             String name = boardName;
             if (threadId <= 0 || boardName == null) {
                 TabPagerAdapter.TabItem item = tabPagerAdapter.getTabItem(pos);
@@ -438,7 +485,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                     Bundle args = item.getBundle();
 
                     if (args != null) {
-                        id = args.getInt(Extras.EXTRAS_THREAD_ID, -1);
+                        id = args.getLong(Extras.EXTRAS_THREAD_ID, -1);
                         name = args.getString(Extras.EXTRAS_BOARD_NAME, null);
                     }
                 }
@@ -447,7 +494,11 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             if (newPos >= 0) {
                 Log.d(LOG_TAG, "Removing tab: position=" + pos);
 
-                RefreshScheduler.getInstance().removeThread(name, id);
+                ThreadRegistryModel threadInfo = ThreadRegistry.getInstance().getThread(id);
+
+                if (threadInfo == null || !threadInfo.isBookmarked()) {
+                    RefreshScheduler.getInstance().removeThread(name, id);
+                }
 
                 tabLayout.removeTabAt(pos);
                 tabPagerAdapter.removeItemAtIndex(pos);
@@ -564,7 +615,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
     @Subscribe
     public void onTabClosed(CloseTabEvent event) {
-        final int threadId = event.getId();
+        final long threadId = event.getId();
         final String boardName = event.getBoardName();
 
         if (event.isCloseOthers()) {
@@ -575,17 +626,8 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
     }
 
     @Override
-    public void onGalleryMenuItemClick(String boardPath, int threadId) {
-        final Bundle args = new Bundle();
-
-        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 0);
-        args.putString(Extras.EXTRAS_BOARD_NAME, boardPath);
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-
-        final Intent intent = new Intent(this, GalleryActivity.class);
-        intent.putExtras(args);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-        startActivity(intent);
+    public void onGalleryMenuItemClick(String boardPath, long threadId) {
+        GalleryActivity2.start(this, 0, 0, boardPath, threadId, new long[0]);
     }
 
     @Subscribe
@@ -631,5 +673,27 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
         tabPager.setCurrentItem(1, false);
 
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        String page = intent.getStringExtra(Extras.OPEN_PAGE);
+        if (!TextUtils.isEmpty(page)) {
+            try {
+                Pages pageEnum = Pages.valueOf(page);
+                boolean watched;
+                if (pageEnum == Pages.BOOKMARKS) {
+                    watched = true;
+                } else {
+                    watched = false;
+                }
+
+                openHistory(new OpenHistoryEvent(watched));
+            } catch (Exception e) {
+
+            }
+        }
     }
 }

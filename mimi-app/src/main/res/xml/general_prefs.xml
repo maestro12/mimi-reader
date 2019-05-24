@@ -30,23 +30,17 @@
             android:summaryOn="@string/user_catalog_summary_on" />
 
         <SwitchPreference
-            android:title="@string/use_fast_scroll"
-            android:summary="@string/use_fast_scroll_summary"
-            android:key="@string/use_fast_scroll_pref"
-            android:defaultValue="true" />
-
-        <SwitchPreference
             android:title="@string/remember_thread_position_title"
             android:summary="@string/remember_thread_position_summary"
             android:key="@string/remember_thread_position_pref"
             android:defaultValue="true" />
 
         <SwitchPreference
-            android:title="@string/handle_youtube_links_title"
-            android:summaryOn="@string/handle_youtube_links_summary_on"
-            android:summaryOff="@string/handle_youtube_links_summary_off"
-            android:key="@string/handle_youtube_links_pref"
-            android:defaultValue="true" />
+            android:title="@string/open_links_externally"
+            android:summaryOn="@string/open_links_default_browser"
+            android:summaryOff="@string/open_links_internally"
+            android:key="@string/open_links_externally_pref"
+            android:defaultValue="false" />
 
         <ListPreference
             android:title="@string/nav_drawer_bookmark_count"

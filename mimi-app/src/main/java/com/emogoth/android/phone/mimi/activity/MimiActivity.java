@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2016. Eli Connelly
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.emogoth.android.phone.mimi.activity;
 
 import android.content.Intent;
@@ -21,21 +5,23 @@ import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.res.ResourcesCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
+
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.HttpErrorEvent;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fragment.NavDrawerFragment;
@@ -44,7 +30,6 @@ import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
@@ -53,8 +38,7 @@ import java.util.List;
 import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.PreferenceChangeListener;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
 
 
 public abstract class MimiActivity extends AppCompatActivity implements PreferenceChangeListener,
@@ -75,22 +59,20 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
     private RefreshScheduler refreshScheduler = RefreshScheduler.getInstance();
     private View navDrawerView;
-    //    private View bookmarkDrawerView;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle drawerToggle;
     private int bookmarkCount;
-    private View advertContainer;
-    private Handler advertHideHandler;
     private boolean showBadge = true;
     private Fragment resultFragment;
-
-    private LayerDrawable navigationDrawable;
 
     private int bookmarksOrHistory = 0;
     private Toolbar toolbar;
 
-    private Subscription fetchPostSubscription;
-//    private Toolbar toolbar;
+    private Disposable fetchPostSubscription;
+
+    private int savedRequestCode;
+    private int savedResultCode;
+    private Intent savedIntentData;
 
     protected void onCreate(Bundle savedInstanceState) {
         try {
@@ -119,7 +101,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
             }
         }
 
-        advertHideHandler = new Handler();
         bookmarkCount = ThreadRegistry.getInstance().getUnreadCount();
     }
 
@@ -139,23 +120,17 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
             BusProvider.getInstance().unregister(this);
             refreshScheduler.unregister(this);
         } catch (final Exception e) {
-            Log.e(LOG_TAG, "Error unregistering", e);
+            Log.e(LOG_TAG, "Caught crash during onPause()", e);
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
         MimiUtil.setScreenOrientation(this);
 
         BusProvider.getInstance().register(this);
         refreshScheduler.register(this);
-
-        if (advertContainer != null && advertContainer.getVisibility() == View.GONE) {
-            advertContainer.setVisibility(View.VISIBLE);
-            advertHideHandler.removeCallbacks(advertHideRunnable);
-        }
     }
 
     protected void drawerItemSelected(final MenuItem item) {
@@ -184,9 +159,16 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (drawerLayout != null && drawerToggle != null) {
+            drawerLayout.removeDrawerListener(drawerToggle);
+        }
+    }
+
     protected void initDrawers(final int navRes, final int drawerLayoutRes, final boolean drawerIndicator) {
         navDrawerView = findViewById(navRes);
-//        bookmarkDrawerView = findViewById(bookmarkRes);
 
         drawerLayout = (DrawerLayout) findViewById(drawerLayoutRes);
         drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name) {
@@ -213,16 +195,16 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
             }
         };
 
+        drawerToggle.setDrawerIndicatorEnabled(false);
+
         final int count = ThreadRegistry.getInstance().getUnreadCount();
         if (drawerIndicator) {
-            setNavigationIconWithBadge(R.drawable.ic_action_hamburger, count);
+            setNavigationIconWithBadge(R.drawable.ic_nav_menu, count);
         } else {
-            setNavigationIconWithBadge(R.drawable.ic_action_arrow_back, count);
+            setNavigationIconWithBadge(R.drawable.ic_nav_arrow_back, count);
         }
-//        drawerToggle.setDrawerIndicatorEnabled(drawerIndicator);
 
-//        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED, bookmarkDrawerView);
-        drawerLayout.setDrawerListener(drawerToggle);
+        drawerLayout.addDrawerListener(drawerToggle);
 
     }
 
@@ -247,11 +229,11 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         if (drawableRes > 0) {
             if (count > 0) {
                 layers = new Drawable[2];
-                layers[0] = getResources().getDrawable(drawableRes);
-                layers[1] = getResources().getDrawable(R.drawable.notification_unread);
+                layers[0] = VectorDrawableCompat.create(getResources(), drawableRes, getTheme());
+                layers[1] = ResourcesCompat.getDrawable(getResources(), R.drawable.notification_unread, getTheme());
             } else {
                 layers = new Drawable[1];
-                layers[0] = getResources().getDrawable(drawableRes);
+                layers[0] = VectorDrawableCompat.create(getResources(), drawableRes, getTheme());
             }
 
             layerDrawable = new LayerDrawable(layers);
@@ -264,7 +246,7 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
                 if (count > 0) {
                     layers = new Drawable[2];
                     layers[0] = icon;
-                    layers[1] = getResources().getDrawable(R.drawable.notification_unread);
+                    layers[1] = ResourcesCompat.getDrawable(getResources(), R.drawable.notification_unread, getTheme());
                 } else {
                     layers = new Drawable[1];
                     layers[0] = icon;
@@ -277,7 +259,7 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         }
 
         if (layerDrawable != null) {
-            getToolbar().setNavigationIcon(layerDrawable);
+            drawerToggle.setHomeAsUpIndicator(layerDrawable);
         }
 
     }
@@ -286,13 +268,10 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         final NavDrawerFragment navDrawerFragment = new NavDrawerFragment();
         final Bundle args = new Bundle();
-//        bookmarkDrawerFragment = new BookmarkDrawerFragment();
+
         args.putInt(Extras.EXTRAS_VIEWING_HISTORY, bookmarksOrHistory);
 
-//        bookmarkDrawerFragment.setArguments(args);
-
         ft.add(navRes, navDrawerFragment, TAG_NAV_DRAWER);
-
         ft.commit();
     }
 
@@ -314,6 +293,8 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         if (this.toolbar != null) {
             this.toolbar.setLogo(null);
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
     }
 
@@ -321,8 +302,12 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         return this.showBadge;
     }
 
-    public void setResultFragment(final Fragment resultFragment) {
+    public void setResultFragment(final Fragment resultFragment, final boolean dispatchResults) {
         this.resultFragment = resultFragment;
+
+        if (dispatchResults && savedIntentData != null) {
+            resultFragment.onActivityResult(savedRequestCode, savedResultCode, savedIntentData);
+        }
     }
 
     public Fragment getResultFragment() {
@@ -338,37 +323,27 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
                 startActivity(new Intent(this, StartupActivity.class));
                 finish();
             }
-        } else if (resultFragment != null) {
-            resultFragment.onActivityResult(requestCode, resultCode, data);
+        } else {
+            savedRequestCode = requestCode;
+            savedResultCode = resultCode;
+            savedIntentData = data;
         }
-
     }
 
     @Override
-    public void onThumbnailClick(List<ChanPost> posts, int threadId, int position, String boardName) {
-        final Bundle args = new Bundle();
-        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 1);
-        ThreadRegistry.getInstance().setPosts(threadId, posts);
-//        args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, GalleryPagerAdapter.getPostsWithImages(posts));
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-        args.putInt(Extras.EXTRAS_POSITION, position);
-        args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+    public void onThumbnailClick(List<ChanPost> posts, long threadId, int position, String boardName) {
+        final long id;
+        if (position < 0 || posts.size() <= position) {
+            Exception e = new Exception("Could not locate post in post list: position=" + position + ", list size=" + posts.size());
 
-        final Intent galleryIntent = new Intent(this, GalleryActivity.class);
-        galleryIntent.putExtras(args);
-        galleryIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-
-        startActivity(galleryIntent);
-    }
-
-    final Runnable advertHideRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (advertContainer != null) {
-                advertContainer.setVisibility(View.VISIBLE);
-            }
+            Log.e(LOG_TAG, "Error opening gallery into a post", e);
+            id = threadId;
+        } else {
+            id = posts.get(position).getNo();
         }
-    };
+        ThreadRegistry.getInstance().setPosts(threadId, posts);
+        GalleryActivity2.start(this, GalleryActivity2.GALLERY_TYPE_PAGER, id, boardName, threadId, new long[0]);
+    }
 
     public void onAutoRefresh(final UpdateHistoryEvent event) {
 
@@ -378,22 +353,19 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         RxUtil.safeUnsubscribe(fetchPostSubscription);
         fetchPostSubscription = HistoryTableConnection.fetchPost(event.getBoardName(), event.getThreadId())
-                .compose(DatabaseUtils.<History>applySchedulers())
-                .subscribe(new Action1<History>() {
-                    @Override
-                    public void call(History history) {
-                        if (history == null) {
-                            return;
-                        }
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(history -> {
+                    if (history.threadId == -1) {
+                        return;
+                    }
 
-                        final boolean watched = history.watched;
-                        if (event.getThread() != null && event.getThread().getPosts() != null && event.getThread().getPosts().get(0).isClosed()) {
-                            ThreadRegistry.getInstance().remove(event.getThread().getThreadId());
-                        } else {
-                            ThreadRegistry.getInstance().update(event.getThreadId(), event.getThreadSize(), watched);
-                            if (watched) {
-                                updateBadge(ThreadRegistry.getInstance().getUnreadCount());
-                            }
+                    final boolean watched = history.watched == 1;
+                    if (event.isClosed()) {
+                        ThreadRegistry.getInstance().remove(history.threadId);
+                    } else {
+                        ThreadRegistry.getInstance().update(history.boardName, history.threadId, history.threadSize, watched);
+                        if (watched) {
+                            updateBadge(ThreadRegistry.getInstance().getUnreadCount());
                         }
                     }
                 });
@@ -404,25 +376,22 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         RxUtil.safeUnsubscribe(fetchPostSubscription);
         fetchPostSubscription = HistoryTableConnection.fetchPost(event.getThreadInfo().boardName, event.getThreadInfo().threadId)
-                .compose(DatabaseUtils.<History>applySchedulers())
-                .subscribe(new Action1<History>() {
-                    @Override
-                    public void call(History history) {
-                        if (history == null) {
-                            return;
-                        }
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(history -> {
+                    if (history.threadId == -1) {
+                        return;
+                    }
 
-                        final boolean watched = history.watched;
-                        ThreadRegistry.getInstance().update(event.getThreadInfo().threadId, -1, watched);
-                        if (watched) {
-                            setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
-                        }
+                    final boolean watched = history.watched == 1;
+                    ThreadRegistry.getInstance().update(event.getThreadInfo().boardName, event.getThreadInfo().threadId, -1, watched);
+                    if (watched) {
+                        setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
                     }
                 });
     }
 
     @Override
-    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, int threadId) {
+    public void onPostItemClick(View v, List<ChanPost> posts, int position, String boardTitle, String boardName, long threadId) {
         // no op
     }
 

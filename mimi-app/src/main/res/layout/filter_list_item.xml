@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.percentlayout.widget.PercentRelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal">
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/filter_name"
+        style="?defaultTextColor"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:paddingLeft="16dp"
+        android:text="@string/edit_filters"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_widthPercent="50%" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/filter_regex"
+        style="?defaultSubtextColor"
+        android:layout_height="match_parent"
+        android:layout_toRightOf="@id/filter_name"
+        android:gravity="center_vertical"
+        android:paddingRight="16dp"
+        android:textSize="14sp"
+        app:layout_widthPercent="50%" />
+
+</androidx.percentlayout.widget.PercentRelativeLayout>

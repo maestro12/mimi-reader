@@ -19,16 +19,17 @@ package com.emogoth.android.phone.mimi.activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.NavUtils;
-import android.support.v4.app.TaskStackBuilder;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.core.app.NavUtils;
+import androidx.core.app.TaskStackBuilder;
+import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.BookmarkClickedEvent;
@@ -47,14 +48,15 @@ import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
 import com.squareup.otto.Subscribe;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 
 /**
  * An activity representing a single PostItem detail screen. This
@@ -81,7 +83,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     private FloatingActionButton addContentFab;
     private int offsetIndex;
 
-    private Subscription fetchHistorySubscription;
+    private Disposable fetchHistorySubscription;
 
 
     @Override
@@ -187,8 +189,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == android.R.id.home) {
-
-
+            toggleNavDrawer();
             return true;
         }
 
@@ -223,11 +224,13 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     @Override
     protected void onResume() {
         super.onResume();
+        SimpleChromeCustomTabs.getInstance().connectTo(this);
         setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
     }
 
     @Override
     protected void onPause() {
+        SimpleChromeCustomTabs.getInstance().disconnectFrom(this);
         super.onPause();
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
     }
@@ -245,9 +248,10 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         } else {
             RxUtil.safeUnsubscribe(fetchHistorySubscription);
             fetchHistorySubscription = HistoryTableConnection.fetchHistory(true)
-                    .subscribe(new Action1<List<History>>() {
+                    .compose(DatabaseUtils.<List<History>>applySchedulers())
+                    .subscribe(new Consumer<List<History>>() {
                         @Override
-                        public void call(List<History> bookmarks) {
+                        public void accept(List<History> bookmarks) {
                             final Bundle args = new Bundle();
                             final Class clazz;
 
@@ -259,12 +263,12 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
                             }
 
                             args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardName());
-                            args.putInt(Extras.EXTRAS_THREAD_ID, event.getThreadId());
+                            args.putLong(Extras.EXTRAS_THREAD_ID, event.getThreadId());
                             args.putInt(Extras.EXTRAS_POSITION, event.getPosition());
                             final ArrayList<ThreadInfo> threadList = new ArrayList<>(bookmarks.size());
 
                             for (final History post : bookmarks) {
-                                final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched);
+                                final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched == 1);
                                 threadList.add(threadInfo);
                             }
 

@@ -17,8 +17,8 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import androidx.fragment.app.FragmentActivity;
+import androidx.appcompat.widget.AppCompatImageView;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -30,10 +30,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.activity.GalleryActivity;
+import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
 import com.emogoth.android.phone.mimi.activity.PostItemDetailActivity;
 import com.emogoth.android.phone.mimi.activity.PostItemListActivity;
 import com.emogoth.android.phone.mimi.dialog.RepliesDialog;
@@ -41,9 +39,11 @@ import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.LongClickLinkMovementMethod;
+import com.emogoth.android.phone.mimi.view.gallery.GalleryPagerAdapter;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 
@@ -60,8 +60,9 @@ public class RepliesListAdapter extends BaseAdapter {
     private final FragmentActivity activity;
     private final String boardName;
     private final String flagUrl;
+    private final String trollUrl;
     private final List<OutsideLink> links;
-    private final Map<Integer, String> thumbUrlMap;
+    private final Map<Long, String> thumbUrlMap;
     private final ChanThread thread;
     private CharSequence[] timeMap;
 
@@ -76,7 +77,8 @@ public class RepliesListAdapter extends BaseAdapter {
 
         this.thumbUrlMap = new HashMap<>();
 
-        this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_int_link);
+        this.flagUrl = MimiUtil.https() + activity.getString(R.string.flag_int_link);
+        this.trollUrl = MimiUtil.https() + activity.getString(R.string.flag_pol_link);
 
         setupReplies();
     }
@@ -93,7 +95,7 @@ public class RepliesListAdapter extends BaseAdapter {
                     DateUtils.FORMAT_ABBREV_RELATIVE);
 
             if (post.getFilename() != null && !"".equals(post.getFilename())) {
-                thumbUrlMap.put(post.getNo(), MimiUtil.httpOrHttps(activity) + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, boardName, post.getTim()));
+                thumbUrlMap.put(post.getNo(), MimiUtil.https() + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, boardName, post.getTim()));
             }
 
             timeMap[i] = dateString;
@@ -144,16 +146,28 @@ public class RepliesListAdapter extends BaseAdapter {
             }
 
             if (viewHolder.flagIcon != null) {
-                if (postItem.getCountry() != null && !"".equals(postItem.getCountry())) {
-                    final String url = flagUrl + postItem.getCountry().toLowerCase() + ".gif";
+                final String country;
+                final String url;
+                if (postItem.getCountry() == null) {
+                    country = postItem.getTrollCountry();
+                    if (country != null) {
+                        url = trollUrl + country.toLowerCase() + ".gif";
+                    } else {
+                        url = null;
+                    }
+                } else {
+                    country = postItem.getCountry();
+                    if (country != null) {
+                        url = flagUrl + country.toLowerCase() + ".gif";
+                    } else {
+                        url = null;
+                    }
+                }
+
+                if (country != null) {
                     Log.i(LOG_TAG, "flag url=" + url);
                     viewHolder.flagIcon.setVisibility(View.VISIBLE);
-                    Glide.with(activity)
-                            .load(url)
-                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                            .placeholder(R.drawable.placeholder_image)
-                            .crossFade()
-                            .into(viewHolder.flagIcon);
+                    MimiUtil.loadImageWithFallback(activity, viewHolder.flagIcon, url, null, R.drawable.placeholder_image, null);
                 } else {
                     viewHolder.flagIcon.setVisibility(View.GONE);
                 }
@@ -202,36 +216,24 @@ public class RepliesListAdapter extends BaseAdapter {
             final String url = thumbUrlMap.get(postItem.getNo());
             if (url != null) {
                 viewHolder.thumbnailContainer.setVisibility(View.VISIBLE);
-                Glide.with(activity)
+                GlideApp.with(activity)
                         .load(url)
                         .placeholder(R.drawable.placeholder_image)
-                        .crossFade()
                         .into(viewHolder.thumbUrl);
 
                 viewHolder.thumbnailContainer.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         final ArrayList<ChanPost> postsWithImages = GalleryPagerAdapter.getPostsWithImages(replies);
-                        final int index = GalleryPagerAdapter.getIndexOfPost(postsWithImages, postItem.getNo());
-                        final Bundle args = new Bundle();
-                        args.putInt(Extras.EXTRAS_GALLERY_TYPE, GalleryActivity.GALLERY_TYPE_PAGER);
-                        args.putInt(Extras.EXTRAS_THREAD_ID, postItem.getNo());
-//                        args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, postsWithImages);
-                        args.putInt(Extras.EXTRAS_POSITION, index);
-                        args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                        final int index = MimiUtil.findPostPositionById(postItem.getNo(), postsWithImages);
 
                         ThreadRegistry.getInstance().setPosts(postItem.getNo(), postsWithImages);
-
-                        final Intent galleryIntent = new Intent(activity, GalleryActivity.class);
-                        galleryIntent.putExtras(args);
-                        galleryIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-
-                        activity.startActivity(galleryIntent);
+                        GalleryActivity2.start(v.getContext(), GalleryActivity2.GALLERY_TYPE_PAGER, postItem.getNo(), boardName, postItem.getNo(), new long[0]);
                     }
                 });
             } else {
                 viewHolder.thumbnailContainer.setVisibility(View.GONE);
-                Glide.clear(viewHolder.thumbUrl);
+                GlideApp.with(activity).clear(viewHolder.thumbUrl);
             }
 
             return convertView;
@@ -297,11 +299,11 @@ public class RepliesListAdapter extends BaseAdapter {
             tripCode = (TextView) v.findViewById(R.id.tripcode);
             subject = (TextView) v.findViewById(R.id.subject);
             comment = (TextView) v.findViewById(R.id.comment);
-            thumbUrl = (ImageView) v.findViewById(R.id.thumbnail);
+            thumbUrl = (AppCompatImageView) v.findViewById(R.id.thumbnail);
             gotoPost = (TextView) v.findViewById(R.id.goto_post);
             repliesText = (TextView) v.findViewById(R.id.replies_number);
             thumbnailContainer = (ViewGroup) v.findViewById(R.id.thumbnail_container);
-            flagIcon = (ImageView) v.findViewById(R.id.flag_icon);
+            flagIcon = (AppCompatImageView) v.findViewById(R.id.flag_icon);
 
             comment.setMovementMethod(LongClickLinkMovementMethod.getInstance());
         }

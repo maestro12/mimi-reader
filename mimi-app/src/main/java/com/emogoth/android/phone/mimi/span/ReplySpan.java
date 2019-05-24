@@ -16,8 +16,8 @@
 
 package com.emogoth.android.phone.mimi.span;
 
-import android.content.Context;
 import android.text.TextPaint;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.View;
 
@@ -29,17 +29,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 
-public final class ReplySpan extends LongClickableSpan {
+public final class ReplySpan extends ClickableSpan {
     private static final String LOG_TAG = ReplySpan.class.getSimpleName();
 
-    private final Context context;
     private final ConcurrentSkipListSet<String> replies;
     private final String boardName;
-    private final int threadId;
+    private final long threadId;
     private final int textColor;
 
-    public ReplySpan(final Context context, final String boardName, final int threadId, final List<String> replies, final int textColor) {
-        this.context = context;
+    public ReplySpan(final String boardName, final long threadId, final List<String> replies, final int textColor) {
         this.boardName = boardName;
         this.threadId = threadId;
         if (replies == null) {
@@ -69,10 +67,5 @@ public final class ReplySpan extends LongClickableSpan {
         event.setReplies(threads);
 
         BusProvider.getInstance().post(event);
-    }
-
-    @Override
-    public boolean onLongClick(View v) {
-        return false;
     }
 }

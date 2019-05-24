@@ -21,7 +21,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.support.v4.graphics.drawable.DrawableCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 

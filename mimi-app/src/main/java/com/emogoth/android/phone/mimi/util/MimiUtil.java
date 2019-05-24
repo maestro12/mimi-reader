@@ -16,6 +16,7 @@
 
 package com.emogoth.android.phone.mimi.util;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
@@ -24,44 +25,77 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.FileProvider;
+import androidx.documentfile.provider.DocumentFile;
+
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.google.android.exoplayer.util.Util;
+import com.emogoth.android.phone.mimi.db.PostTableConnection;
+import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.viewmodel.GalleryItem;
+import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
+import com.google.android.exoplayer2.util.Util;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonWriter;
+import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 
-import java.io.BufferedOutputStream;
-import java.io.Externalizable;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.net.CookieStore;
-import java.net.HttpCookie;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
+import io.reactivex.functions.Function;
+import okhttp3.Cookie;
 
 /**
  * General purpose util class to handle the generic methods used throughout the app
@@ -106,8 +140,8 @@ public class MimiUtil {
     private Context context;
 
     private File cacheDir;
-    private File bookmarkDir;
     private String cacheDirPrefString;
+    private ThreadPoolExecutor executorPool;
     private boolean ready = false;
 
     private int quoteColor;
@@ -149,7 +183,7 @@ public class MimiUtil {
         themeArray[THEME_DARK][THEME_COLOR_GREY] = R.style.Theme_Mimi_Dark_Toolbar_Grey;
         themeArray[THEME_DARK][THEME_COLOR_DARK_GREY] = R.style.Theme_Mimi_Dark_Toolbar_DarkGrey;
         themeArray[THEME_DARK][THEME_COLOR_BLACK] = R.style.Theme_Mimi_Dark_Toolbar_Black;
-        
+
         themeArray[THEME_BLACK][THEME_COLOR_DEFAULT] = R.style.Theme_Mimi_Black_Toolbar_Default;
         themeArray[THEME_BLACK][THEME_COLOR_RED] = R.style.Theme_Mimi_Black_Toolbar_Red;
         themeArray[THEME_BLACK][THEME_COLOR_GREEN] = R.style.Theme_Mimi_Black_Toolbar_Green;
@@ -232,7 +266,11 @@ public class MimiUtil {
         nextLoaderId = 0;
         loaderIdMap = new HashMap<>();
 
-        bookmarkDir = new File(context.getFilesDir(), "bookmarks/");
+        executorPool = new ThreadPoolExecutor(THREAD_POOL_CORE_SIZE,
+                THREAD_POOL_MAX_SIZE,
+                THREAD_POOL_KEEP_ALIVE,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(THREAD_POOL_CORE_SIZE));
 
         quoteColor = sh.getInt(context.getString(R.string.quote_color_pref), context.getResources().getColor(R.color.quote));
         replyColor = sh.getInt(context.getString(R.string.reply_color_pref), context.getResources().getColor(R.color.reply));
@@ -319,21 +357,48 @@ public class MimiUtil {
         return loaderId;
     }
 
-    public static File getSaveDir(final Context context) {
+    @Nullable
+    public static DocumentFile getSaveDir() {
+        final Context context = MimiApplication.getInstance().getApplicationContext();
         final String dir = PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string.image_file_location_pref), null);
+        return directoryToDocumentFile(context, dir);
+    }
 
+    public static DocumentFile directoryToDocumentFile(final Context context, final String dir) {
         if (!TextUtils.isEmpty(dir)) {
-            return new File(dir);
+            if (dir.startsWith(Utils.SCHEME_CONTENT)) {
+                return DocumentFile.fromTreeUri(context, Uri.parse(dir));
+            } else {
+                return DocumentFile.fromFile(new File(dir));
+            }
+        } else {
+            DocumentFile defaultDir = DocumentFile.fromFile(new File(Environment.getExternalStorageDirectory(), "/Mimi"));
+            if (!defaultDir.exists()) {
+                DocumentFile externalStorageDir = DocumentFile.fromFile(Environment.getExternalStorageDirectory());
+                return externalStorageDir.createDirectory("Mimi");
+            } else {
+                return defaultDir;
+            }
+        }
+    }
+
+    public static boolean createSaveDir() {
+        try {
+            DocumentFile saveDir = getSaveDir();
+            if (!saveDir.canWrite()) {
+                return false;
+            }
+
+            return saveDir.exists();
+
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error creating dir", e);
         }
 
-        return new File(Environment.getExternalStorageDirectory(), "/Mimi");
+        return false;
     }
 
-    public static String getTempPath(final Context context, final String extension) {
-        return getSaveDir(context).getAbsolutePath() + "/tmp/temp." + extension;
-    }
-
-    public void setSaveDir(final Context context, final String path) {
+    public static void setSaveDir(final Context context, final String path) {
         final SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
         editor.putString(context.getString(R.string.image_file_location_pref), path).apply();
     }
@@ -341,27 +406,6 @@ public class MimiUtil {
     public static int getFontStyle(final Context context) {
         final String style = PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string.font_style_pref), "0");
         return fontSizeMap.get(style);
-    }
-
-    private void clearBookmarkFiles() {
-        final Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        };
-
-        final File dir = getBookmarkDir();
-        if (dir.isDirectory()) {
-            String[] children = dir.list();
-            for (int i = 0; i < children.length; i++) {
-                final File entry = new File(children[i]);
-                if (!entry.isDirectory()) {
-                    entry.delete();
-                }
-
-            }
-        }
     }
 
     public int getTheme() {
@@ -378,75 +422,77 @@ public class MimiUtil {
         themeResource = themeArray[theme][colorId];
     }
 
-    public void removeBookmark(String boardName, int threadId) {
-        final File bookmarkFile = getBookmarkFile(getBookmarkDir(), boardName, threadId);
+    public static Flowable<Boolean> removeHistory(final boolean watched) {
+        return HistoryTableConnection.fetchHistory(watched)
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
+                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
+                .toList()
+                .toFlowable()
+                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.removeAllHistory(watched))
+                .compose(DatabaseUtils.applySchedulers());
+    }
 
+    public static Flowable<Boolean> pruneHistory(final int days) {
+        return HistoryTableConnection.getHistoryToPrune(days)
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
+                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
+                .toList()
+                .toFlowable()
+                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.pruneHistory(days))
+                .compose(DatabaseUtils.applySchedulers());
+    }
+
+//    public static Observable<Boolean> pruneHistory(final int days) {
+//        return HistoryTableConnection.fetchHistory(false)
+//                .flatMapIterable(new Function<List<History>, Iterable<History>>() {
+//                    @Override
+//                    public Iterable<History> apply(List<History> histories) {
+//                        return histories;
+//                    }
+//                })
+//                .flatMap(new Function<History, Observable<Boolean>>() {
+//                    @Override
+//                    public Observable<Boolean> apply(History history) {
+//                        final Long oldestHistoryTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
+//                        if (oldestHistoryTime > history.lastAccess) {
+//                            return PostTableConnection.removeThread(history.threadId);
+//                        } else {
+//                            return Observable.just(true);
+//                        }
+//                    }
+//                })
+//                .toList()
+//                .toObservable()
+//                .onErrorReturn(new Function<Throwable, List<Boolean>>() {
+//                    @Override
+//                    public List<Boolean> apply(Throwable throwable) {
+//                        Log.e(LOG_TAG, "Exception while removing post history", throwable);
+//                        return null;
+//                    }
+//                })
+//                .flatMap(new Function<List<Boolean>, Observable<Boolean>>() {
+//                    @Override
+//                    public Observable<Boolean> apply(List<Boolean> booleen) {
+//                        if (booleen == null) {
+//                            return Observable.just(false);
+//                        }
+//                        return HistoryTableConnection.pruneHistory(days);
+//                    }
+//                });
+//    }
+
+    @Nullable
+    public static Uri getFileProvider(File file) {
         try {
-            if (bookmarkFile != null) {
-                if (bookmarkFile.exists()) {
-                    Log.d(LOG_TAG, "Deleting file: " + bookmarkFile.getAbsolutePath());
-                    bookmarkFile.delete();
-                }
-            }
+            final String authority = MimiApplication.getInstance().getPackageName() + ".fileprovider";
+            return FileProvider.getUriForFile(MimiApplication.getInstance(), authority, file);
         } catch (Exception e) {
-            Log.w(LOG_TAG, "Could not delete bookmark: board=" + boardName + ", thread=" + threadId, e);
-        }
-    }
-
-    public void saveBookmark(final ChanThread data, final OperationCompleteListener listener) {
-        if (data == null) {
-            return;
+            Log.w(LOG_TAG, "Could not get file provider Uri", e);
         }
 
-        HistoryTableConnection.putHistory(data.getBoardName(), data.getPosts().get(0), data.getPosts().size(), true)
-                .flatMap(new Func1<Boolean, Observable<Boolean>>() {
-                    @Override
-                    public Observable<Boolean> call(Boolean aBoolean) {
-                        final File bookmarkFile = getBookmarkFile(getBookmarkDir(), data.getBoardName(), data.getThreadId());
-
-                        if (bookmarkFile != null) {
-                            if (bookmarkFile.exists()) {
-                                Log.d(LOG_TAG, "Deleting file: " + bookmarkFile.getAbsolutePath());
-                                bookmarkFile.delete();
-                            }
-
-                            return Observable.just(MimiUtil.writeObjectToFile(bookmarkFile, data));
-                        }
-                        return Observable.just(null);
-                    }
-                })
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
-                .subscribe(new Action1<Boolean>() {
-                    @Override
-                    public void call(Boolean success) {
-                        if (success) {
-                            if (listener != null) {
-                                listener.onOperationComplete();
-                            }
-                        } else {
-                            if (listener != null) {
-                                listener.onOperationFailed();
-                            }
-                        }
-                    }
-                });
-    }
-
-    public File getBookmarkDir() {
-        return this.bookmarkDir;
-    }
-
-    public static File getBookmarkFile(final File bookmarkDir, final String boardName, final int threadId) {
-        final String fileName = boardName + "_" + String.valueOf(threadId);
-
-        if (!bookmarkDir.exists()) {
-            if (!bookmarkDir.mkdirs()) {
-                return null;
-            }
-        }
-
-        return new File(bookmarkDir, fileName);
-
+        return null;
     }
 
     public File getCacheDir() {
@@ -474,28 +520,24 @@ public class MimiUtil {
         PreferenceManager.getDefaultSharedPreferences(context).edit().putInt(context.getString(R.string.board_order_pref), order).apply();
     }
 
-    public static String httpOrHttps(final Context context) {
-        final String securePref = context.getString(R.string.use_ssl_pref);
-        final String httpString;
-        if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean(securePref, false)) {
-            httpString = "https://";
-        } else {
-            httpString = "http://";
-        }
-
-        return httpString;
+    public static String https() {
+        return "https://";
     }
 
-    public static boolean isSecureConnection(final Context context) {
-        final String securePref = context.getString(R.string.use_ssl_pref);
-        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(securePref, false);
+    public static int getDeviceOrientation(Context context) {
+        return context.getResources().getConfiguration().orientation;
     }
 
     public static void setScreenOrientation(final Activity activity) {
         final String orientationPref = activity.getString(R.string.prevent_screen_rotation_pref);
 
         if (PreferenceManager.getDefaultSharedPreferences(activity).getBoolean(orientationPref, false)) {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            try {
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            } catch (Exception e) {
+                Toast.makeText(activity, R.string.could_not_set_orientation, Toast.LENGTH_SHORT).show();
+            }
+
         } else {
             activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
         }
@@ -526,68 +568,70 @@ public class MimiUtil {
         return null;
     }
 
-    public ChanThread getBookmarkedThread(final String boardName, final int threadId) {
-        if (!bookmarkDir.exists()) {
-            return null;
-        }
-
-        final File bookmarkFile = getBookmarkFile(bookmarkDir, boardName, threadId);
-        if (bookmarkFile == null || !bookmarkFile.exists()) {
-            return null;
-        }
-
-        ObjectInputStream input;
-
+    public static boolean writeThreadToFile(final File saveFile, final ChanThread thread) {
+        Gson gson = new Gson();
         try {
-            input = new ObjectInputStream(new FileInputStream(bookmarkFile));
-            ChanThread thread = new ChanThread();
-            thread.readExternal(input);
-            input.close();
-
-            return thread;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        Log.d(LOG_TAG, "Returning null bookmark");
-        return null;
-    }
-
-    public static boolean writeObjectToFile(final File saveFile, final Externalizable data) {
-        ObjectOutput out;
-        try {
-            out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(saveFile, true)));
-            data.writeExternal(out);
-//            out.writeObject(data);
-            out.close();
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Error writing bookmark to file", e);
+            TypeAdapter<ChanThread> adapter = gson.getAdapter(ChanThread.class);
+            JsonWriter writer = new JsonWriter(new FileWriter(saveFile, true));
+            adapter.write(writer, thread);
+            writer.close();
+            return true;
+        } catch (FileNotFoundException e) {
+            Log.e(LOG_TAG, "File not found: " + saveFile.getAbsolutePath(), e);
+            return false;
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "IOException caught while writing bookmark file", e);
             return false;
         }
-
-        return true;
     }
 
     public boolean isLoggedIn() {
-        final CookieStore cookieStore = HttpClientFactory.getInstance().getCookieStore();
-        boolean found = false;
-
-        for (final HttpCookie cookie : cookieStore.getCookies()) {
-            if ("pass_enabled".equals(cookie.getName()) && "1".equals(cookie.getValue())) {
-                found = true;
+        try {
+            CookiePersistor cookieStore = HttpClientFactory.getInstance().getCookieStore();
+            if (cookieStore == null) {
+                return false;
             }
+
+            for (final Cookie cookie : cookieStore.loadAll()) {
+                if ("pass_enabled".equals(cookie.name()) && "1".equals(cookie.value())) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Could not validate logged in status", e);
         }
 
-        return found;
+        return false;
     }
 
-    public static boolean handleYouTubeLinks(Context contex) {
-        return PreferenceManager.getDefaultSharedPreferences(contex)
-                .getBoolean(contex.getString(R.string.handle_youtube_links_pref), true);
+    public static boolean openLinksExternally(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(context.getString(R.string.open_links_externally_pref), false);
     }
 
     public void logout() {
-        HttpClientFactory.getInstance().getCookieStore().removeAll();
+        CookiePersistor cookieStore = HttpClientFactory.getInstance().getCookieStore();
+        Cookie loginCookie = null;
+        for (final Cookie cookie : cookieStore.loadAll()) {
+            if ("pass_enabled".equals(cookie.name()) && "1".equals(cookie.value())) {
+                loginCookie = cookie;
+                break;
+            }
+        }
+
+        if (loginCookie != null) {
+            HttpClientFactory.getInstance().getCookieStore().removeAll(Collections.singletonList(loginCookie));
+        }
+    }
+
+    public static int arrayLocation(final long[] array, final long v) {
+        for (int i = 0; i < array.length; i++) {
+            if(array[i] == v){
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public void openMarketLink(final Context context) {
@@ -634,13 +678,20 @@ public class MimiUtil {
             }
         }
 
-        final String samsungString = Build.MANUFACTURER.toLowerCase();
-
-        if (samsungString != null && samsungString.contains("samsung")) {
+        if (isSamsung()) {
             inSampleSize *= 2;
         }
 
         return inSampleSize;
+    }
+
+    public static boolean isSamsung() {
+        String strManufacturer = android.os.Build.MANUFACTURER;
+        if (strManufacturer != null && strManufacturer.contains("samsung")) {
+            return false;
+        }
+
+        return false;
     }
 
     public static String removeExtention(String filePath) {
@@ -713,10 +764,256 @@ public class MimiUtil {
         return false;
     }
 
+    public static void loadImageWithFallback(final Context context, @NonNull final ImageView into, String url, final String fallback, @DrawableRes final int placeholderRes, final RequestListener<Drawable> listener) {
+        GlideRequest<Drawable> originalRequest = GlideApp.with(context)
+                .load(url)
+                .diskCacheStrategy(DiskCacheStrategy.ALL);
+
+        if (!TextUtils.isEmpty(fallback)) {
+            GlideRequest<Drawable> stuff = originalRequest.listener(new RequestListener<Drawable>() {
+                @Override
+                public boolean onLoadFailed(@Nullable GlideException e, Object o, Target<Drawable> target, boolean b) {
+                    if (context != null) {
+                        GlideRequest requestBuilder = GlideApp.with(context)
+                                .load(fallback)
+                                .diskCacheStrategy(DiskCacheStrategy.ALL);
+
+                        if (listener != null) {
+                            requestBuilder = requestBuilder.listener(listener);
+                        }
+
+                        requestBuilder.placeholder(placeholderRes).into(into);
+
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean onResourceReady(Drawable drawable, Object o, Target<Drawable> target, DataSource dataSource, boolean b) {
+                    return false;
+                }
+            });
+        } else {
+            if (listener != null) {
+                originalRequest.listener(listener);
+            }
+
+            if (placeholderRes > 0) {
+                originalRequest.placeholder(placeholderRes);
+            }
+        }
+
+        originalRequest.into(into);
+
+    }
+
+    public static void showKeyboard() {
+        Context context = MimiApplication.getInstance().getApplicationContext();
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+    }
+
+    public static void hideKeyboard(View view) {
+        Context context = MimiApplication.getInstance().getApplicationContext();
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    public static int findPostPositionById(long id, List<ChanPost> posts) {
+        if (posts == null) {
+            return -1;
+        }
+
+        for (int i = 0; i < posts.size(); i++) {
+            if (posts.get(i).getNo() == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static int findGalleryItemPositionById(long id, List<GalleryItem> posts) {
+        if (posts == null || posts.isEmpty()) {
+            return -1;
+        }
+
+        for (int i = 0; i < posts.size(); i++) {
+            if (posts.get(i).getId() == id) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    public static void setAppBarScrollingEnabled(AppBarLayout appBarLayout, final boolean enabled) {
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        AppBarLayout.Behavior behavior = (AppBarLayout.Behavior) params.getBehavior();
+        behavior.setDragCallback(new AppBarLayout.Behavior.DragCallback() {
+            @Override
+            public boolean canDrag(@NonNull AppBarLayout appBarLayout) {
+                return enabled;
+            }
+        });
+    }
+
     public interface OperationCompleteListener {
         void onOperationComplete();
 
         void onOperationFailed();
     }
 
+    private static Object[] volumes;
+
+    private static List<StorageVolume> volumesNougat;
+
+    public static Uri getDocumentFileRealPath(DocumentFile documentFile) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
+        return getDocumentFileRealPath(documentFile.getUri());
+    }
+    public static Uri getDocumentFileRealPath(Uri documentUri) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
+        if ("file".equals(documentUri.getScheme())) {
+            return documentUri;
+        }
+
+        if (PostUtil.isDownloadsDocument(documentUri)) {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            return Uri.fromFile(path);
+        }
+
+        final String docId = DocumentsContract.getDocumentId(documentUri);
+        final String[] split = docId.split(":");
+        final String type = split[0];
+
+        if (split.length != 2) {
+            return null;
+        }
+
+        if (type.equalsIgnoreCase("primary")) {
+            File file = new File(Environment.getExternalStorageDirectory(), split[1]);
+            return Uri.fromFile(file);
+        } else {
+            StorageManager sm = (StorageManager) MimiApplication.getInstance().getSystemService(Context.STORAGE_SERVICE);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                return getFileUri(sm, type, split);
+            } else {
+                return getFileUriNougat(sm, type, split);
+            }
+        }
+    }
+
+    @TargetApi(24)
+    private static Uri getFileUriNougat(StorageManager sm, String type, String[] split) throws NoSuchFieldException, IllegalAccessException {
+        if (volumesNougat == null) {
+            volumesNougat = sm.getStorageVolumes();
+        }
+
+        for (StorageVolume volume : volumesNougat) {
+            String uuid = volume.getUuid();
+
+            if (uuid != null && uuid.equalsIgnoreCase(type)) {
+                Field f = volume.getClass().getDeclaredField("mPath");
+                f.setAccessible(true);
+
+                final File pathFile = (File) f.get(volume);
+                final File file;
+                if (split.length > 1) {
+                    file = new File(pathFile, split[1]);
+                } else {
+                    file = pathFile;
+                }
+                return Uri.fromFile(file);
+            }
+        }
+
+        return null;
+    }
+
+    private static Uri getFileUri(StorageManager sm, String type, String[] split) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        if (volumes == null) {
+            Method getVolumeListMethod = sm.getClass().getMethod("getVolumeList", new Class[0]);
+            volumes = (Object[]) getVolumeListMethod.invoke(sm);
+        }
+
+        for (Object volume : volumes) {
+            Method getUuidMethod = volume.getClass().getMethod("getUuid", new Class[0]);
+            String uuid = (String) getUuidMethod.invoke(volume);
+
+            if (uuid != null && uuid.equalsIgnoreCase(type)) {
+                Method getPathMethod = volume.getClass().getMethod("getPath", new Class[0]);
+                String path = (String) getPathMethod.invoke(volume);
+                File file = new File(path, split[1]);
+                return Uri.fromFile(file);
+            }
+        }
+
+        return null;
+    }
+
+    public static void deleteRecursive(File fileOrDirectory, boolean keepDir) {
+        if (fileOrDirectory.isDirectory()) {
+            for (File child : fileOrDirectory.listFiles()) {
+                deleteRecursive(child, keepDir);
+            }
+        }
+
+        if (!keepDir || !fileOrDirectory.isDirectory()) {
+            fileOrDirectory.delete();
+        } else if (BuildConfig.DEBUG) {
+                Log.d(LOG_TAG, "Skipping directory: " + fileOrDirectory.getAbsolutePath());
+
+        }
+    }
+
+    static Single<Bitmap> scaleBitmap(@NonNull final File imageFile) {
+
+        return Single.just(imageFile)
+                .map(file -> {
+                    if (!file.exists()) {
+                        return null;
+                    }
+
+                    final String ext = MimeTypeMap.getFileExtensionFromUrl(file.getAbsolutePath());
+                    final String type;
+                    if (ext != null) {
+                        final String t = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                        type = t == null ? "" : t;
+                    } else {
+                        type = "";
+                    }
+
+                    if (type.toLowerCase().contains("video")) {
+                        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+                        retriever.setDataSource(file.getAbsolutePath());
+                        Bitmap bmp = retriever.getFrameAtTime();
+                        retriever.release();
+
+                        return bmp;
+                    }
+
+                    final BitmapFactory.Options options = new BitmapFactory.Options();
+
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+                    options.inSampleSize = MimiUtil.calculateInSampleSize(options, 500, 500);
+                    options.inJustDecodeBounds = false;
+
+                    if (imageFile.exists()) {
+                        Bitmap bmp = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+                        if (bmp == null) {
+                            Log.e(LOG_TAG, "Image file is null", new Exception("Could not decode bitmap from " + imageFile.getAbsolutePath() + " width: " + options.outWidth + ", height: " + options.outHeight));
+                        }
+                        return bmp;
+                    } else {
+                        Log.e(LOG_TAG, "Image file not found", new Exception("Image file does not exist"));
+                        return null;
+                    }
+
+                });
+
+    }
+
+    public interface ImageDisplayedListener {
+        void onImageDisplayed(final Bitmap bmp);
+    }
 }
