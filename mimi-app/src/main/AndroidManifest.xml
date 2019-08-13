@@ -38,7 +38,7 @@
         <activity
             android:name=".activity.GalleryActivity2"
             android:label="@string/gallery"
-            android:launchMode="singleTask"
+            android:configChanges="keyboardHidden|orientation|screenSize"
             android:theme="@style/Theme.Mimi.Gallery"/>
 
         <meta-data

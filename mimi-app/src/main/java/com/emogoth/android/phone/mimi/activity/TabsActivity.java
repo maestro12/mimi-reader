@@ -20,12 +20,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.tabs.TabLayout;
-import androidx.viewpager.widget.ViewPager;
-import androidx.appcompat.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -34,6 +28,9 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.widget.Toolbar;
+import androidx.viewpager.widget.ViewPager;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.TabPagerAdapter;
@@ -60,6 +57,10 @@ import com.emogoth.android.phone.mimi.util.AppRatingUtil;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.Pages;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.tabs.TabLayout;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
 import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
@@ -585,13 +586,10 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                     if (v != null) {
                         View highlightView = v.findViewById(R.id.highlight);
                         if (highlightView != null) {
-                            ThreadRegistryModel model = ThreadRegistry.getInstance().getThread(event.getThreadId());
-                            if (model != null) {
-                                if (model.getThreadSize() > model.getLastReadPosition() && model.getLastReadPosition() > 0) {
-                                    highlightView.setVisibility(View.VISIBLE);
-                                } else {
-                                    highlightView.setVisibility(View.GONE);
-                                }
+                            if (event.getThreadSize() - 1 > event.getLastReadPosition() && event.getLastReadPosition() > 0) {
+                                highlightView.setVisibility(View.VISIBLE);
+                            } else {
+                                highlightView.setVisibility(View.GONE);
                             }
                         }
                     }

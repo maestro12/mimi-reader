@@ -159,7 +159,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
     override fun onCleared() {
         super.onCleared()
         Log.w(TAG, "onCleared() called", Exception())
-        downloadManager?.clear()
+        downloadManager?.destroy()
 
         if (galleryItems is ArrayList) {
             galleryItems.clear()

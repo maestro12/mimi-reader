@@ -6,10 +6,10 @@ import com.emogoth.android.phone.mimi.db.HistoryTableConnection
 import com.emogoth.android.phone.mimi.db.PostTableConnection
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection
 import com.emogoth.android.phone.mimi.db.model.History
+import com.emogoth.android.phone.mimi.db.model.UserPost
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector
 import com.emogoth.android.phone.mimi.util.HttpClientFactory
 import com.emogoth.android.phone.mimi.util.MimiUtil
-import com.emogoth.android.phone.mimi.util.ThreadRegistry
 import com.mimireader.chanlib.ChanConnector
 import com.mimireader.chanlib.models.ChanThread
 import com.mimireader.chanlib.models.ErrorChanThread
@@ -18,6 +18,7 @@ import io.reactivex.Single
 import java.util.*
 
 open class ChanDataSource {
+    var userPosts = ArrayList<Long>()
     val chanConnector: ChanConnector = FourChanConnector.Builder()
             .setCacheDirectory(MimiUtil.getInstance().cacheDir)
             .setEndpoint(FourChanConnector.getDefaultEndpoint())
@@ -29,11 +30,12 @@ open class ChanDataSource {
         return PostTableConnection.watchThread(threadId)
                 .flatMap { Flowable.just(PostTableConnection.convertDbPostsToChanThread(boardName, threadId, it)) }
                 .flatMap { chanThread ->
-                    UserPostTableConnection.fetchPosts()
-                            .flatMap { userPosts ->
-                                Log.d("ChanDataSource", "user posts size: ${userPosts.size}")
-                                ThreadRegistry.getInstance().populateUserPosts(userPosts)
-                                val postIds = UserPostTableConnection.postIdList(userPosts)
+                    UserPostTableConnection.fetchPosts(chanThread.boardName, chanThread.threadId)
+                            .flatMap { userPostList ->
+                                Log.d("ChanDataSource", "user posts size: ${userPostList.size}")
+                                val postIds = UserPostTableConnection.postIdList(userPostList)
+                                userPosts.clear()
+                                userPosts.addAll(postIds)
                                 Flowable.just(ProcessThreadTask.processThread(chanThread.posts, postIds, boardName, threadId))
                             }
                 }

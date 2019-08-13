@@ -30,7 +30,7 @@ import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.PostTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.UserPost;
+import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.HttpErrorEvent;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
@@ -42,10 +42,11 @@ import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.Pages;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
+
+import org.reactivestreams.Publisher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,7 +123,7 @@ public class RefreshJobService extends JobService {
 
                             new Handler(
                                     Looper.getMainLooper()).post(
-                                    () -> BusProvider.getInstance().post(new UpdateHistoryEvent(chanThread.getThreadId(), boardName, size, firstPost.isClosed())));
+                                    () -> BusProvider.getInstance().post(new UpdateHistoryEvent(chanThread.getThreadId(), boardName, size, threadMetadata.lastReadPosition, firstPost.isClosed(), threadInfo.watched)));
                         }
 
                     }
@@ -137,7 +138,7 @@ public class RefreshJobService extends JobService {
                             .subscribe(new SingleObserver<Boolean>() {
                                 @Override
                                 public void onSubscribe(Disposable d) {
-
+                                    // no op
                                 }
 
                                 @Override
@@ -169,12 +170,6 @@ public class RefreshJobService extends JobService {
                     if (LOG_DEBUG) {
                         Log.i(LOG_TAG, "[refresh] Setting thread size to: size=" + response.getPosts().size() + ", old size=" + threadSize);
                     }
-
-                    if (ThreadRegistry.getInstance().getThreadSize(id) <= 0) {
-                        ThreadRegistry.getInstance().add(response.getBoardName(), id, 0, response.getPosts().size(), threadInfo.watched);
-                    } else {
-                        ThreadRegistry.getInstance().update(response.getBoardName(), id, response.getPosts().size(), threadInfo.watched);
-                    }
                 })
                 .compose(DatabaseUtils.applySchedulers())
                 .onErrorReturn(refreshError(new ThreadInfo(threadId, boardName, lastRefreshTime, watched)))
@@ -205,7 +200,7 @@ public class RefreshJobService extends JobService {
 
             if (LOG_DEBUG) {
                 if (threadInfo != null) {
-                    Log.d(LOG_TAG, "Returned from refresh service successfully: id=/" + threadInfo.boardName + "/" + threadInfo.threadId + ", size=" + ThreadRegistry.getInstance().getThreadSize(threadInfo.threadId) + ", unread=" + ThreadRegistry.getInstance().getUnreadCount(threadInfo.threadId));
+                    Log.d(LOG_TAG, "Returned from refresh service successfully: id=/" + threadInfo.boardName + "/" + threadInfo.threadId);
                 } else {
                     Log.d(LOG_TAG, "Returned from refresh service successfully: id=UNKNOWN");
                 }
@@ -275,8 +270,6 @@ public class RefreshJobService extends JobService {
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
 
-        final List<ThreadRegistryModel> updatedThreads = ThreadRegistry.getInstance().getUpdatedThreads();
-        if (updatedThreads.size() > 0) {
             final NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(MimiApplication.getInstance(), REFRESH_CHANNEL_ID);
             final NotificationCompat.InboxStyle style = new NotificationCompat.InboxStyle();
 
@@ -285,31 +278,35 @@ public class RefreshJobService extends JobService {
                 fetchPostDisposable.dispose();
             }
 
-            fetchPostDisposable = UserPostTableConnection.fetchPosts()
+            fetchPostDisposable = UserPostTableConnection.fetchPosts(boardName, threadId)
                     .flatMap(posts -> {
-                        for (UserPost userPostDbModel : posts) {
-                            ThreadRegistry.getInstance().addUserPost(userPostDbModel.boardName, userPostDbModel.threadId, userPostDbModel.postId);
-                        }
-
-                        final List<ThreadRegistryModel> models = ThreadRegistry.getInstance().getUpdatedThreads();
-                        return Flowable.just(models)
-                                .flatMapIterable(threadRegistryModels -> {
-                                    Log.d(LOG_TAG, "Processing posts");
-                                    return threadRegistryModels;
-                                })
-                                .flatMap(model -> Flowable.zip(
-                                        PostTableConnection.fetchThread(model.getThreadId())
-                                                .map(PostTableConnection.mapDbPostsToChanThread(model.getBoardName(), model.getThreadId()))
-                                                .toFlowable(),
-                                        Flowable.just(model),
-                                        (chanThread, model1) -> {
-                                            Log.d(LOG_TAG, "Processing post: " + chanThread);
-                                            return processPosts(model1, chanThread, style);
+                        return HistoryTableConnection.fetchHistory(true)
+                                .flatMap((Function<List<History>, Publisher<List<ThreadRegistryModel>>>) histories -> {
+                                    final List<ThreadRegistryModel> models = new ArrayList<>(histories.size());
+                                    for (History history : histories) {
+                                        if (history.threadSize - 1 > history.lastReadPosition) {
+                                            models.add(new ThreadRegistryModel(history, posts));
                                         }
-                                ))
-                                .toList()
-                                .toFlowable();
+                                    }
+                                    return Flowable.just(models);
+                                });
                     })
+                    .flatMapIterable(models -> {
+                        Log.d(LOG_TAG, "Processing posts");
+                        return models;
+                    })
+                    .flatMap(model -> Flowable.zip(
+                            PostTableConnection.fetchThread(model.getThreadId())
+                                    .map(PostTableConnection.mapDbPostsToChanThread(model.getBoardName(), model.getThreadId()))
+                                    .toFlowable(),
+                            Flowable.just(model),
+                            (chanThread, model1) -> {
+                                Log.d(LOG_TAG, "Processing post: " + chanThread);
+                                return processPosts(model1, chanThread, style);
+                            }
+                    ))
+                    .toList()
+                    .toFlowable()
                     .doOnNext(threadList -> {
                         if (threadList == null) {
                             return;
@@ -376,7 +373,6 @@ public class RefreshJobService extends JobService {
                     }, throwable -> {
                         Log.e(LOG_TAG, "Exception while creating notification", throwable);
                     });
-        }
     }
 
     private Pair<ChanThread, Integer> processPosts(ThreadRegistryModel model, ChanThread thread, NotificationCompat.InboxStyle style) {
@@ -395,14 +391,13 @@ public class RefreshJobService extends JobService {
 
                 final ChanThread currentThread = ProcessThreadTask.processThread(
                         thread.getPosts(),
-                        ThreadRegistry.getInstance().getUserPosts(model.getBoardName(), model.getThreadId()),
+                        model.getUserPosts(),
                         model.getBoardName(),
                         model.getThreadId()
                 );
 
-                final int pos = ThreadRegistry.getInstance().getLastReadPosition(model.getThreadId()) < ThreadRegistry.getInstance().getThreadSize(model.getThreadId()) ?
-                        ThreadRegistry.getInstance().getLastReadPosition(model.getThreadId()) :
-                        ThreadRegistry.getInstance().getThreadSize(model.getThreadId());
+                final int pos = model.getLastReadPosition() < model.getThreadSize() ?
+                        model.getLastReadPosition() : model.getThreadSize();
 
                 if (currentThread != null && currentThread.getPosts() != null) {
                     repliesToYou = 0;

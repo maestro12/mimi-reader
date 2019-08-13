@@ -24,6 +24,12 @@
         android:id="@+id/quote_menu_item"
         android:title="@string/quote_menu_item" />
     <item
+        android:id="@+id/claim_menu_item"
+        android:title="@string/claim_menu_item"/>
+    <item
+        android:id="@+id/unclaim_menu_item"
+        android:title="@string/unclaim_menu_item"/>
+    <item
         android:id="@+id/copy_text"
         android:title="@string/copy_text" />
 

@@ -156,7 +156,7 @@ class GalleryActivity2 : AppCompatActivity() {
         }
 
         gp.gridButtonListener = {
-            showGrid(galleryItems, position)
+            showGrid(galleryItems, gp.position)
         }
 
         val fromReply = intent.extras?.getBoolean(EXTRA_FROM_REPLY, false) ?: false
@@ -693,7 +693,7 @@ class GalleryActivity2 : AppCompatActivity() {
         val gp: GalleryPager = galleryPager as GalleryPager
 
         if (gg.visibility == View.VISIBLE && gp.visibility == View.VISIBLE) {
-            showGrid(Collections.emptyList(), -1)
+            showGrid(Collections.emptyList(), gp.position)
             return
         }
 

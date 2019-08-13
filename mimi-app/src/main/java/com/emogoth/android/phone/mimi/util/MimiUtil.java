@@ -960,7 +960,7 @@ public class MimiUtil {
         if (!keepDir || !fileOrDirectory.isDirectory()) {
             fileOrDirectory.delete();
         } else if (BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "Skipping directory: " + fileOrDirectory.getAbsolutePath());
+                Log.d(LOG_TAG, "Skipping directory: " + fileOrDirectory.getAbsolutePath() + ", keep=" + keepDir);
 
         }
     }

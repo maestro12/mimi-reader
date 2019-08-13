@@ -22,8 +22,8 @@
     android:layout_height="?attr/font_board_height"
     android:background="?android:attr/selectableItemBackground"
     android:orientation="horizontal"
-    android:paddingBottom="12dp"
-    android:paddingTop="12dp">
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
     <com.emogoth.android.phone.mimi.view.IconTextView
         android:id="@+id/drag_handle"
@@ -31,6 +31,7 @@
         android:layout_width="wrap_content"
         android:layout_height="50dp"
         android:layout_gravity="center"
+        android:layout_weight="0"
         android:gravity="center"
         android:paddingLeft="8dp"
         android:paddingRight="8dp"
@@ -41,29 +42,26 @@
     <TextView
         android:id="@+id/board_title"
         style="?defaultTextColor"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
+        android:layout_weight="1"
         android:ellipsize="end"
-        android:paddingLeft="5dp"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:singleLine="true"
         android:textSize="?attr/font_medium"
         android:textStyle="bold"
         tools:text="Technology" />
 
-    <View
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" />
-
     <TextView
         android:id="@+id/board_name"
-        style="?defaultSubtextColor"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:gravity="right"
-        android:paddingRight="10dp"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:gravity="center_vertical|end"
+        android:paddingEnd="4dp"
         android:textSize="?attr/font_label_small"
         tools:text="/g/" />
 

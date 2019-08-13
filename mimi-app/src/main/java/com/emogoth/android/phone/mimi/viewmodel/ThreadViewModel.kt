@@ -2,6 +2,7 @@ package com.emogoth.android.phone.mimi.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.emogoth.android.phone.mimi.util.MimiPrefs
 import com.mimireader.chanlib.models.ChanThread
 import io.reactivex.Flowable
 import io.reactivex.Single
@@ -19,24 +20,25 @@ class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
     private var bookmarked = false
 
     var firstFetchComplete = false
+    var userPosts = dataSource.userPosts
 
     fun watchThread(): Flowable<ChanThread> {
         Log.d(TAG, "Getting thread")
         return dataSource.watchThread(boardName, threadId)
-            .flatMap {
-                lastReadPosition = it.first.lastReadPosition
-                unread = if (it.first.threadSize > 0) it.first.threadSize - lastReadPosition else 0
-                bookmarked = it.first.watched == 1
-                Flowable.just(it.second)
-            }
-            .flatMap {
-                if (this.thread.posts.size < it.posts.size) {
-                    unread = it.posts.size - this.thread.posts.size
+                .flatMap {
+                    lastReadPosition = it.first.lastReadPosition
+                    unread = if (it.first.threadSize > 0) it.first.threadSize - lastReadPosition else 0
+                    bookmarked = it.first.watched == 1
+                    Flowable.just(it.second)
                 }
-                this.thread.posts.clear()
-                this.thread.posts.addAll(it.posts)
-                Flowable.just(it)
-            }
+                .flatMap {
+                    if (this.thread.posts.size < it.posts.size) {
+                        unread = it.posts.size - this.thread.posts.size
+                    }
+                    this.thread.posts.clear()
+                    this.thread.posts.addAll(it.posts)
+                    Flowable.just(it)
+                }
     }
 
     fun fetchThread(force: Boolean = true): Single<ChanThread> {
@@ -57,6 +59,9 @@ class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
 
     fun setBookmarked(bookmarked: Boolean): Single<Boolean> {
         this.bookmarked = bookmarked
+        if (!bookmarked) {
+            MimiPrefs.removeWatch(threadId)
+        }
         return dataSource.updateHistoryBookmark(boardName, threadId, bookmarked)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

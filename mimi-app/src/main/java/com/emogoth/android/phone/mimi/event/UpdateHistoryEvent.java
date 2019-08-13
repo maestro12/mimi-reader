@@ -16,54 +16,45 @@
 
 package com.emogoth.android.phone.mimi.event;
 
-import com.mimireader.chanlib.models.ChanThread;
-
 public class UpdateHistoryEvent {
 
-    private String boardName;
+    private final String boardName;
+    private final long threadId;
+    private final int threadSize;
+    private final int lastReadPosition;
+    private final boolean closed;
+    private final boolean watched;
 
-    private long threadId;
-    private int threadSize;
-
-    private boolean closed;
-
-    public UpdateHistoryEvent(final long threadId, final String boardName, final int size, final boolean closed) {
+    public UpdateHistoryEvent(final long threadId, final String boardName, final int size, final int lastRead, final boolean closed, final boolean watched) {
         this.boardName = boardName;
         this.threadId = threadId;
         this.threadSize = size;
+        this.lastReadPosition = lastRead;
         this.closed = closed;
+        this.watched = watched;
     }
 
     public boolean isClosed() {
         return closed;
     }
 
-    public void setClosed(boolean closed) {
-        this.closed = closed;
-    }
-
     public String getBoardName() {
         return boardName;
-    }
-
-    public void setBoardName(String boardName) {
-        this.boardName = boardName;
     }
 
     public long getThreadId() {
         return threadId;
     }
 
-    public void setThreadId(long threadId) {
-        this.threadId = threadId;
-    }
-
     public int getThreadSize() {
         return threadSize;
     }
 
-    public void setThreadSize(int threadSize) {
-        this.threadSize = threadSize;
+    public int getLastReadPosition() {
+        return lastReadPosition;
     }
 
+    public boolean isWatched() {
+        return watched;
+    }
 }

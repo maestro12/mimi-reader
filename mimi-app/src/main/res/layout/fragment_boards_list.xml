@@ -17,20 +17,16 @@
   -->
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     style="?defaultLayoutBackground"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.legacy.widget.Space
-        android:id="@+id/spacer"
-        android:layout_width="wrap_content"
-        android:layout_height="45dp" />
-
     <com.emogoth.android.phone.mimi.util.BetterViewAnimator
         android:id="@+id/error_switcher"
+        android:paddingTop="45dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/spacer">
+        android:layout_height="wrap_content">
 
         <com.emogoth.android.phone.mimi.widget.MimiRecyclerView
             android:id="@+id/boards_list"
@@ -43,8 +39,9 @@
             android:drawSelectorOnTop="true"
             android:fadingEdge="none"
             android:paddingLeft="2dp"
+            android:paddingTop="4dp"
             android:paddingRight="2dp"
-            android:paddingTop="4dp" />
+            tools:listitem="@layout/board_list_item" />
 
         <ViewStub
             android:id="@+id/error_container"

@@ -42,7 +42,7 @@
                 android:checkableBehavior="single">
                 <item
                     android:id="@+id/catalog_menu"
-                    android:title="@string/catalog" />
+                    android:title="@string/grid" />
                 <item
                     android:id="@+id/list_menu"
                     android:title="@string/list" />

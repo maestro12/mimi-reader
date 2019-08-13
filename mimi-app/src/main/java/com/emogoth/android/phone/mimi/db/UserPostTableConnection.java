@@ -39,12 +39,14 @@ import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQ
 public class UserPostTableConnection {
     public static final String LOG_TAG = UserPostTableConnection.class.getSimpleName();
 
-    public static Flowable<List<UserPost>> fetchPosts() {
-        return watchPosts().take(1);
+    public static Flowable<List<UserPost>> fetchPosts(final String boardName, final long threadId) {
+        return watchPosts(boardName, threadId).take(1);
     }
-    public static Flowable<List<UserPost>> watchPosts() {
+    public static Flowable<List<UserPost>> watchPosts(final String boardName, final long threadId) {
         From query = new Select()
-                .from(UserPost.class);
+                .from(UserPost.class)
+                .where(UserPost.KEY_PATH + "=?", boardName)
+                .and(UserPost.KEY_THREAD_ID + "=?", threadId);
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
 
@@ -70,6 +72,32 @@ public class UserPostTableConnection {
                 userPost.postTime = System.currentTimeMillis();
 
                 val = DatabaseUtils.insert(db, userPost);
+
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error saving user post data", e);
+            } finally {
+                transaction.end();
+            }
+            return Flowable.just(val > 0);
+        });
+    }
+
+    public static Flowable<Boolean> removePost(final String boardName, final long threadId, final long postId) {
+
+        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+            long val = 0;
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
+
+            try {
+                UserPost userPost = new UserPost();
+                userPost.boardName = boardName;
+                userPost.threadId = threadId;
+                userPost.postId = postId;
+                userPost.postTime = System.currentTimeMillis();
+
+                val = DatabaseUtils.delete(db, userPost);
 
                 transaction.markSuccessful();
             } catch (Exception e) {

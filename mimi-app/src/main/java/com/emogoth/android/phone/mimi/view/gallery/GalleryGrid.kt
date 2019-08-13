@@ -52,7 +52,7 @@ class GalleryGrid @JvmOverloads constructor(context: Context, attrs: AttributeSe
         }
         set(value) {
             field = value
-            grid.post { grid.scrollToPosition(value) }
+            grid.post { grid.layoutManager?.scrollToPosition(value) }
         }
 
     var items: List<GalleryItem> = Collections.emptyList()

@@ -8,10 +8,9 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.FlowableSubscriber
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import okhttp3.*
-import okio.Okio
+import okio.*
 import org.reactivestreams.Subscription
 import java.io.File
 import java.io.IOException
@@ -204,16 +203,12 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
             }
             entry.value.cancel()
         }
+    }
 
-//        for (item in items) {
-//            if (item.file.exists()) {
-//                item.file.delete()
-//
-//                if (BuildConfig.DEBUG) {
-//                    Log.d(LOG_TAG, "Deleting downloaded file: ${item.file.absolutePath}")
-//                }
-//            }
-//        }
+    fun destroy() {
+        clear()
+        maxConcurrent = 0
+        items.clear()
     }
 }
 
@@ -243,33 +238,17 @@ fun downloadToFile(client: OkHttpClient, url: String, file: File?): Flowable<Int
             @Throws(IOException::class)
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    emitter.setDisposable(object : Disposable {
-                        private var disposed = false
-                        override fun dispose() {
-                            disposed = true
-                        }
-
-                        override fun isDisposed(): Boolean {
-                            return disposed
-                        }
-                    })
-                    val body = response.body()
+                    val body = response.body
                     if (body == null) {
                         emitter.tryOnError(IllegalStateException("Response from $url returned an empty body"))
                         return
                     }
 
-//                    val instr = body.byteStream()
-//                    if (instr == null) {
-//                        response.close()
-//                        return
-//                    }
-
                     val contentLength = body.contentLength()
                     val source = body.source()
                     val sink = if (file != null) {
                         file.createNewFile()
-                        Okio.buffer(Okio.sink(file))
+                        file.sink().buffer()
                     } else null
                     val sinkBuffer = sink?.buffer()
 
@@ -279,9 +258,9 @@ fun downloadToFile(client: OkHttpClient, url: String, file: File?): Flowable<Int
                     }
 
                     var totalBytes = 0L
-                    while (true) {
+                    while (!emitter.isCancelled) {
                         val count = source.read(sinkBuffer, DownloadManager.BUFFER_SIZE)
-                        if (count == -1L || emitter.isCancelled) break
+                        if (count == -1L) break
                         sink.emit()
 
                         totalBytes += count

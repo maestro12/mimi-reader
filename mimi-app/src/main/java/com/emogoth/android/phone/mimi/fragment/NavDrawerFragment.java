@@ -22,8 +22,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import androidx.fragment.app.Fragment;
-import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -35,6 +33,10 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.BuildConfig;
@@ -58,7 +60,6 @@ import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.DrawerViewHolder;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.squareup.otto.Subscribe;
@@ -66,8 +67,11 @@ import com.squareup.otto.Subscribe;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class NavDrawerFragment extends Fragment {
@@ -111,25 +115,24 @@ public class NavDrawerFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         final View settingsRow = view.findViewById(R.id.settings_row);
-        settingsRow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivityForResult(new Intent(getActivity(), MimiSettings.class), MimiActivity.SETTINGS_ID);
-                toggleDrawer();
-            }
-
+        settingsRow.setOnClickListener(v -> {
+            startActivityForResult(new Intent(getActivity(), MimiSettings.class), MimiActivity.SETTINGS_ID);
+            toggleDrawer();
         });
 
-        notificationContainer = (FrameLayout) view.findViewById(R.id.notification_container);
-        notificationContainer.addView(MimiUtil.getInstance().createActionBarNotification(getActivity().getLayoutInflater(), notificationContainer, ThreadRegistry.getInstance().getUnreadCount()));
+        notificationContainer = view.findViewById(R.id.notification_container);
+
+        totalUnread(count -> {
+            if (getActivity() != null) {
+                notificationContainer.addView(MimiUtil.getInstance().createActionBarNotification(getActivity().getLayoutInflater(), notificationContainer, count));
+            }
+        });
+
 
         final View homeRow = view.findViewById(R.id.home_row);
-        homeRow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                BusProvider.getInstance().post(new HomeButtonPressedEvent());
-                toggleDrawer();
-            }
+        homeRow.setOnClickListener(v -> {
+            BusProvider.getInstance().post(new HomeButtonPressedEvent());
+            toggleDrawer();
         });
 
         final View closeTabsContainer = view.findViewById(R.id.close_tabs_container);
@@ -137,34 +140,23 @@ public class NavDrawerFragment extends Fragment {
             closeTabsContainer.setVisibility(View.GONE);
         } else {
             final View closeTabsRow = view.findViewById(R.id.close_tabs_row);
-            closeTabsRow.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    closeAllTabs();
-                }
-            });
+            closeTabsRow.setOnClickListener(v -> closeAllTabs());
         }
 
         final View bookmarksRow = view.findViewById(R.id.bookmarks_row);
-        bookmarksRow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleDrawer();
-                BusProvider.getInstance().post(new OpenHistoryEvent(true));
-            }
+        bookmarksRow.setOnClickListener(v -> {
+            toggleDrawer();
+            BusProvider.getInstance().post(new OpenHistoryEvent(true));
         });
 
-        bookmarksItemContainer = (ViewGroup) view.findViewById(R.id.bookmark_items);
+        bookmarksItemContainer = view.findViewById(R.id.bookmark_items);
         noBookmarksContainer = view.findViewById(R.id.no_bookmarks);
         populateBookmarks();
 
         final View historyRow = view.findViewById(R.id.history_row);
-        historyRow.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleDrawer();
-                BusProvider.getInstance().post(new OpenHistoryEvent(false));
-            }
+        historyRow.setOnClickListener(v -> {
+            toggleDrawer();
+            BusProvider.getInstance().post(new OpenHistoryEvent(false));
         });
     }
 
@@ -253,14 +245,11 @@ public class NavDrawerFragment extends Fragment {
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(bookmark.boardName)
                 .compose(DatabaseUtils.<ChanBoard>applySchedulers())
-                .subscribe(new Consumer<ChanBoard>() {
-                    @Override
-                    public void accept(ChanBoard chanBoard) {
-                        if (!TextUtils.isEmpty(chanBoard.getName())) {
-                            BusProvider.getInstance().post(new BookmarkClickedEvent(bookmark.threadId, chanBoard.getName(), chanBoard.getTitle(), bookmark.orderId));
-                        } else if (getActivity() != null) {
-                            Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
-                        }
+                .subscribe(chanBoard -> {
+                    if (!TextUtils.isEmpty(chanBoard.getName())) {
+                        BusProvider.getInstance().post(new BookmarkClickedEvent(bookmark.threadId, chanBoard.getName(), chanBoard.getTitle(), bookmark.orderId));
+                    } else if (getActivity() != null) {
+                        Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -281,12 +270,13 @@ public class NavDrawerFragment extends Fragment {
                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
                 .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                .setLinkColor(MimiUtil.getInstance().getLinkColor());
+                .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
 
         viewHolder.text.setText(parserBuilder.build().parse());
 
         if (bookmark.watched == 1) {
-            final int count = ThreadRegistry.getInstance().getUnreadCount(bookmark.threadId);
+            final int count = bookmark.threadSize - 1 - bookmark.lastReadPosition;
 
             if (count > 0) {
                 viewHolder.unreadcount.setText(String.valueOf(count));
@@ -411,12 +401,75 @@ public class NavDrawerFragment extends Fragment {
 
     }
 
+    private void postUread(String boardName, long threadId, @NonNull UnreadCountUpdate callback) {
+        HistoryTableConnection.fetchPost(boardName, threadId)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .single(new History())
+                .subscribe(new SingleObserver<History>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // no op
+                    }
+
+                    @Override
+                    public void onSuccess(History history) {
+
+                        int unread = history.threadSize - 1 - history.lastReadPosition;
+                        callback.OnUnreadCountUpdate(unread);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(LOG_TAG, "Error setting unread count badge", e);
+                    }
+                });
+    }
+
+    private void totalUnread(@NonNull UnreadCountUpdate callback) {
+        HistoryTableConnection.fetchHistory(true)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .single(new ArrayList<>())
+                .subscribe(new SingleObserver<List<History>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // no op
+                    }
+
+                    @Override
+                    public void onSuccess(List<History> histories) {
+
+                        int unread = 0;
+                        for (History history : histories) {
+                            unread += (history.threadSize - 1 - history.lastReadPosition);
+                        }
+
+                        callback.OnUnreadCountUpdate(unread);
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(LOG_TAG, "Error setting unread count badge", e);
+                    }
+                });
+    }
+
     @Subscribe
     public void onAutoRefresh(final UpdateHistoryEvent event) {
         populateBookmarks();
 
-        notificationContainer.removeAllViews();
-        notificationContainer.addView(MimiUtil.getInstance().createActionBarNotification(getActivity().getLayoutInflater(), notificationContainer, ThreadRegistry.getInstance().getUnreadCount()));
+        totalUnread(count -> {
+            if (getActivity() != null) {
+                notificationContainer.removeAllViews();
+                notificationContainer.addView(MimiUtil.getInstance().createActionBarNotification(getActivity().getLayoutInflater(), notificationContainer, count));
+            }
+        });
+    }
+
+    private interface UnreadCountUpdate {
+        void OnUnreadCountUpdate(int count);
     }
 
 }

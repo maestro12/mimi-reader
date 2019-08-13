@@ -490,10 +490,8 @@ public class RefreshScheduler {
                 return;
             }
 
-            Long lastRefreshTime = nextPostToRefresh.refreshTimestamp;
-            Long nextRefreshTime;
-
-            nextRefreshTime = lastRefreshTime + (refreshInterval * 1000);
+            long lastRefreshTime = nextPostToRefresh.refreshTimestamp;
+            long nextRefreshTime = lastRefreshTime + (refreshInterval * 1000);
 
             final Long delta = nextRefreshTime - System.currentTimeMillis();
             if (delta < MIN_TIME_BETWEEN_REFRESH) {

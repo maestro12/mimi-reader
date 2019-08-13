@@ -23,13 +23,6 @@
         android:title="@string/general_title">
 
         <SwitchPreference
-            android:title="@string/use_catalog_title"
-            android:key="@string/use_catalog_pref"
-            android:defaultValue="true"
-            android:summaryOff="@string/user_catalog_summary_off"
-            android:summaryOn="@string/user_catalog_summary_on" />
-
-        <SwitchPreference
             android:title="@string/remember_thread_position_title"
             android:summary="@string/remember_thread_position_summary"
             android:key="@string/remember_thread_position_pref"
@@ -59,6 +52,12 @@
             android:summaryOn="@string/close_tab_on_back_summary_on"
             android:summaryOff="@string/close_tab_on_back_summary_off"
             android:key="@string/close_tab_on_back_pref"
+            android:defaultValue="false" />
+
+        <SwitchPreference
+            android:title="@string/enable_emoji_text"
+            android:summary="@string/enable_emoji_summary"
+            android:key="@string/enable_emoji_pref"
             android:defaultValue="false" />
 
     </PreferenceCategory>

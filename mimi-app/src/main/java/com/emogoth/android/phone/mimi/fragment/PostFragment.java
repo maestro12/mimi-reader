@@ -63,17 +63,18 @@ import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.PostUtil;
 import com.emogoth.android.phone.mimi.util.ResourceUtils;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.IconTextView;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
+import com.vdurmont.emoji.EmojiParser;
 
 import org.jsoup.Jsoup;
 
@@ -423,7 +424,8 @@ public class PostFragment extends BottomSheetDialogFragment {
                         .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                         .setReplyColor(MimiUtil.getInstance().getReplyColor())
                         .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                        .setLinkColor(MimiUtil.getInstance().getLinkColor());
+                        .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                        .setEnableEmoji(MimiPrefs.isEmojiEnabled());
 
                 firstPost.setName(name);
                 firstPost.setTim(Calendar.getInstance(Locale.getDefault()).getTime().toString());
@@ -485,14 +487,14 @@ public class PostFragment extends BottomSheetDialogFragment {
             return;
         }
         final int id = Integer.valueOf(postId);
-        RxUtil.safeUnsubscribe(fetchPostSubscription);
-        fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                .compose(DatabaseUtils.applySchedulers())
-                .subscribe(history -> {
-                    if (history.threadId == -1) {
-                        ThreadRegistry.getInstance().add(boardName, threadId, id, threadSize + 1, watch);
-                    }
-                });
+//        RxUtil.safeUnsubscribe(fetchPostSubscription);
+//        fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
+//                .compose(DatabaseUtils.applySchedulers())
+//                .subscribe(history -> {
+//                    if (history.threadId == -1) {
+//                        ThreadRegistry.getInstance().add(boardName, threadId, id, threadSize + 1, watch);
+//                    }
+//                });
 
         RxUtil.safeUnsubscribe(addPostSubscription);
         addPostSubscription = UserPostTableConnection.addPost(boardName, threadId, id)
@@ -581,10 +583,30 @@ public class PostFragment extends BottomSheetDialogFragment {
     }
 
     private void saveFormData() {
-        comment = commentField.getText().toString();
-        subject = subjectInput.getText().toString();
+        String c = commentField.getText().toString();
+        try {
+            c = EmojiParser.parseToAliases(c);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Cannot parse emoji", e);
+        }
+        comment = c;
+
+        String s = subjectInput.getText().toString();
+        try {
+            s = EmojiParser.parseToAliases(s);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Cannot parse emoji", e);
+        }
+        subject = s;
         email = optionsInput.getText().toString();
-        name = nameInput.getText().toString();
+
+        String n = nameInput.getText().toString();
+        try {
+            n = EmojiParser.parseToAliases(n);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Cannot parse emoji", e);
+        }
+        name = n;
     }
 
     private void clearForm() {

@@ -89,7 +89,7 @@ public class History extends BaseModel {
     @Column(name = KEY_LAST_READ_POS)
     public int lastReadPosition;
 
-    public Spanned comment;
+    public CharSequence comment;
 
     public History() {
         this.threadId = -1L;

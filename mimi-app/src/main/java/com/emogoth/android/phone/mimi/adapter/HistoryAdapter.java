@@ -40,7 +40,6 @@ import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,7 +89,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         }
 
         if (historyItem.watched == 1) {
-            final int count = ThreadRegistry.getInstance().getUnreadCount(historyItem.threadId);
+            final int count = historyItem.threadSize - 1 - historyItem.lastReadPosition;
             unreadCountList[position] = count;
             if (count > 0) {
                 viewHolder.unreadcount.setText(String.valueOf(count));
@@ -141,7 +140,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
                             Log.d(LOG_TAG, "Removed history: " + "board name=" + historyItem.boardName + ", thread id=" + historyItem.threadId);
 
                             RefreshScheduler.getInstance().removeThread(historyItem.boardName, historyItem.threadId);
-                            ThreadRegistry.getInstance().remove(historyItem.threadId);
+//                            ThreadRegistry.getInstance().remove(historyItem.threadId);
                             historyList.remove(currentPosition);
                             timeList.remove(currentPosition);
                             if (historyList.size() == 0) {
@@ -173,7 +172,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     private void init() {
         unreadCountList = new int[historyList.size()];
         for (int i = 0; i < historyList.size(); i++) {
-            final int count = ThreadRegistry.getInstance().getUnreadCount(historyList.get(i).threadId);
+            History history = historyList.get(i);
+            final int count = history.threadSize - 1 - history.lastReadPosition;
             unreadCountList[i] = count;
         }
 
@@ -254,7 +254,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
 
                         }
 
-                        ThreadRegistry.getInstance().clear();
+//                        ThreadRegistry.getInstance().clear();
                         MimiUtil.removeHistory(watched).subscribe();
 
                         isEditMode = false;

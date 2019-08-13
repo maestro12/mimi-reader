@@ -49,6 +49,7 @@ import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
 import com.emogoth.android.phone.mimi.model.ThreadInfo;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
@@ -328,7 +329,8 @@ public class HistoryFragment extends MimiFragmentBase {
                             .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                             .setReplyColor(MimiUtil.getInstance().getReplyColor())
                             .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                            .setLinkColor(MimiUtil.getInstance().getLinkColor());
+                            .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                            .setEnableEmoji(MimiPrefs.isEmojiEnabled());
 
                     for (History history : histories) {
                         history.comment = builder.setComment(history.text).build().parse();
