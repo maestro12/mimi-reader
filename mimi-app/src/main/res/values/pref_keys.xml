@@ -251,5 +251,6 @@
     <string name="ad_personalization_pref">ad_personalization_pref</string>
     <string name="gallery_prefs_screen">gallery_prefs_screen</string>
     <string name="gallery_preload_pref">gallery_preload_pref</string>
+    <string name="enable_emoji_pref">enable_emoji_pref</string>
 
 </resources>

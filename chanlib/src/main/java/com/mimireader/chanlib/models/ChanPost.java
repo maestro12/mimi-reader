@@ -18,52 +18,89 @@ package com.mimireader.chanlib.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import com.google.gson.annotations.Expose;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class ChanPost implements Parcelable {
-    @Expose private long no;
-    @Expose private boolean closed;
-    @Expose private boolean sticky;
-    @Expose private String now;
-    @Expose private String name;
-    @Expose private String com;
+    private static final Boolean LOG_DEBUG = false;
+    @Expose
+    private long no;
+    @Expose
+    private boolean closed;
+    @Expose
+    private boolean sticky;
+    @Expose
+    private String now;
+    @Expose
+    private String name;
+    @Expose
+    private String com;
     private transient CharSequence comment;
-    @Expose private String sub;
+    @Expose
+    private String sub;
     private transient CharSequence subject;
-    @Expose private String filename;
-    @Expose private String ext;
-    @Expose private int w;
-    @Expose private int h;
-    @Expose private int tnW;
-    @Expose private int tnH;
-    @Expose private String tim;
-    @Expose private int time;
-    @Expose private String md5;
-    @Expose private int fsize;
-    @Expose private int resto;
-    @Expose private int bumplimit;
-    @Expose private int imagelimit;
-    @Expose private String semanticUrl;
-    @Expose private int replies;
-    @Expose private int images;
-    @Expose private int omittedPosts;
-    @Expose private int omittedImages;
-    @Expose private String email;
-    @Expose private String trip;
-    @Expose private String id;
-    @Expose private String capcode;
-    @Expose private String country;
-    @Expose private String countryName;
-    @Expose private String trollCountry;
-    @Expose private boolean watched;
+    @Expose
+    private String filename;
+    @Expose
+    private String ext;
+    @Expose
+    private int w;
+    @Expose
+    private int h;
+    @Expose
+    private int tnW;
+    @Expose
+    private int tnH;
+    @Expose
+    private String tim;
+    @Expose
+    private int time;
+    @Expose
+    private String md5;
+    @Expose
+    private int fsize;
+    @Expose
+    private int resto;
+    @Expose
+    private int bumplimit;
+    @Expose
+    private int imagelimit;
+    @Expose
+    private String semanticUrl;
+    @Expose
+    private int replies;
+    @Expose
+    private int images;
+    @Expose
+    private int omittedPosts;
+    @Expose
+    private int omittedImages;
+    @Expose
+    private String email;
+    @Expose
+    private String trip;
+    @Expose
+    private String id;
+    @Expose
+    private String capcode;
+    @Expose
+    private String country;
+    @Expose
+    private String countryName;
+    @Expose
+    private String trollCountry;
+    @Expose
+    private boolean watched;
     private transient CharSequence displayedName;
 
-    @Expose  private ArrayList<String> repliesTo = new ArrayList<>();
+    @Expose
+    private ArrayList<String> repliesTo = new ArrayList<>();
     private ArrayList<ChanPost> repliesFrom = new ArrayList<>();
 
     private String humanReadableFileSize;
@@ -426,17 +463,6 @@ public class ChanPost implements Parcelable {
         this.humanReadableFileSize = humanReadableFileSize;
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        return o instanceof ChanPost && getNo() == ((ChanPost) o).getNo();
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        return no;
-//    }
-
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -444,53 +470,145 @@ public class ChanPost implements Parcelable {
 
         ChanPost chanPost = (ChanPost) o;
 
-        if (no != chanPost.no) return false;
-        if (closed != chanPost.closed) return false;
-        if (sticky != chanPost.sticky) return false;
-        if (w != chanPost.w) return false;
-        if (h != chanPost.h) return false;
-        if (tnW != chanPost.tnW) return false;
-        if (tnH != chanPost.tnH) return false;
-        if (time != chanPost.time) return false;
-        if (fsize != chanPost.fsize) return false;
-        if (resto != chanPost.resto) return false;
-        if (bumplimit != chanPost.bumplimit) return false;
-        if (imagelimit != chanPost.imagelimit) return false;
-        if (replies != chanPost.replies) return false;
-        if (images != chanPost.images) return false;
-        if (omittedPosts != chanPost.omittedPosts) return false;
-        if (omittedImages != chanPost.omittedImages) return false;
-        if (watched != chanPost.watched) return false;
-        if (now != null ? !now.equals(chanPost.now) : chanPost.now != null) return false;
-        if (name != null ? !name.equals(chanPost.name) : chanPost.name != null) return false;
-        if (com != null ? !com.equals(chanPost.com) : chanPost.com != null) return false;
-        if (comment != null ? !comment.equals(chanPost.comment) : chanPost.comment != null)
+        if (no != chanPost.no) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.no is different: old=" + no + ", new=" + chanPost.no);
+            }
             return false;
-        if (sub != null ? !sub.equals(chanPost.sub) : chanPost.sub != null) return false;
-        if (subject != null ? !subject.equals(chanPost.subject) : chanPost.subject != null)
+        }
+        if (closed != chanPost.closed) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.closed is different: closed=" + closed + ", new=" + chanPost.closed);
+            }
             return false;
-        if (filename != null ? !filename.equals(chanPost.filename) : chanPost.filename != null)
+        }
+        if (sticky != chanPost.sticky) {
             return false;
-        if (ext != null ? !ext.equals(chanPost.ext) : chanPost.ext != null) return false;
-        if (tim != null ? !tim.equals(chanPost.tim) : chanPost.tim != null) return false;
-        if (md5 != null ? !md5.equals(chanPost.md5) : chanPost.md5 != null) return false;
-        if (semanticUrl != null ? !semanticUrl.equals(chanPost.semanticUrl) : chanPost.semanticUrl != null)
+        }
+        if (w != chanPost.w) {
             return false;
-        if (email != null ? !email.equals(chanPost.email) : chanPost.email != null) return false;
-        if (trip != null ? !trip.equals(chanPost.trip) : chanPost.trip != null) return false;
-        if (id != null ? !id.equals(chanPost.id) : chanPost.id != null) return false;
-        if (capcode != null ? !capcode.equals(chanPost.capcode) : chanPost.capcode != null)
+        }
+        if (h != chanPost.h) {
             return false;
-        if (country != null ? !country.equals(chanPost.country) : chanPost.country != null)
+        }
+        if (tnW != chanPost.tnW) {
             return false;
-        if (countryName != null ? !countryName.equals(chanPost.countryName) : chanPost.countryName != null)
+        }
+        if (tnH != chanPost.tnH) {
             return false;
-        if (trollCountry != null ? !trollCountry.equals(chanPost.trollCountry) : chanPost.trollCountry != null)
+        }
+        if (time != chanPost.time) {
             return false;
-        if (displayedName != null ? !displayedName.equals(chanPost.displayedName) : chanPost.displayedName != null)
+        }
+        if (fsize != chanPost.fsize) {
             return false;
-        return humanReadableFileSize != null ? humanReadableFileSize.equals(chanPost.humanReadableFileSize) : chanPost.humanReadableFileSize == null;
-
+        }
+        if (resto != chanPost.resto) {
+            return false;
+        }
+        if (bumplimit != chanPost.bumplimit) {
+            return false;
+        }
+        if (imagelimit != chanPost.imagelimit) {
+            return false;
+        }
+        if (replies != chanPost.replies) {
+            return false;
+        }
+        if (images != chanPost.images) {
+            return false;
+        }
+        if (omittedPosts != chanPost.omittedPosts) {
+            return false;
+        }
+        if (omittedImages != chanPost.omittedImages) {
+            return false;
+        }
+        if (watched != chanPost.watched) {
+            return false;
+        }
+        if (!Objects.equals(now, chanPost.now)) {
+            return false;
+        }
+        if (!Objects.equals(name, chanPost.name)) {
+            return false;
+        }
+        if (!Objects.equals(com, chanPost.com)) {
+            return false;
+        }
+        if (!Objects.equals(comment, chanPost.comment)) {
+            return false;
+        }
+        if (!Objects.equals(sub, chanPost.sub)) {
+            return false;
+        }
+        if (!Objects.equals(subject, chanPost.subject)) {
+            return false;
+        }
+        if (!Objects.equals(filename, chanPost.filename)) {
+            return false;
+        }
+        if (!Objects.equals(ext, chanPost.ext)) {
+            return false;
+        }
+        if (!Objects.equals(tim, chanPost.tim)) {
+            return false;
+        }
+        if (!Objects.equals(md5, chanPost.md5)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.md5 is different: old=" + md5 + ", new=" + chanPost.md5);
+            }
+            return false;
+        }
+        if (!Objects.equals(semanticUrl, chanPost.semanticUrl)) {
+            return false;
+        }
+        if (!Objects.equals(email, chanPost.email)) {
+            return false;
+        }
+        if (!Objects.equals(trip, chanPost.trip)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.trip is different: old=" + trip + ", new=" + chanPost.trip);
+            }
+            return false;
+        }
+        if (!Objects.equals(id, chanPost.id)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.id is different: old=" + id + ", new=" + chanPost.id);
+            }
+            return false;
+        }
+        if (!Objects.equals(capcode, chanPost.capcode)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.capcode is different: old=" + capcode + ", new=" + chanPost.capcode);
+            }
+            return false;
+        }
+        if (!Objects.equals(country, chanPost.country)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.country is different: old=" + country + ", new=" + chanPost.country);
+            }
+            return false;
+        }
+        if (!Objects.equals(countryName, chanPost.countryName)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.countryName is different: old=" + countryName + ", new=" + chanPost.countryName);
+            }
+            return false;
+        }
+        if (!Objects.equals(trollCountry, chanPost.trollCountry)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.trollCountry is different: old=" + trollCountry + ", new=" + chanPost.trollCountry);
+            }
+            return false;
+        }
+        if (!Objects.equals(displayedName, chanPost.displayedName)) {
+            if (LOG_DEBUG) {
+                Log.d("ChanPost", "chanPost.displayedName is different: old=" + displayedName + ", new=" + chanPost.displayedName);
+            }
+            return false;
+        }
+        return Objects.equals(humanReadableFileSize, chanPost.humanReadableFileSize);
     }
 
     @Override

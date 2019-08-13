@@ -225,7 +225,7 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
     protected void onResume() {
         super.onResume();
         SimpleChromeCustomTabs.getInstance().connectTo(this);
-        setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
+//        setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
     }
 
     @Override

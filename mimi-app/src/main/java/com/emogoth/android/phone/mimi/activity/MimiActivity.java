@@ -8,7 +8,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -22,6 +25,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
+import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.HttpErrorEvent;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fragment.NavDrawerFragment;
@@ -34,11 +38,17 @@ import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.prefs.PreferenceChangeEvent;
 import java.util.prefs.PreferenceChangeListener;
 
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
 public abstract class MimiActivity extends AppCompatActivity implements PreferenceChangeListener,
@@ -61,7 +71,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
     private View navDrawerView;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle drawerToggle;
-    private int bookmarkCount;
     private boolean showBadge = true;
     private Fragment resultFragment;
 
@@ -100,8 +109,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
                 bookmarksOrHistory = extras.getInt(Extras.EXTRAS_VIEWING_HISTORY);
             }
         }
-
-        bookmarkCount = ThreadRegistry.getInstance().getUnreadCount();
     }
 
     protected void onPostCreate(Bundle savedInstanceState) {
@@ -129,7 +136,11 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         super.onResume();
         MimiUtil.setScreenOrientation(this);
 
-        BusProvider.getInstance().register(this);
+        try {
+            BusProvider.getInstance().register(this);
+        } catch (Exception e) {
+            Log.w(LOG_TAG, "Exception caught when registering bus provider", e);
+        }
         refreshScheduler.register(this);
     }
 
@@ -197,11 +208,10 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         drawerToggle.setDrawerIndicatorEnabled(false);
 
-        final int count = ThreadRegistry.getInstance().getUnreadCount();
         if (drawerIndicator) {
-            setNavigationIconWithBadge(R.drawable.ic_nav_menu, count);
+            updateBadge(R.drawable.ic_nav_menu);
         } else {
-            setNavigationIconWithBadge(R.drawable.ic_nav_arrow_back, count);
+            updateBadge(R.drawable.ic_nav_arrow_back);
         }
 
         drawerLayout.addDrawerListener(drawerToggle);
@@ -216,8 +226,34 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         return drawerToggle;
     }
 
-    public void updateBadge(final int count) {
-        setNavigationIconWithBadge(0, count);
+    public void updateBadge(@DrawableRes final int navDrawable) {
+        HistoryTableConnection.fetchHistory(true)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .single(new ArrayList<>())
+                .subscribe(new SingleObserver<List<History>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // no op
+                    }
+
+                    @Override
+                    public void onSuccess(List<History> histories) {
+
+                        int unread = 0;
+                        for (History history : histories) {
+                            unread += (history.threadSize - 1 - history.lastReadPosition);
+                        }
+
+                        setNavigationIconWithBadge(navDrawable, unread);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e(LOG_TAG, "Error setting unread count badge", e);
+                    }
+                });
+
     }
 
     protected void setNavigationIconWithBadge(final int drawableRes, final int count) {
@@ -275,10 +311,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         ft.commit();
     }
 
-    public int getBookmarkCount() {
-        return this.bookmarkCount;
-    }
-
     @Override
     public void preferenceChange(PreferenceChangeEvent pce) {
         Log.i(LOG_TAG, "Preference Changed: name=" + pce.getKey() + ", value=" + pce.getNewValue());
@@ -331,18 +363,24 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
     }
 
     @Override
-    public void onThumbnailClick(List<ChanPost> posts, long threadId, int position, String boardName) {
+    public void onThumbnailClick(final List<ChanPost> posts, final long threadId, final int position, final String boardName) {
         final long id;
+        try {
         if (position < 0 || posts.size() <= position) {
             Exception e = new Exception("Could not locate post in post list: position=" + position + ", list size=" + posts.size());
 
-            Log.e(LOG_TAG, "Error opening gallery into a post", e);
-            id = threadId;
-        } else {
-            id = posts.get(position).getNo();
+                Log.e(LOG_TAG, "Error opening gallery into a post", e);
+                id = threadId;
+            } else {
+                id = posts.get(position).getNo();
+            }
+            ThreadRegistry.getInstance().setPosts(threadId, posts);
+            GalleryActivity2.start(this, GalleryActivity2.GALLERY_TYPE_PAGER, id, boardName, threadId, new long[0]);
+
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Could not open thumbnail: posts.size()=" + posts.size() + ", position=" + position);
+            Toast.makeText(this, R.string.error_opening_gallery, Toast.LENGTH_SHORT).show();
         }
-        ThreadRegistry.getInstance().setPosts(threadId, posts);
-        GalleryActivity2.start(this, GalleryActivity2.GALLERY_TYPE_PAGER, id, boardName, threadId, new long[0]);
     }
 
     public void onAutoRefresh(final UpdateHistoryEvent event) {
@@ -351,24 +389,9 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
             Log.i(LOG_TAG, "Updating thread registry");
         }
 
-        RxUtil.safeUnsubscribe(fetchPostSubscription);
-        fetchPostSubscription = HistoryTableConnection.fetchPost(event.getBoardName(), event.getThreadId())
-                .compose(DatabaseUtils.applySchedulers())
-                .subscribe(history -> {
-                    if (history.threadId == -1) {
-                        return;
-                    }
-
-                    final boolean watched = history.watched == 1;
-                    if (event.isClosed()) {
-                        ThreadRegistry.getInstance().remove(history.threadId);
-                    } else {
-                        ThreadRegistry.getInstance().update(history.boardName, history.threadId, history.threadSize, watched);
-                        if (watched) {
-                            updateBadge(ThreadRegistry.getInstance().getUnreadCount());
-                        }
-                    }
-                });
+        if (event.isWatched()) {
+            updateBadge(0);
+        }
     }
 
     public void onHttpError(final HttpErrorEvent event) {
@@ -382,10 +405,8 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
                         return;
                     }
 
-                    final boolean watched = history.watched == 1;
-                    ThreadRegistry.getInstance().update(event.getThreadInfo().boardName, event.getThreadInfo().threadId, -1, watched);
-                    if (watched) {
-                        setNavigationIconWithBadge(0, ThreadRegistry.getInstance().getUnreadCount());
+                    if (history.watched == 1) {
+                        updateBadge(0);
                     }
                 });
     }

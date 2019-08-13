@@ -39,19 +39,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.collection.LongSparseArray;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.core.util.Pair;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 
@@ -60,10 +58,11 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.async.ProcessThreadTask;
+import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.dialog.RepliesDialog;
 import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ReplyMenuClickListener;
-import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
 import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
@@ -81,6 +80,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+
 
 public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements Filterable {
     private static final String LOG_TAG = ThreadListAdapter.class.getSimpleName();
@@ -92,17 +96,16 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private static final int FIND_NO_RESULTS = -2;
 
-    private final LayoutInflater inflater;
-    private final FragmentManager fm;
     private final String flagUrl;
     private final String trollUrl;
 
     private final VectorDrawableCompat pinDrawable;
     private final VectorDrawableCompat lockDrawable;
 
-    private FragmentActivity activity;
-    private ChanThread thread;
+    private List<ChanPost> items = new ArrayList<>();
+    private List<Long> userPosts = new ArrayList<>();
     private String boardName;
+    private long threadId;
     private CharSequence[] timeMap;
     private OnThumbnailClickListener thumbnailClickListener;
     private ReplyMenuClickListener replyMenuClickListener;
@@ -113,10 +116,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private int selectedTextBackground;
 
     private int lastPosition = 0;
-    private List<Long> userPostList;
-
-    private List<View> headers = new ArrayList<>();
-    private List<View> footers = new ArrayList<>();
+//    private List<Long> userPostList;
 
     private List<String> repliesText = new ArrayList<>();
     private List<String> imagesText = new ArrayList<>();
@@ -131,31 +131,30 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private OnFilterUpdateCallback filterUpdateCallback;
 
 
-    public ThreadListAdapter(final FragmentActivity activity, final FragmentManager fm, final ChanThread thread, final String boardName) {
-        this.activity = activity;
-        this.fm = fm;
-        this.thread = thread;
-        this.boardName = boardName;
-        this.inflater = LayoutInflater.from(activity);
+    public ThreadListAdapter(@NonNull final ChanThread thread) {
+        this.items.addAll(thread.getPosts());
+        this.boardName = thread.getBoardName();
+        this.threadId = thread.getThreadId();
+        final Context context = MimiApplication.getInstance().getApplicationContext();
 
-        this.flagUrl = MimiUtil.https() + activity.getString(R.string.flag_int_link);
-        this.trollUrl = MimiUtil.https() + activity.getString(R.string.flag_pol_link);
+        this.flagUrl = MimiUtil.https() + context.getString(R.string.flag_int_link);
+        this.trollUrl = MimiUtil.https() + context.getString(R.string.flag_pol_link);
 
         if (MimiUtil.getInstance().getTheme() == MimiUtil.THEME_LIGHT) {
             defaultPostBackground = R.color.row_item_background_light;
             highlightPostBackground = R.color.post_highlight_light;
-            highlightTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_highlight_background_light, activity.getTheme());
-            selectedTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_select_background_light, activity.getTheme());
+            highlightTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_highlight_background_light, context.getTheme());
+            selectedTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_select_background_light, context.getTheme());
         } else if (MimiUtil.getInstance().getTheme() == MimiUtil.THEME_DARK) {
             defaultPostBackground = R.color.row_item_background_dark;
             highlightPostBackground = R.color.post_highlight_dark;
-            highlightTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_highlight_background_dark, activity.getTheme());
-            selectedTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_select_background_dark, activity.getTheme());
+            highlightTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_highlight_background_dark, context.getTheme());
+            selectedTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_select_background_dark, context.getTheme());
         } else {
             defaultPostBackground = R.color.row_item_background_black;
             highlightPostBackground = R.color.post_highlight_black;
-            highlightTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_highlight_background_black, activity.getTheme());
-            selectedTextBackground = ResourcesCompat.getColor(activity.getResources(), R.color.text_select_background_black, activity.getTheme());
+            highlightTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_highlight_background_black, context.getTheme());
+            selectedTextBackground = ResourcesCompat.getColor(context.getResources(), R.color.text_select_background_black, context.getTheme());
         }
 
         Pair<VectorDrawableCompat, VectorDrawableCompat> metadataDrawables = initMetadataDrawables();
@@ -167,12 +166,14 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     private void setupThread() {
-        this.timeMap = new CharSequence[thread.getPosts().size()];
-        this.colorList = new int[thread.getPosts().size()];
-        this.userPostList = ThreadRegistry.getInstance().getUserPosts(boardName, thread.getThreadId());
+        this.timeMap = new CharSequence[items.size()];
+        this.colorList = new int[items.size()];
+//        this.userPostList = ThreadRegistry.getInstance().getUserPosts(boardName, threadId);
 
-        for (int i = 0; i < thread.getPosts().size(); i++) {
-            final ChanPost post = thread.getPosts().get(i);
+        final Context context = MimiApplication.getInstance().getApplicationContext();
+
+        for (int i = 0; i < items.size(); i++) {
+            final ChanPost post = items.get(i);
             final CharSequence dateString = DateUtils.getRelativeTimeSpanString(
                     post.getTime() * 1000L,
                     System.currentTimeMillis(),
@@ -180,12 +181,12 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                     DateUtils.FORMAT_ABBREV_RELATIVE);
 
             if (post.getFilename() != null && !post.getFilename().equals("")) {
-                thumbUrlMap.put(post.getNo(), MimiUtil.https() + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, boardName, post.getTim()));
-                fullImageUrlMap.put(post.getNo(), MimiUtil.https() + activity.getString(R.string.image_link) + activity.getString(R.string.full_image_path, boardName, post.getTim(), post.getExt()));
+                thumbUrlMap.put(post.getNo(), MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, boardName, post.getTim()));
+                fullImageUrlMap.put(post.getNo(), MimiUtil.https() + context.getString(R.string.image_link) + context.getString(R.string.full_image_path, boardName, post.getTim(), post.getExt()));
             }
 
-            repliesText.add(activity.getResources().getQuantityString(R.plurals.replies_plural, post.getRepliesFrom().size(), post.getRepliesFrom().size()));
-            imagesText.add(activity.getResources().getQuantityString(R.plurals.image_plural, post.getImages(), post.getImages()));
+            repliesText.add(context.getResources().getQuantityString(R.plurals.replies_plural, post.getRepliesFrom().size(), post.getRepliesFrom().size()));
+            imagesText.add(context.getResources().getQuantityString(R.plurals.image_plural, post.getImages(), post.getImages()));
 
             timeMap[i] = dateString;
 
@@ -221,61 +222,13 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         return Pair.create(pin, lock);
     }
 
-    private boolean isHeader(int position) {
-        return (position < headers.size());
-    }
-
-    private boolean isFooter(int position) {
-        return (position >= headers.size() + thread.getPosts().size());
-    }
-
-    //add a header to the adapter
-    public void addHeader(View header) {
-        if (!headers.contains(header)) {
-            headers.add(header);
-            //animate
-            notifyItemInserted(headers.size() - 1);
-        }
-    }
-
-    //remove a header from the adapter
-    public void removeHeader(View header) {
-        if (headers.contains(header)) {
-            //animate
-            notifyItemRemoved(headers.indexOf(header));
-            headers.remove(header);
-        }
-    }
-
-    //add a footer to the adapter
-    public void addFooter(View footer) {
-        if (!footers.contains(footer)) {
-            footers.add(footer);
-            //animate
-            notifyItemInserted(headers.size() + thread.getPosts().size() + footers.size() - 1);
-        }
-    }
-
-    //remove a footer from the adapter
-    public void removeFooter(View footer) {
-        if (footers.contains(footer)) {
-            //animate
-            notifyItemRemoved(headers.size() + thread.getPosts().size() + footers.indexOf(footer));
-            footers.remove(footer);
-        }
-    }
-
-    public int headerCount() {
-        return headers == null ? 0 : headers.size();
-    }
-
     public int getNextFoundStringPosition() {
         if (foundPosts.size() == 0) {
             return FIND_NO_RESULTS;
         }
 
         foundPos = foundPos == foundPosts.size() - 1 ? 0 : foundPos + 1;
-        return getListPositionFromResultPosition(foundPos) + headerCount();
+        return getListPositionFromResultPosition(foundPos);
     }
 
     public int getPrevFoundStringPosition() {
@@ -284,7 +237,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
 
         foundPos = foundPos == 0 ? foundPosts.size() - 1 : foundPos - 1;
-        return getListPositionFromResultPosition(foundPos) + headerCount();
+        return getListPositionFromResultPosition(foundPos);
     }
 
     private int getListPositionFromResultPosition(int pos) {
@@ -295,33 +248,25 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         List<Long> resultList = new ArrayList<>(foundPosts.keySet());
         long foundPostId = resultList.get(pos);
 
-        return MimiUtil.findPostPositionById(foundPostId, thread.getPosts());
+        return MimiUtil.findPostPositionById(foundPostId, items);
     }
 
-    public int getLastPosition() {
-        return lastPosition;
+    public void setUserPosts(List<Long> posts) {
+        this.userPosts.clear();
+        this.userPosts.addAll(posts);
     }
 
+    @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final View v;
         switch (viewType) {
-            case VIEW_HEADER:
-                FrameLayout headerFrameLayout = new FrameLayout(parent.getContext());
-                //make sure it fills the space
-                headerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, MimiUtil.dpToPx(10)));
-                return new HeaderFooterViewHolder(headerFrameLayout);
             case VIEW_TOP_LIST_ITEM:
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.thread_first_post_item, parent, false);
                 return new FirstPostViewHolder(v);
             case VIEW_NORMAL_LIST_ITEM:
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.thread_post_item, parent, false);
                 return new ThreadPostViewHolder(v);
-            case VIEW_FOOTER:
-                FrameLayout footerFrameLayout = new FrameLayout(parent.getContext());
-                //make sure it fills the space
-                footerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, MimiUtil.dpToPx(60)));
-                return new HeaderFooterViewHolder(footerFrameLayout);
             default:
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.header_layout, parent, false);
                 return new ThreadPostViewHolder(v);
@@ -335,76 +280,86 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public int getItemCount() {
-        if (thread != null && thread.getPosts() != null) {
-            return headers.size() + thread.getPosts().size() + footers.size();
-        }
-
-        return 0;
+        return items.size();
     }
 
-    public void setThread(final ChanThread thread) {
+    private void reset(List<ChanPost> posts) {
         this.thumbUrlMap.clear();
         this.fullImageUrlMap.clear();
 
         this.repliesText.clear();
         this.imagesText.clear();
 
-//        final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new ThreadDiff(this.thread, thread));
-        this.thread = new ChanThread(thread);
+        items.clear();
+        items.addAll(posts);
 
         setupThread();
-//        result.dispatchUpdatesTo(ThreadListAdapter.this);
-        notifyDataSetChanged();
+    }
+
+    public void setThread(final ChanThread thread) {
+
+        if (TextUtils.isEmpty(boardName) || threadId <= 0) {
+            boardName = thread.getBoardName();
+            threadId = thread.getThreadId();
+
+            reset(thread.getPosts());
+
+            notifyDataSetChanged();
+            return;
+        }
+
+        if (thread.getPosts().size() > this.items.size() && this.items.size() > 1) {
+
+//            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new ThreadDiff(this.thread, thread), false);
+//            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new ThreadDiff(this.thread, thread));
+//            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+//                @Override
+//                public int getOldListSize() {
+//                    return items.size();
+//                }
+//
+//                @Override
+//                public int getNewListSize() {
+//                    return thread.getPosts().size();
+//                }
+//
+//                @Override
+//                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+//                    return items.get(oldItemPosition).getNo() == thread.getPosts().get(newItemPosition).getNo();
+//                }
+//
+//                @Override
+//                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+//                    return items.get(oldItemPosition).getNo() == thread.getPosts().get(newItemPosition).getNo();
+//                }
+//            }, false);
+
+            reset(thread.getPosts());
+            notifyDataSetChanged();
+//            result.dispatchUpdatesTo(this);
+
+        } else if (items.size() <= 1) {
+            reset(thread.getPosts());
+            notifyDataSetChanged();
+        }
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (isHeader(position)) {
-            return VIEW_HEADER;
-        } else if (isFooter(position)) {
-            return VIEW_FOOTER;
-        } else if (position == headers.size()) {
+        if (position == 0) {
             return VIEW_TOP_LIST_ITEM;
         } else {
             return VIEW_NORMAL_LIST_ITEM;
         }
     }
 
-    private void prepareHeaderFooter(HeaderFooterViewHolder vh, View view) {
-
-        //if the view already belongs to another layout, remove it
-        if (view.getParent() != null) {
-            ((ViewGroup) view.getParent()).removeView(view);
-        }
-
-        //empty out our FrameLayout and replace with our header/footer
-        vh.base.removeAllViews();
-        vh.base.addView(view);
-
-    }
-
     @Override
-    public void onBindViewHolder(final RecyclerView.ViewHolder vh, final int pos) {
-
-        if (isHeader(pos) || isFooter(pos)) {
-            if (isHeader(pos)) {
-                View v = headers.get(pos);
-                //add our view to a header view and display it
-                prepareHeaderFooter((HeaderFooterViewHolder) vh, v);
-            } else {
-                View v = footers.get(pos - thread.getPosts().size() - headers.size());
-                //add our view to a footer view and display it
-                prepareHeaderFooter((HeaderFooterViewHolder) vh, v);
-            }
-
-            return;
-        }
+    public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder vh, final int position) {
 
         final long startTime = System.currentTimeMillis();
 
         final ViewHolder viewHolder = (ViewHolder) vh;
-        final int position = pos - headers.size();
-        final ChanPost postItem = thread.getPosts().get(position);
+        final ChanPost postItem = items.get(position);
 
         if (postItem == null) {
             return;
@@ -419,25 +374,22 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 //        final boolean selected = foundPos >= 0 && position == postPosition;
         // setting this dynamically causes the app to crash
         final boolean selected = false;
+        final boolean usersPost = userPosts.contains(postItem.getNo());
 
         if (viewHolder.postContainer != null) {
-            if (userPostList.contains(postItem.getNo())) {
+            if (usersPost) {
                 viewHolder.postContainer.setBackgroundResource(highlightPostBackground);
             } else {
                 viewHolder.postContainer.setBackgroundResource(defaultPostBackground);
             }
         }
 
-        viewHolder.thumbnailContainer.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (thumbnailClickListener != null) {
-                    final ArrayList<ChanPost> postsWithImages = GalleryPagerAdapter.getPostsWithImages(thread);
-                    final int position = postsWithImages.indexOf(postItem);
-                    final long threadId = thread.getPosts().get(0).getNo();
+        viewHolder.thumbnailContainer.setOnClickListener(v -> {
+            if (thumbnailClickListener != null) {
+                final ArrayList<ChanPost> postsWithImages = GalleryPagerAdapter.getPostsWithImages(items);
+                final int position1 = postsWithImages.indexOf(postItem);
 
-                    thumbnailClickListener.onThumbnailClick(postsWithImages, threadId, position, boardName);
-                }
+                thumbnailClickListener.onThumbnailClick(postsWithImages, threadId, position1, boardName);
             }
         });
 
@@ -465,29 +417,24 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             if (country != null) {
 
                 viewHolder.flagIcon.setVisibility(View.VISIBLE);
-                viewHolder.flagIcon.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-                        builder.setMessage(postItem.getCountryName())
-                                .setCancelable(true)
-                                .show()
-                                .setCanceledOnTouchOutside(true);
-                    }
+                viewHolder.flagIcon.setOnClickListener(v -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(viewHolder.flagIcon.getContext());
+                    builder.setMessage(postItem.getCountryName())
+                            .setCancelable(true)
+                            .show()
+                            .setCanceledOnTouchOutside(true);
                 });
 
-                MimiUtil.loadImageWithFallback(activity, viewHolder.flagIcon, url, null, R.drawable.placeholder_image, null);
-//                    Glide.with(activity)
-//                            .load(url)
-//                            .placeholder(R.drawable.ic_placeholder_image)
-//                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-//                            .crossFade()
-//                            .into(viewHolder.flagIcon);
+//                MimiUtil.loadImageWithFallback(viewHolder.flagIcon.getContext(), viewHolder.flagIcon, url, null, R.drawable.placeholder_image, null);
+                Glide.with(viewHolder.flagIcon)
+                        .load(url)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .into(viewHolder.flagIcon);
 
             } else {
                 viewHolder.flagIcon.setVisibility(View.GONE);
                 viewHolder.flagIcon.setOnClickListener(null);
-                GlideApp.with(activity).clear(viewHolder.flagIcon);
+                GlideApp.with(viewHolder.flagIcon).clear(viewHolder.flagIcon);
             }
         }
 
@@ -509,88 +456,104 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             }
         }
 
-        viewHolder.menuButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View v) {
-                final PopupMenu menu = new PopupMenu(v.getContext(), v);
-                if (position == 0) {
-                    menu.inflate(R.menu.thread_first_post_menu);
-                } else {
-                    menu.inflate(R.menu.thread_menu);
-                }
-
-                final MenuItem imageInfoItem = menu.getMenu().findItem(R.id.image_info_menu_item);
-                if (imageUrl == null && imageInfoItem != null) {
-                    imageInfoItem.setVisible(false);
-                }
-
-                menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(final MenuItem menuItem) {
-                        int sdk = android.os.Build.VERSION.SDK_INT;
-                        final String url = "https://" + activity.getString(R.string.board_link);
-                        final String path = activity.getString(R.string.raw_thread_path, boardName, thread.getThreadId());
-                        final String link;
-                        if (postItem.getNo() == thread.getThreadId()) {
-                            link = url + path;
-                        } else {
-                            link = url + path + "#q" + postItem.getNo();
-                        }
-                        switch (menuItem.getItemId()) {
-                            case R.id.reply_menu_item:
-                                if (replyMenuClickListener != null) {
-                                    replyMenuClickListener.onReply(v, postItem.getNo());
-                                }
-
-                                return true;
-                            case R.id.quote_menu_item:
-                                if (replyMenuClickListener != null) {
-                                    replyMenuClickListener.onQuote(v, postItem);
-                                }
-
-                                return true;
-                            case R.id.copy_text:
-                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
-                                android.content.ClipData clip = android.content.ClipData.newPlainText("hread info", thread.getPosts().get(position).getComment());
-                                clipboard.setPrimaryClip(clip);
-
-                                Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
-                                return true;
-                            case R.id.image_info_menu_item:
-                                createImageInfoDialog(postItem, imageUrl);
-                                return true;
-
-                            case R.id.report_menu:
-                                final String reportUrl = "https://" + activity.getString(R.string.sys_link);
-                                final String reportPath = activity.getString(R.string.report_path, boardName, thread.getPosts().get(position).getNo());
-                                final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(reportUrl + reportPath));
-
-                                activity.startActivity(reportIntent);
-                                return true;
-
-                            case R.id.copy_link_menu:
-                                ClipboardManager linkClipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
-                                ClipData linkClip = android.content.ClipData.newPlainText("thread link", link);
-                                linkClipboard.setPrimaryClip(linkClip);
-
-                                Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
-
-                                return true;
-
-                            case R.id.open_link_menu:
-                                final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
-                                activity.startActivity(openLinkIntent);
-
-                                return true;
-
-                            default:
-                                return false;
-
-                        }
-                    }
-                });
-                menu.show();
+        viewHolder.menuButton.setOnClickListener(v -> {
+            final PopupMenu menu = new PopupMenu(v.getContext(), v);
+            if (position == 0) {
+                menu.inflate(R.menu.thread_first_post_menu);
+            } else {
+                menu.inflate(R.menu.thread_menu);
             }
+
+            final MenuItem claimMenuItem = menu.getMenu().findItem(R.id.claim_menu_item);
+            final MenuItem unclaimMenuItem = menu.getMenu().findItem(R.id.unclaim_menu_item);
+
+            claimMenuItem.setVisible(!usersPost);
+            unclaimMenuItem.setVisible(usersPost);
+
+            final MenuItem imageInfoItem = menu.getMenu().findItem(R.id.image_info_menu_item);
+            if (imageUrl == null && imageInfoItem != null) {
+                imageInfoItem.setVisible(false);
+            }
+
+            menu.setOnMenuItemClickListener(menuItem -> {
+                final Context context = MimiApplication.getInstance().getApplicationContext();
+                final String url = "https://" + context.getString(R.string.board_link);
+                final String path = context.getString(R.string.raw_thread_path, boardName, threadId);
+                final String link;
+                if (postItem.getNo() == threadId) {
+                    link = url + path;
+                } else {
+                    link = url + path + "#q" + postItem.getNo();
+                }
+                switch (menuItem.getItemId()) {
+                    case R.id.reply_menu_item:
+                        if (replyMenuClickListener != null) {
+                            replyMenuClickListener.onReply(v, postItem.getNo());
+                        }
+
+                        return true;
+                    case R.id.quote_menu_item:
+                        if (replyMenuClickListener != null) {
+                            replyMenuClickListener.onQuote(v, postItem);
+                        }
+
+                        return true;
+                    case R.id.claim_menu_item:
+                        setPostOwner(postItem, true);
+                        return true;
+                    case R.id.unclaim_menu_item:
+                        setPostOwner(postItem, false);
+                        return true;
+                    case R.id.copy_text:
+                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData clip = ClipData.newPlainText("hread info", items.get(position).getComment());
+                        clipboard.setPrimaryClip(clip);
+
+                        Toast.makeText(context, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                        return true;
+                    case R.id.image_info_menu_item:
+                        if (viewHolder.menuButton.getContext() instanceof Activity) {
+                            final Activity activity = (Activity) viewHolder.menuButton.getContext();
+                            createImageInfoDialog(activity, postItem, imageUrl);
+                        }
+                        return true;
+
+                    case R.id.report_menu:
+                        if (viewHolder.menuButton.getContext() instanceof Activity) {
+                            final Activity activity = (Activity) viewHolder.menuButton.getContext();
+                            final String reportUrl = "https://" + context.getString(R.string.sys_link);
+                            final String reportPath = context.getString(R.string.report_path, boardName, items.get(position).getNo());
+                            final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(reportUrl + reportPath));
+
+
+                            activity.startActivity(reportIntent);
+                        }
+                        return true;
+
+                    case R.id.copy_link_menu:
+                        ClipboardManager linkClipboard = (ClipboardManager) MimiApplication.getInstance().getApplicationContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipData linkClip = ClipData.newPlainText("thread link", link);
+                        linkClipboard.setPrimaryClip(linkClip);
+
+                        Toast.makeText(context, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
+
+                        return true;
+
+                    case R.id.open_link_menu:
+                        if (viewHolder.menuButton.getContext() instanceof Activity) {
+                            final Activity activity = (Activity) viewHolder.menuButton.getContext();
+                            final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+                            activity.startActivity(openLinkIntent);
+                        }
+
+                        return true;
+
+                    default:
+                        return false;
+
+                }
+            });
+            menu.show();
         });
 
         viewHolder.threadId.setText(String.valueOf(postItem.getNo()));
@@ -620,10 +583,10 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             viewHolder.userId.setBackgroundColor(colorList[position]);
             viewHolder.userId.setText(postItem.getId());
             viewHolder.userId.setVisibility(View.VISIBLE);
-            viewHolder.userId.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    RepliesDialog.newInstance(thread, postItem.getId()).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
+            viewHolder.userId.setOnClickListener(v -> {
+                if (v.getContext() instanceof AppCompatActivity) {
+                    final AppCompatActivity activity = (AppCompatActivity) viewHolder.menuButton.getContext();
+                    RepliesDialog.newInstance(new ChanThread(boardName, threadId, items), postItem.getId()).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
                 }
             });
         } else {
@@ -689,12 +652,9 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 viewHolder.replyButton.setVisibility(View.GONE);
             } else {
                 viewHolder.replyButton.setVisibility(View.VISIBLE);
-                viewHolder.replyButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (replyMenuClickListener != null) {
-                            replyMenuClickListener.onReply(v, postItem.getNo());
-                        }
+                viewHolder.replyButton.setOnClickListener(v -> {
+                    if (replyMenuClickListener != null) {
+                        replyMenuClickListener.onReply(v, postItem.getNo());
                     }
                 });
             }
@@ -704,12 +664,10 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             if (postItem.getRepliesFrom() != null) {
                 viewHolder.replyCount.setText(repliesText.get(position));
-                viewHolder.replyCount.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (activity != null && v != null) {
-                            RepliesDialog.newInstance(thread, postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
-                        }
+                viewHolder.replyCount.setOnClickListener(v -> {
+                    if (v.getContext() instanceof AppCompatActivity) {
+                        final AppCompatActivity activity = (AppCompatActivity) viewHolder.menuButton.getContext();
+                        RepliesDialog.newInstance(new ChanThread(boardName, threadId, items), postItem).show(activity.getSupportFragmentManager(), RepliesDialog.DIALOG_TAG);
                     }
                 });
             }
@@ -717,7 +675,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             if (viewHolder.galleryImageCount != null) {
                 viewHolder.galleryImageCount.setText(imagesText.get(position));
                 viewHolder.galleryImageCount.setOnClickListener(v -> {
-                    ThreadRegistry.getInstance().setPosts(postItem.getNo(), GalleryPagerAdapter.getPostsWithImages(thread.getPosts()));
+                    ThreadRegistry.getInstance().setPosts(postItem.getNo(), GalleryPagerAdapter.getPostsWithImages(items));
                     GalleryActivity2.start(v.getContext(), 0, postItem.getNo(), boardName, postItem.getNo(), new long[0]);
                 });
 
@@ -763,7 +721,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             }
 
             viewHolder.thumbnailContainer.setVisibility(View.VISIBLE);
-            GlideApp.with(activity)
+            GlideApp.with(viewHolder.thumbnailContainer)
                     .load(thumbUrl)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(viewHolder.thumbUrl);
@@ -774,16 +732,98 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 viewHolder.thumbnailInfoContainer.setVisibility(View.GONE);
             }
 
-            Glide.with(activity).clear(viewHolder.thumbUrl);
+            Glide.with(viewHolder.thumbUrl.getContext()).clear(viewHolder.thumbUrl);
         }
 
         long endTime = System.currentTimeMillis();
         long delta = endTime - startTime;
 
-        Log.d(LOG_TAG, "onBindViewHolder took " + String.valueOf(delta) + "ms");
+        Log.d(LOG_TAG, "onBindViewHolder took " + delta + "ms");
     }
 
-    private void createImageInfoDialog(final ChanPost postItem, final String imageUrl) {
+    private void setPostOwner(final ChanPost post, boolean claim) {
+        long id = post.getNo();
+        if (claim) {
+            UserPostTableConnection.addPost(boardName, threadId, id)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .single(false)
+                    .subscribe(new SingleObserver<Boolean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+                            // no op
+                        }
+
+                        @Override
+                        public void onSuccess(Boolean success) {
+                            if (!success) {
+                                onError(new Exception("Error claiming thread. Please try again."));
+                                return;
+                            }
+
+                            userPosts.add(id);
+                            processPostReplies(post);
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG, "Error claiming thread", e);
+                            Toast.makeText(MimiApplication.getInstance().getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        } else {
+            UserPostTableConnection.removePost(boardName, threadId, id)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .single(false)
+                    .subscribe(new SingleObserver<Boolean>() {
+                        @Override
+                        public void onSubscribe(Disposable d) {
+                            // no op
+                        }
+
+                        @Override
+                        public void onSuccess(Boolean success) {
+                            if (!success) {
+                                onError(new Exception("Error unclaiming thread. Please try again."));
+                                return;
+                            }
+
+                            final int index = userPosts.indexOf(id);
+                            if (index >= 0) {
+                                userPosts.remove(index);
+                                processPostReplies(post);
+                            } else {
+                                onError(new Exception("Error unclaiming thread. Please try again."));
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+                            Log.e(LOG_TAG, "Error unclaiming thread", e);
+                            Toast.makeText(MimiApplication.getInstance().getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+    }
+
+    private void processPostReplies(ChanPost post) {
+        final int postPosition = MimiUtil.findPostPositionById(post.getNo(), items);
+        for (ChanPost reply : post.getRepliesFrom()) {
+            final int i = MimiUtil.findPostPositionById(reply.getNo(), items);
+            if (i >= 0) {
+                ChanPost p = ProcessThreadTask.updatePost(items.get(i), userPosts, boardName, 0);
+                items.set(i, p);
+
+                notifyItemChanged(i);
+            }
+        }
+
+        notifyItemChanged(postPosition);
+    }
+
+    private void createImageInfoDialog(final Activity activity, final ChanPost postItem, final String imageUrl) {
+        final LayoutInflater inflater = LayoutInflater.from(activity);
         final View root = inflater.inflate(R.layout.dialog_image_info_buttons, null, false);
         final TextView fileName = (TextView) root.findViewById(R.id.file_name);
         final TextView dimensions = (TextView) root.findViewById(R.id.dimensions);
@@ -845,7 +885,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     @Override
     public Filter getFilter() {
         if (postFilter == null) {
-            postFilter = new ThreadListAdapter.PostFilter(thread.getPosts());
+            postFilter = new ThreadListAdapter.PostFilter(items);
         }
 
         return postFilter;
@@ -873,7 +913,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             } else {
                 String constraint = searchStr.toString().toLowerCase();
                 LinkedHashMap<Long, TextSearchResult> resultMap = new LinkedHashMap<>();
-                for (ChanPost chanPost : thread.getPosts()) {
+                for (ChanPost chanPost : items) {
                     final TextSearchResult result = new TextSearchResult();
                     result.searchStr = constraint;
                     result.postId = chanPost.getNo();
@@ -981,6 +1021,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 filterUpdateCallback.onFilterUpdated(constraint.toString(), foundPosts.size());
             }
         }
+
     }
 
     public TextSearchResult getSearchResultByPostId(long postId) {
@@ -1086,35 +1127,45 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
     }
 
-    private class ThreadDiff extends DiffUtil.Callback {
-        private ChanThread oldThread;
-        private ChanThread newThread;
-
-        public ThreadDiff(ChanThread oldThread, ChanThread newThread) {
-            this.oldThread = oldThread;
-            this.newThread = newThread;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldThread == null ? 0 : oldThread.getPosts().size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newThread == null ? 0 : newThread.getPosts().size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldThread.getPosts().get(oldItemPosition).getNo() == newThread.getPosts().get(newItemPosition).getNo();
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldThread.getPosts().get(oldItemPosition).equals(newThread.getPosts().get(newItemPosition));
-        }
-    }
+//    private class ThreadDiff extends DiffUtil.Callback {
+//        private final ChanThread oldThread;
+//        private final ChanThread newThread;
+//
+//        ThreadDiff(ChanThread oldThread, ChanThread newThread) {
+//            this.oldThread = oldThread;
+//            this.newThread = newThread;
+//        }
+//
+//        @Override
+//        public int getOldListSize() {
+//            return oldThread == null ? 0 : olditems.size();
+//        }
+//
+//        @Override
+//        public int getNewListSize() {
+//            return newThread == null ? 0 : newitems.size();
+//        }
+//
+//        @Override
+//        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+//            return olditems.get(oldItemPosition).getNo() == newitems.get(newItemPosition).getNo();
+//        }
+//
+//        @Override
+//        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+//            return olditems.get(oldItemPosition).getNo() == newitems.get(newItemPosition).getNo();
+////            return olditems.get(oldItemPosition).equals(newitems.get(newItemPosition));
+//        }
+//
+//        @Nullable
+//        @Override
+//        public Object getChangePayload(int oldItemPosition, int newItemPosition) {
+//            Log.d(LOG_TAG, "old number=" + olditems.get(oldItemPosition).getNo()
+//                    + ", new number=" + newitems.get(newItemPosition).getNo()
+//                    + ", equals=" + olditems.get(oldItemPosition).equals(newitems.get(newItemPosition)));
+//            return super.getChangePayload(oldItemPosition, newItemPosition);
+//        }
+//    }
 
     public void setOnThumbnailClickListener(final OnThumbnailClickListener listener) {
         thumbnailClickListener = listener;

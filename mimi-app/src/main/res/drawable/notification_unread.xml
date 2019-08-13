@@ -17,7 +17,7 @@
 
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/new_unread_count"
-    android:insetBottom="19dip"
-    android:insetLeft="21dip"
-    android:insetTop="2dip"
+    android:insetBottom="10dip"
+    android:insetLeft="15dip"
+    android:insetTop="6dip"
     android:visible="true" />

@@ -13,13 +13,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.legacy.widget.Space
-            android:id="@+id/thread_list_top_spacer"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/thread_find_text_view_height"
-            android:visibility="gone"
-            tools:visibility="visible" />
-
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swipe_refresh_layout"
             android:layout_width="match_parent"
@@ -33,6 +26,9 @@
                 android:layout_height="wrap_content"
                 android:dividerHeight="2.0sp"
                 android:fadingEdge="none"
+                android:clipToPadding="false"
+                android:paddingTop="15dp"
+                android:paddingBottom="10dp"
                 android:paddingLeft="4dp"
                 android:paddingRight="4dp"
                 android:scrollbars="vertical"

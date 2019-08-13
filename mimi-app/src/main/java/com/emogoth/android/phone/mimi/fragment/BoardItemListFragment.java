@@ -29,7 +29,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.legacy.widget.Space;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -54,7 +54,6 @@ import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RequestQueueUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.view.DividerItemDecoration;
 import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
@@ -118,7 +117,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
     private TextView orderByLast;
     private TextView orderByPost;
     private TextView orderbyCustom;
-    private Space actionBarSpacer;
     private ViewGroup boardOrderBackground;
     private Spinner toolbarSpinner;
     private View errorView;
@@ -134,7 +132,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
     private boolean editMode = false;
     private Toolbar toolbar;
     private ChanConnector chanConnector;
-    private View listFooter;
     private ItemTouchHelper itemTouchHelper;
     private ActionMode.Callback actionModeCallback;
 
@@ -185,26 +182,21 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
         }
 
         rootView = inflater.inflate(R.layout.fragment_boards_list, container, false);
-        listFooter = inflater.inflate(R.layout.footer_board_list, container, false);
-
-        actionBarSpacer = (Space) rootView.findViewById(R.id.spacer);
         errorSwitcher = rootView.findViewById(R.id.error_switcher);
 
         boardListAdapter = new BoardListAdapter(getActivity(), new ArrayList<>());
 
         final LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
         boardsList = rootView.findViewById(R.id.boards_list);
-        boardsList.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.LIST_VERTICAL));
+        boardsList.addItemDecoration(new DividerItemDecoration(boardsList.getContext(), RecyclerView.VERTICAL));
         boardsList.setLayoutManager(layoutManager);
         boardsList.setAdapter(boardListAdapter);
         boardListAdapter.setDragListener(viewHolder -> itemTouchHelper.startDrag(viewHolder));
         boardListAdapter.setOnItemLongClickListener((parent, view, position, id) -> {
             if (getActivity() != null) {
-
-                final MimiActivity activity = ((MimiActivity) getActivity());
-                activity.getToolbar().startActionMode(getActionMode());
+                getActivity().startActionMode(getActionMode());
             }
-            return false;
+            return true;
         });
         return rootView;
     }
@@ -231,8 +223,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
                     }
 
                     toolbar.setVisibility(View.GONE);
-
-                    actionBarSpacer.setVisibility(View.GONE);
                     boardOrderContainer.setVisibility(View.GONE);
 
                     boardsList.setClickable(false);
@@ -276,7 +266,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
                     boardListAdapter.setOnBoardClickListener(BoardItemListFragment.this);
 
                     boardOrderContainer.setVisibility(View.VISIBLE);
-                    actionBarSpacer.setVisibility(View.VISIBLE);
 
                     final int order = MimiUtil.getBoardOrder(getActivity());
                     boardOrderText.setText(orderByNames[order]);
@@ -589,7 +578,9 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
     }
 
     private void showChangeLog() {
-        LicensesFragment.displayLicensesFragment(getActivity().getSupportFragmentManager(), R.raw.changelog, "ChangeLog");
+        if (isAdded()) {
+            LicensesFragment.displayLicensesFragment(getActivity().getSupportFragmentManager(), R.raw.changelog, "ChangeLog");
+        }
     }
 
     private void setupHeader(final View rootView) {
@@ -814,11 +805,8 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.manage_boards_menu) {
-            if (getActivity() != null) {
-                final MimiActivity activity = ((MimiActivity) getActivity());
-                activity.getToolbar().startActionMode(getActionMode());
-            }
+        if (item.getItemId() == R.id.manage_boards_menu && getActivity() != null) {
+            getActivity().startActionMode(getActionMode());
         }
         return true;
     }

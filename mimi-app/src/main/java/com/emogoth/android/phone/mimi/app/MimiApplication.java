@@ -118,7 +118,7 @@ public class MimiApplication extends Application {
             }
         }, throwable -> Log.e(LOG_TAG, "Caught exception while setting up database", throwable));
 
-        ThreadRegistry.getInstance().init();
+                ThreadRegistry.getInstance().init();
         BusProvider.getInstance();
         RefreshScheduler.getInstance();
 

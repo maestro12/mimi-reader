@@ -136,12 +136,13 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
     @Override
     public void onBindViewHolder(final BoardViewHolder holder, int position) {
         final ChanBoard board = boards.get(position);
-        if (holder.boardName != null) {
-            holder.boardName.setVisibility(View.GONE);
-        }
 
         if (holder.boardTitle != null) {
             holder.boardTitle.setText(board.getTitle());
+        }
+
+        if (holder.boardName != null) {
+            holder.boardName.setText(board.getName());
         }
 
         if (holder.dragHandle != null) {
@@ -303,10 +304,10 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
             super(root);
             this.root = root;
 
-            boardName = (TextView) root.findViewById(R.id.board_name);
-            boardTitle = (TextView) root.findViewById(R.id.board_title);
+            boardName = root.findViewById(R.id.board_name);
+            boardTitle = root.findViewById(R.id.board_title);
             dragHandle = root.findViewById(R.id.drag_handle);
-            favorite = (TextView) root.findViewById(R.id.favorite);
+            favorite = root.findViewById(R.id.favorite);
 
         }
     }

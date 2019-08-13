@@ -67,6 +67,7 @@ public class RepliesDialog extends DialogFragment {
     public static final String DIALOG_TAG = "reply_dialog_tag";
 
     private String boardName;
+    private long threadId;
     private ArrayList<String> replies;
     private List<OutsideLink> outsideLinks;
     private ChanThread thread;
@@ -164,7 +165,7 @@ public class RepliesDialog extends DialogFragment {
 
         RxUtil.safeUnsubscribe(repliesSubscription);
 
-        repliesSubscription = Flowable.zip(UserPostTableConnection.fetchPosts(),
+        repliesSubscription = Flowable.zip(UserPostTableConnection.fetchPosts(boardName, threadId),
                 PostTableConnection.watchThread(thread.getThreadId()), (userPosts, chanThread) -> {
                     List<Long> posts = new ArrayList<>();
                     for (UserPost userPost : userPosts) {
@@ -258,6 +259,8 @@ public class RepliesDialog extends DialogFragment {
             long id = bundle.getLong(Extras.EXTRAS_THREAD_ID);
             List<ChanPost> threadPosts = ThreadRegistry.getInstance().getPosts(id);
             thread = new ChanThread(boardName, id, threadPosts);
+
+            this.threadId = id;
 
             ThreadRegistry.getInstance().clearPosts(id);
         }

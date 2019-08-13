@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.preference.PreferenceManager
 import com.emogoth.android.phone.mimi.R
+import com.emogoth.android.phone.mimi.app.MimiApplication
+import com.emogoth.android.phone.mimi.autorefresh.RefreshJobService
 
 class MimiPrefs {
     companion object {
@@ -60,6 +62,18 @@ class MimiPrefs {
         fun userOriginalFilename(context: Context): Boolean {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             return prefs.getBoolean(context.getString(R.string.use_original_filename_pref), false)
+        }
+
+        fun removeWatch(threadId: Long) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(MimiApplication.getInstance().applicationContext)
+            prefs.edit().remove("${RefreshJobService.NOTIFICATIONS_KEY_THREAD_SIZE}.$threadId").apply()
+        }
+
+        @JvmStatic
+        fun isEmojiEnabled(): Boolean {
+            val context = MimiApplication.getInstance().applicationContext
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            return prefs.getBoolean(context.getString(R.string.enable_emoji_pref), false)
         }
     }
 }

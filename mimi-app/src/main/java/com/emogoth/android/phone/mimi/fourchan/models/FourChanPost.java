@@ -17,9 +17,9 @@
 package com.emogoth.android.phone.mimi.fourchan.models;
 
 import android.content.Context;
-import android.text.Spannable;
 
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -129,7 +129,7 @@ public class FourChanPost implements PostConverter {
     @Expose
     private String trollCountry;
 
-    private Spannable comment;
+    private CharSequence comment;
 
     public int getNo() {
         return no;
@@ -331,11 +331,11 @@ public class FourChanPost implements PostConverter {
         this.lastReplies = lastReplies;
     }
 
-    public Spannable getComment() {
+    public CharSequence getComment() {
         return comment;
     }
 
-    public void setComment(Spannable comment) {
+    public void setComment(CharSequence comment) {
         this.comment = comment;
     }
 
@@ -460,8 +460,8 @@ public class FourChanPost implements PostConverter {
                     .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                     .setReplyColor(MimiUtil.getInstance().getReplyColor())
                     .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                    .setLinkColor(MimiUtil.getInstance().getLinkColor());
-            ;
+                    .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                    .setEnableEmoji(MimiPrefs.isEmojiEnabled());
 
             comment = parserBuilder.build().parse();
         }

@@ -54,7 +54,7 @@ public class ExoPlayer2Helper implements ExoPlayer.EventListener, TransferListen
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context);
         EventLogger eventLogger = new EventLogger(trackSelector);
 
-        player = ExoPlayerFactory.newSimpleInstance(renderersFactory, trackSelector);
+        player = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector);
         player.addListener(this);
         player.addListener(eventLogger);
         player.setAudioDebugListener(eventLogger);

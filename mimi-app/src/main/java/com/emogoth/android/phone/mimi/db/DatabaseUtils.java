@@ -54,6 +54,10 @@ public class DatabaseUtils {
         return db.insert(baseModel.getTableName(), SQLiteDatabase.CONFLICT_REPLACE, baseModel.toContentValues());
     }
 
+    public static long delete(BriteDatabase db, BaseModel baseModel) {
+        return db.delete(baseModel.getTableName(), baseModel.clause(), baseModel.vals());
+    }
+
     public static <T> FlowableTransformer<T, T> applySchedulers() {
         return f -> f.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());

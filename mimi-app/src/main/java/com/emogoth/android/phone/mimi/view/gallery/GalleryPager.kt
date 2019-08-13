@@ -3,6 +3,7 @@ package com.emogoth.android.phone.mimi.view.gallery
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -51,15 +52,20 @@ class GalleryPager @JvmOverloads constructor(
         }
         set(value) {
             try {
-                pager.post { pager.scrollToPosition(value) }
+                pager.post { pager.layoutManager?.scrollToPosition(value) }
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Error getting gallery position", e)
             }
         }
     var postId: Long = -1
         get() {
-            val holder: GalleryPagerItemViewHolder = pager.findViewHolderForAdapterPosition(position) as GalleryPagerItemViewHolder
-            return holder.postId
+            val pagerHolder = pager.findViewHolderForAdapterPosition(position)
+            if (pagerHolder != null) {
+                val holder: GalleryPagerItemViewHolder = pagerHolder as GalleryPagerItemViewHolder
+                return holder.postId
+            }
+
+            return -1
         }
 
     private var galleryViewModel: GalleryViewModel? = null
@@ -305,7 +311,7 @@ class GalleryPagerAdapter(val items: List<GalleryItem>, val viewModel: GalleryVi
         fun getPostsWithImages(postList: List<ChanPost>): ArrayList<ChanPost> {
             val posts = ArrayList<ChanPost>()
             for (post in postList) {
-                if (post.filename != null && post.filename != "") {
+                if (!TextUtils.isEmpty(post.filename)) {
                     posts.add(post)
                 }
             }

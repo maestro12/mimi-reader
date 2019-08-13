@@ -23,6 +23,30 @@
 
     <string name="custom_scroll_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
 
+    <!-- 4chan API links -->
+<!--    <string name="sys_link">sys.4chan.org</string>-->
+<!--    <string name="api_link">a.4cdn.org</string>-->
+<!--    <string name="thumb_link">i.4cdn.org</string>-->
+<!--    <string name="image_link">i.4cdn.org</string>-->
+<!--    <string name="board_link">boards.4chan.org</string>-->
+<!--    <string name="board_list_link">a.4cdn.org/boards.json</string>-->
+<!--    <string name="icon_link">s.4cdn.org</string>-->
+
+<!--    <string name="board_path">/%s/</string>-->
+<!--    <string name="first_post_path">/%s/</string>-->
+<!--    <string name="api_thread_path">/%1$s/thread/%2$d.json</string>-->
+<!--    <string name="raw_thread_path">/%1$s/thread/%2$d</string>-->
+<!--    <string name="catalog_path">/%s/catalog.json</string>-->
+<!--    <string name="api_thread_list_path">/%1$s/%2$s.json</string>-->
+<!--    <string name="raw_thread_list_path">/%1$s/%2$s</string>-->
+<!--    <string name="report_path">/%1$s/imgboard.php?mode=report&amp;no=%2$d</string>-->
+
+    <!-- /{board}/thumb/{tim}s{ext} -->
+<!--    <string name="thumb_path">/%1$s/%2$ss.jpg</string>-->
+
+    <!-- /{board}/src/{tim}{ext} -->
+<!--    <string name="full_image_path">/%1$s/%2$s%3$s</string>-->
+
     <!-- Colors -->
     <string name="red">Red</string>
     <string name="green">Green</string>
@@ -64,6 +88,8 @@
     <string name="report_menu_item">Report</string>
     <string name="reply_menu_item">Reply</string>
     <string name="quote_menu_item">Quote</string>
+    <string name="claim_menu_item">Claim Post</string>
+    <string name="unclaim_menu_item">Unclaim Post</string>
     <string name="watch_thread_menu_item">Watch Thread</string>
     <string name="search">Search</string>
     <string name="share">Share</string>
@@ -427,7 +453,7 @@
 
     <string name="nav_drawer_bookmark_count">Nav Drawer Bookmark Count</string>
     <string name="close_other_tabs">Close Other Tabs</string>
-    <string name="catalog">Catalog</string>
+    <string name="grid">Grid</string>
     <string name="list">List</string>
     <string name="close_all_tabs">Close All Tabs</string>
     <string name="ask_before_closing_tabs">Ask before closing all tabs</string>
@@ -575,4 +601,7 @@
     <string name="gallery_preload_disabled">Disabled</string>
     <string name="could_not_load_gif">Could not load GIF</string>
     <string name="batch_dowmload_no_items_selected">No selected items found for batch download</string>
+    <string name="enable_emoji_text">Enable Emoji</string>
+    <string name="enable_emoji_summary">Enabling this option may significantly reduce performance</string>
+    <string name="error_opening_gallery">Error opening gallery; Restart the app and try again</string>
 </resources>

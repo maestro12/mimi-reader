@@ -19,11 +19,11 @@ package com.emogoth.android.phone.mimi.async;
 import android.content.Context;
 import android.content.res.Resources;
 import android.text.Html;
-import android.text.Spannable;
 
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.util.FourChanUtil;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
@@ -94,6 +94,43 @@ public class ProcessThreadTask {
         return processPostList(posts, userPosts, thread, 0);
     }
 
+    public static ChanPost updatePost(final ChanPost post, List<Long> userPosts, final String boardName, final long highlightedPost) {
+        final Context context = MimiApplication.getInstance().getApplicationContext();
+        ChanPost updatedPost = new ChanPost(post);
+        List<Long> hightlightedPosts = new ArrayList<>();
+        if (highlightedPost > 0) {
+            hightlightedPosts.add(highlightedPost);
+        }
+
+        FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
+        parserBuilder.setContext(context)
+                .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
+                .setReplyColor(MimiUtil.getInstance().getReplyColor())
+                .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
+                .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+
+        final CharSequence nameSpan = FourChanUtil.getUserName(
+                context.getResources(),
+                post.getName(),
+                post.getCapcode()
+        );
+        updatedPost.setDisplayedName(nameSpan);
+
+        if (updatedPost.getCom() != null) {
+            parserBuilder.setBoardName(boardName)
+                    .setComment(updatedPost.getCom())
+                    .setThreadId(updatedPost.getResto())
+                    .setReplies(updatedPost.getRepliesTo())
+                    .setUserPostIds(userPosts)
+                    .setHighlightedPosts(hightlightedPosts);
+            updatedPost.setComment(parserBuilder.build().parse());
+        }
+
+        return updatedPost;
+
+    }
+
     private static List<ChanPost> updatePostList(final List<ChanPost> posts, List<Long> userPosts, final String boardName, final long threadId, final long highlightedPost) {
         final Context context = MimiApplication.getInstance().getApplicationContext();
         List<ChanPost> updatedPosts = new ArrayList<>(posts.size());
@@ -107,11 +144,12 @@ public class ProcessThreadTask {
                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
                 .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                .setLinkColor(MimiUtil.getInstance().getLinkColor());
+                .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
 
         for (int i = 0; i < posts.size(); i++) {
             final ChanPost post = new ChanPost(posts.get(i));
-            final Spannable nameSpan = FourChanUtil.getUserName(
+            final CharSequence nameSpan = FourChanUtil.getUserName(
                     context.getResources(),
                     post.getName(),
                     post.getCapcode()

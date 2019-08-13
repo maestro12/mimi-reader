@@ -23,6 +23,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.Preference;
@@ -39,12 +40,11 @@ import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.mimireader.chanlib.models.ChanBoard;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 
@@ -100,11 +100,12 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
 
         final Preference feedback = findPreference(getString(R.string.feedback_pref));
         feedback.setOnPreferenceClickListener(preference -> {
-            final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-                    "mailto", "eli@mimireader.com", null));
-            intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
-            Intent mailer = Intent.createChooser(intent, null);
-            startActivity(mailer);
+//            final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+//                    "mailto", "eli@mimireader.com", null));
+//            intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
+//            Intent mailer = Intent.createChooser(intent, null);
+//            startActivity(mailer);
+            sendLogcatMail(false, true);
             return true;
         });
 
@@ -177,5 +178,51 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
 
             return true;
         });
+    }
+
+    void sendLogcatMail(boolean attachLogcat, boolean attachDeviceInfo) {
+
+        boolean log = attachLogcat;
+        File outputFile = null;
+        if (log) {
+            // save logcat in file
+            outputFile = getActivity().getFileStreamPath("logcat.txt");
+
+            try {
+                Runtime.getRuntime().exec(
+                        "logcat -f " + outputFile.getAbsolutePath());
+            } catch (IOException e) {
+                Log.e("Feedback", "Error getting logcat for feedback email", e);
+                log = false;
+            }
+        }
+
+        StringBuilder sb = new StringBuilder("\n\n\n-----\n");
+        if (attachDeviceInfo) {
+            sb.append("Mimi ")
+                    .append(BuildConfig.VERSION_NAME).append(" (")
+                    .append(BuildConfig.VERSION_CODE).append('-')
+                    .append(BuildConfig.FLAVOR).append(")\n");
+            sb.append("Device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n');
+            sb.append("Android: ").append(Build.VERSION.CODENAME).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
+        }
+
+        //send file using email
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        // Set type to "email"
+        emailIntent.setType("vnd.android.cursor.dir/email");
+        String[] to = {"eli@mimireader.com"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+        if (log) {
+            // the attachment
+            emailIntent.putExtra(Intent.EXTRA_STREAM, outputFile.getAbsolutePath());
+        }
+
+        if (attachDeviceInfo) {
+            emailIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+        }
+        // the mail subject
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
+        startActivity(Intent.createChooser(emailIntent, "Send Feedback"));
     }
 }

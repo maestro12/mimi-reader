@@ -43,8 +43,6 @@ import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
-//import okhttp3.JavaNetCookieJar;
-
 public class HttpClientFactory {
     private static final String LOG_TAG = HttpClientFactory.class.getSimpleName();
     private static final int MAX_CACHE_SIZE = 100 * 1024 * 1024;
@@ -73,6 +71,7 @@ public class HttpClientFactory {
 
         builder.cache(cache)
                 .cookieJar(jar)
+                .followRedirects(true)
                 .followSslRedirects(true)
                 .connectTimeout(90, TimeUnit.SECONDS)
                 .readTimeout(90, TimeUnit.SECONDS)
@@ -114,7 +113,7 @@ public class HttpClientFactory {
     private Interceptor loggingInterceptor() {
         return chain -> {
             Request request = chain.request();
-            Log.d(LOG_TAG, "[Secure] " + String.valueOf(chain.connection().socket() instanceof javax.net.ssl.SSLSocket));
+            Log.d(LOG_TAG, "[Secure] " + (chain.connection().socket() instanceof javax.net.ssl.SSLSocket));
             Log.d(LOG_TAG, "[URL] " + request.url().toString());
             for (Map.Entry<String, List<String>> stringListEntry : request.headers().toMultimap().entrySet()) {
                 for (String s : stringListEntry.getValue()) {
@@ -125,7 +124,7 @@ public class HttpClientFactory {
         };
     }
 
-    public CookiePersistor getCookieStore() {
+    CookiePersistor getCookieStore() {
         return cookiePersistor;
     }
 

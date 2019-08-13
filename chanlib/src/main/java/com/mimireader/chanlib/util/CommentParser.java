@@ -17,9 +17,8 @@
 package com.mimireader.chanlib.util;
 
 import android.content.Context;
-import android.content.res.Resources;
-import android.text.Spannable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -37,13 +36,14 @@ public abstract class CommentParser {
     protected final String youTag;
     protected final long threadId;
     protected final boolean demoMode;
+    protected final boolean enableEmoji;
 
     protected int replyColor;
     protected int highlightReplyColor;
     protected int quoteColor;
     protected int linkColor;
 
-    public CommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode) {
+    public CommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode, boolean enableEmoji) {
         this.replies = replies;
         this.userPostIds = userPostIds;
         this.highlightedPosts = highlightedPosts;
@@ -58,12 +58,13 @@ public abstract class CommentParser {
         this.quoteColor = quoteColor;
         this.linkColor = linkColor;
         this.demoMode = demoMode;
+        this.enableEmoji = enableEmoji;
     }
 
     public abstract static class Builder {
         protected List<String> replies = null;
-        protected List<Long> userPostIds = null;
-        protected List<Long> highlightedPosts = null;
+        protected List<Long> userPostIds = new ArrayList<>();
+        protected List<Long> highlightedPosts = new ArrayList<>();
         protected Context context = null;
         protected CharSequence comment = null;
         protected String boardName = null;
@@ -77,19 +78,24 @@ public abstract class CommentParser {
         protected int linkColor = -1;
 
         protected boolean demoMode = false;
+        protected boolean enableEmoji = false;
 
         public Builder setReplies(List<String> replies) {
             this.replies = replies;
+//            this.replies.clear();
+//            this.replies.addAll(replies);
             return this;
         }
 
         public Builder setUserPostIds(List<Long> userPostIds) {
-            this.userPostIds = userPostIds;
+            this.userPostIds.clear();
+            this.userPostIds.addAll(userPostIds);
             return this;
         }
 
         public Builder setHighlightedPosts(List<Long> highlightedPosts) {
-            this.highlightedPosts = highlightedPosts;
+            this.highlightedPosts.clear();
+            this.highlightedPosts.addAll(highlightedPosts);
             return this;
         }
 
@@ -148,9 +154,13 @@ public abstract class CommentParser {
             return this;
         }
 
+        public void setEnableEmoji(boolean enableEmoji) {
+            this.enableEmoji = enableEmoji;
+        }
+
         public abstract CommentParser build();
 
     }
 
-    public abstract Spannable parse();
+    public abstract CharSequence parse();
 }
