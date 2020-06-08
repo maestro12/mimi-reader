@@ -1,0 +1,4 @@
+ALTER TABLE thread_posts ADD COLUMN spoiler INT NOT NULL DEFAULT(0);
+ALTER TABLE thread_posts ADD COLUMN custom_spoiler INT NOT NULL DEFAULT(0);
+ALTER TABLE catalog_posts ADD COLUMN spoiler INT NOT NULL DEFAULT(0);
+ALTER TABLE catalog_posts ADD COLUMN custom_spoiler INT NOT NULL DEFAULT(0);
