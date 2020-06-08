@@ -28,7 +28,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.PersistableBundle;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 import androidx.core.app.NotificationManagerCompat;
 import android.util.Log;
 
@@ -234,7 +234,7 @@ public class RefreshScheduler {
     private void loadBookmarkFiles() {
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
         fetchHistorySubscription = HistoryTableConnection.fetchHistory(true)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .onErrorReturn(throwable -> {
                     Log.w(LOG_TAG, "Error fetching history", throwable);
                     return Collections.emptyList();

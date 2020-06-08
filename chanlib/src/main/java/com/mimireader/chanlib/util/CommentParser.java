@@ -36,14 +36,13 @@ public abstract class CommentParser {
     protected final String youTag;
     protected final long threadId;
     protected final boolean demoMode;
-    protected final boolean enableEmoji;
 
     protected int replyColor;
     protected int highlightReplyColor;
     protected int quoteColor;
     protected int linkColor;
 
-    public CommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode, boolean enableEmoji) {
+    public CommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightReplyColor, int quoteColor, int linkColor, boolean demoMode) {
         this.replies = replies;
         this.userPostIds = userPostIds;
         this.highlightedPosts = highlightedPosts;
@@ -58,7 +57,6 @@ public abstract class CommentParser {
         this.quoteColor = quoteColor;
         this.linkColor = linkColor;
         this.demoMode = demoMode;
-        this.enableEmoji = enableEmoji;
     }
 
     public abstract static class Builder {
@@ -78,7 +76,6 @@ public abstract class CommentParser {
         protected int linkColor = -1;
 
         protected boolean demoMode = false;
-        protected boolean enableEmoji = false;
 
         public Builder setReplies(List<String> replies) {
             this.replies = replies;
@@ -152,10 +149,6 @@ public abstract class CommentParser {
         public Builder setDemoMode(boolean enabled) {
             this.demoMode = enabled;
             return this;
-        }
-
-        public void setEnableEmoji(boolean enableEmoji) {
-            this.enableEmoji = enableEmoji;
         }
 
         public abstract CommentParser build();

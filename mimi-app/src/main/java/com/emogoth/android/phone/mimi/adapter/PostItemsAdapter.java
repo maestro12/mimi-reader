@@ -54,6 +54,7 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
+import com.emogoth.android.phone.mimi.db.CatalogTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
@@ -63,19 +64,20 @@ import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.GlideApp;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.GridItemImageView;
 import com.google.android.material.snackbar.Snackbar;
-import com.mimireader.chanlib.ChanConnector;
-import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.SingleObserver;
+import io.reactivex.SingleSource;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
 
 
 public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements Filterable {
@@ -88,7 +90,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private static final int VIEW_FOOTER = 3;
 
     private final OnPostItemClickListener clickListener;
-    private final ChanConnector chanConnector;
 
     private final VectorDrawableCompat pinDrawable;
     private final VectorDrawableCompat lockDrawable;
@@ -97,13 +98,21 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     protected String boardName;
     protected String boardTitle;
-    protected int postCount = 0;
-    protected int lastPosition = 0;
-    protected String flagUrl;
+    private int postCount;
+    private String flagUrl;
     private String trollUrl;
-    protected PostFilter postFilter;
-    protected boolean searching;
+    private PostFilter postFilter;
     private RecyclerView.LayoutManager layoutManager;
+
+    private String oneReply;
+    private String oneImage;
+    private String numberReplies;
+    private String numberImages;
+
+    private Boolean imageSpoilersEnabled;
+    private String thumbUrl;
+    private String spoilerUrl;
+    private String customSpoilerUrl;
 
     private Disposable historyInfoSubscription;
 
@@ -125,39 +134,31 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     protected ManagerType managerType = ManagerType.LIST;
 
 
-    public PostItemsAdapter(final String boardName, final String boardTitle, final ChanCatalog threads, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
-        this.boardName = boardName;
-        this.boardTitle = boardTitle;
-        this.clickListener = clickListener;
-        this.chanConnector = chanConnector;
-
-        for (int i = 0; i < threads.getPosts().size(); i++) {
-            postList.addAll(threads.getPosts());
-        }
-
-        setup();
-
-        Pair<VectorDrawableCompat, VectorDrawableCompat> drawables = initMetadataDrawables();
-        pinDrawable = drawables.first;
-        lockDrawable = drawables.second;
-
-        this.postCount = postList.size();
-
-    }
-
-    public PostItemsAdapter(final String boardName, final String boardTitle, final List<ChanPost> postList, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
+    public PostItemsAdapter(final String boardName, final String boardTitle, final List<ChanPost> postList, final OnPostItemClickListener clickListener) {
         this.boardName = boardName;
         this.boardTitle = boardTitle;
         this.postList.addAll(postList);
         this.postCount = postList.size();
         this.clickListener = clickListener;
-        this.chanConnector = chanConnector;
 
         setup();
 
         Pair<VectorDrawableCompat, VectorDrawableCompat> drawables = initMetadataDrawables();
         pinDrawable = drawables.first;
         lockDrawable = drawables.second;
+
+        final Context appContext = MimiApplication.getInstance().getApplicationContext();
+
+        oneReply = appContext.getString(R.string.one_reply);
+        numberReplies = appContext.getString(R.string.number_replies);
+
+        oneImage = appContext.getString(R.string.one_image);
+        numberImages = appContext.getString(R.string.number_images);
+
+        imageSpoilersEnabled = MimiPrefs.imageSpoilersEnabled(appContext);
+        thumbUrl = MimiUtil.https() + appContext.getString(R.string.thumb_link) + appContext.getString(R.string.thumb_path);
+        spoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.spoiler_path);
+        customSpoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.custom_spoiler_path);
     }
 
     private Pair<VectorDrawableCompat, VectorDrawableCompat> initMetadataDrawables() {
@@ -197,11 +198,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View v;
         switch (viewType) {
-            case VIEW_HEADER:
-                FrameLayout headerFrameLayout = new FrameLayout(parent.getContext());
-                //make sure it fills the space
-                headerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                return new HeaderFooterViewHolder(headerFrameLayout);
             case VIEW_LIST_ITEM:
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.catalog_post_list_item, parent, false);
                 return new ViewHolderListItem(v);
@@ -216,6 +212,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 footerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, MimiUtil.dpToPx(60)));
                 return new HeaderFooterViewHolder(footerFrameLayout);
 
+            case VIEW_HEADER:
             default:
                 FrameLayout defaultFrameLayout = new FrameLayout(parent.getContext());
                 //make sure it fills the space
@@ -366,7 +363,17 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             viewHolder.thumbUrl.setVisibility(View.VISIBLE);
             viewHolder.thumbUrl.setOnClickListener(v -> GalleryActivity2.start(v.getContext(), GalleryActivity2.GALLERY_TYPE_PAGER, 0, boardName, threadId, new long[0]));
 
-            final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim());
+            final String url;
+            if (!imageSpoilersEnabled) {
+                url = String.format(thumbUrl, boardName, threadItem.getTim());
+            } else if (threadItem.spoiler > 0 && threadItem.custom_spoiler > 0) {
+                url = String.format(customSpoilerUrl, boardName, threadItem.custom_spoiler);
+            } else if (threadItem.spoiler > 0) {
+                url = spoilerUrl;
+            } else {
+                url = String.format(thumbUrl, boardName, threadItem.getTim());
+            }
+//            final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim());
             GlideApp.with(viewHolder.thumbUrl.getContext())
                     .load(url)
                     .into(viewHolder.thumbUrl);
@@ -404,8 +411,21 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         viewHolder.comment.setText(threadItem.getComment());
 
         if (managerType == ManagerType.LIST) {
-            viewHolder.replyCount.setText(chanConnector.getRepliesCountText(threadItem.getReplies()));
-            viewHolder.imageCount.setText(chanConnector.getImageCountText(threadItem.getImages()));
+            final String replyCountString;
+            if (threadItem.getReplies() == 1) {
+                replyCountString = oneReply;
+            } else {
+                replyCountString = String.format(numberReplies, threadItem.getReplies());
+            }
+
+            final String imageCountString;
+            if (threadItem.getImages() == 1) {
+                imageCountString = oneImage;
+            } else {
+                imageCountString = String.format(numberImages, threadItem.getImages());
+            }
+            viewHolder.replyCount.setText(replyCountString);
+            viewHolder.imageCount.setText(imageCountString);
         } else {
             viewHolder.replyCount.setText(String.valueOf(threadItem.getReplies()));
             viewHolder.imageCount.setText(String.valueOf(threadItem.getImages()));
@@ -428,6 +448,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     HiddenThreadTableConnection.hideThread(boardName, threadId, sticky)
                             .compose(DatabaseUtils.applySchedulers())
                             .single(false)
+                            .flatMap((Function<Boolean, SingleSource<Boolean>>) aBoolean -> CatalogTableConnection.removeThread(threadId))
                             .subscribe(new SingleObserver<Boolean>() {
                                 @Override
                                 public void onSubscribe(Disposable d) {
@@ -461,27 +482,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                                     Log.w(LOG_TAG, "Error hiding thread", e);
                                 }
                             });
-//                            .subscribe(success -> {
-//                                int msgId = R.string.thread_hidden;
-//                                if (!success) {
-//                                    msgId = R.string.error_hiding_thread;
-//                                } else {
-//                                    int index = -1;
-//                                    for (int i = 0; i < postList.size(); i++) {
-//                                        if (postList.get(i).getNo() == threadId) {
-//                                            index = i;
-//                                            postList.remove(i);
-//                                        }
-//                                    }
-//
-//                                    if (index >= 0) {
-//                                        BusProvider.getInstance().post(new RemovePostEvent(index));
-//                                    }
-//                                }
-//
-//                                Snackbar.make(viewHolder.cardRoot, msgId, Snackbar.LENGTH_SHORT).show();
-//
-//                            }, throwable -> Log.w(LOG_TAG, "Error hiding thread", throwable));
                 } else if (menuItem.getItemId() == R.id.report_menu) {
                     final String url = "https://" + activity.getString(R.string.sys_link);
                     final String path = activity.getString(R.string.report_path, boardName, threadId);
@@ -521,8 +521,10 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
         if (viewHolder.bookmarkButton != null) {
             if (threadItem.isWatched()) {
+                viewHolder.bookmarkButton.setVisibility(View.VISIBLE);
                 viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
             } else {
+                viewHolder.bookmarkButton.setVisibility(View.INVISIBLE);
                 viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
             }
 
@@ -533,7 +535,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 if (watched) {
                     viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
                     HistoryTableConnection.removeHistory(boardName, threadId)
-                            .compose(DatabaseUtils.applySchedulers())
+                            .compose(DatabaseUtils.applySingleSchedulers())
                             .subscribe();
                     RefreshScheduler.getInstance().removeThread(boardName, threadId);
 //                    ThreadRegistry.getInstance().remove(threadId);
@@ -544,8 +546,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 }
 
                 RxUtil.safeUnsubscribe(historyInfoSubscription);
-                historyInfoSubscription = HistoryTableConnection.putHistory(boardName, threadItem, postCount, 0, !watched)
-                        .compose(DatabaseUtils.applySchedulers())
+                historyInfoSubscription = HistoryTableConnection.putHistory(boardName, threadItem, postCount, 0, !watched, 0)
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe();
             });
         }
@@ -876,7 +878,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             final FilterResults results = new FilterResults();
 
             if (constraint == null || constraint.length() == 0) {
-                searching = false;
                 results.count = posts.size();
                 results.values = posts;
             } else {
@@ -888,7 +889,6 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     }
                 }
 
-                searching = true;
                 results.count = filteredList.size();
                 results.values = filteredList;
             }

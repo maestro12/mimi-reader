@@ -14,7 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PersistableBundle;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -103,75 +104,66 @@ public class RefreshJobService extends JobService {
                 .build();
 
         RxUtil.safeUnsubscribe(fetchThreadSubscription);
-        fetchThreadSubscription = Flowable.zip(chanConnector.fetchThread(threadInfo.boardName, threadInfo.threadId, ChanConnector.CACHE_FORCE_NETWORK),
+        fetchThreadSubscription = Single.zip(chanConnector.fetchThread(threadInfo.boardName, threadInfo.threadId, ChanConnector.CACHE_FORCE_NETWORK).single(new ChanThread()),
                 HistoryTableConnection.fetchPost(threadInfo.boardName, threadInfo.threadId), (chanThread, history) -> {
                     if (chanThread == null || chanThread.getPosts() == null || chanThread.getPosts().size() == 0) {
                         return new ThreadMetadata();
                     }
 
                     threadInfo.watched = history.watched == 1;
-                    return new ThreadMetadata(chanThread, history.threadSize, history.lastReadPosition, new ThreadInfo(threadId, boardName, lastRefreshTime, history.watched == 1));
+                    int unread = history.unreadCount + chanThread.getPosts().size() - history.threadSize;
+                    if (unread < 0) {
+                        return new ThreadMetadata();
+                    }
+
+                    return new ThreadMetadata(chanThread, history.threadSize, history.lastReadPosition, unread, new ThreadInfo(threadId, boardName, lastRefreshTime, history.watched == 1));
                 })
-                .doOnNext(threadMetadata -> {
+                .doOnSuccess(threadMetadata -> {
                     ChanThread chanThread = threadMetadata.thread;
-                    if (chanThread != null && chanThread.getPosts().size() > threadMetadata.size) {
+                    if (chanThread != null && chanThread.getPosts().size() > 0 && chanThread.getPosts().size() > threadMetadata.size) {
                         ChanPost firstPost = chanThread.getPosts().get(0);
                         int size = chanThread.getPosts().size();
                         if (size > threadMetadata.size) {
-                            HistoryTableConnection.putHistory(chanThread.getBoardName(), firstPost, size, threadMetadata.lastReadPosition, threadInfo.watched)
+                            HistoryTableConnection.putHistory(chanThread.getBoardName(), firstPost, size, threadMetadata.lastReadPosition, threadInfo.watched, threadMetadata.unreadCount)
                                     .subscribe();
 
                             new Handler(
                                     Looper.getMainLooper()).post(
-                                    () -> BusProvider.getInstance().post(new UpdateHistoryEvent(chanThread.getThreadId(), boardName, size, threadMetadata.lastReadPosition, firstPost.isClosed(), threadInfo.watched)));
+                                    () -> BusProvider.getInstance().post(new UpdateHistoryEvent(chanThread.getThreadId(), boardName, size - threadMetadata.lastReadPosition, firstPost.isClosed(), threadInfo.watched)));
                         }
 
                     }
                 })
-                .doOnNext(threadMetadata -> {
+                .doAfterSuccess(threadMetadata -> {
                     final ChanThread response = threadMetadata.thread;
-                    final ThreadInfo ti = threadMetadata.threadInfo;
-                    final long id = ti.threadId;
                     final int threadSize = threadMetadata.size;
-                    PostTableConnection.putThread(threadMetadata.getThread())
-                            .single(false)
-                            .subscribe(new SingleObserver<Boolean>() {
-                                @Override
-                                public void onSubscribe(Disposable d) {
-                                    // no op
-                                }
 
-                                @Override
-                                public void onSuccess(Boolean success) {
-                                    if (success) {
-                                        if (LOG_DEBUG) {
-                                            Log.d(LOG_TAG, "[refresh] Saved thread to database from auto refresh service");
-                                        }
+                    try {
+                        final boolean success = PostTableConnection.putThread(threadMetadata.getThread());
+                        if (success) {
+                            if (LOG_DEBUG) {
+                                Log.d(LOG_TAG, "[refresh] Saved thread to database from auto refresh service");
+                            }
 
-                                        if (backgrounded && threadSize < response.getPosts().size()) {
-                                            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(RefreshJobService.this);
-                                            final String notificationPref = preferences.getString(getString(R.string.background_notification_pref), String.valueOf(NOTIFICATIONS_ALL));
-                                            final int notificationLevel = Integer.valueOf(notificationPref);
+                            if (backgrounded && threadSize < response.getPosts().size()) {
+                                final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(RefreshJobService.this);
+                                final String notificationPref = preferences.getString(getString(R.string.background_notification_pref), String.valueOf(NOTIFICATIONS_ALL));
+                                final int notificationLevel = Integer.parseInt(notificationPref);
 
-                                            createNotification(threadMetadata.thread.getBoardName(), threadMetadata.thread.getThreadId(), notificationLevel);
-                                        }
-                                    }
-
-                                    jobFinished(params, false);
-                                }
-
-                                @Override
-                                public void onError(Throwable throwable) {
-                                    Log.e(LOG_TAG, "[refresh] Caught error while fetching posts from the auto refresh service", throwable);
-                                    jobFinished(params, false);
-                                }
-                            });
+                                createNotification(threadMetadata.thread.getBoardName(), threadMetadata.thread.getThreadId(), notificationLevel);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(LOG_TAG, "[refresh] Caught error while fetching posts from the auto refresh service", e);
+                    } finally {
+                        jobFinished(params, false);
+                    }
 
                     if (LOG_DEBUG) {
                         Log.i(LOG_TAG, "[refresh] Setting thread size to: size=" + response.getPosts().size() + ", old size=" + threadSize);
                     }
                 })
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .onErrorReturn(refreshError(new ThreadInfo(threadId, boardName, lastRefreshTime, watched)))
                 .subscribe(fetchComplete(params, backgrounded), fetchFailed(threadInfo, params));
 
@@ -281,16 +273,17 @@ public class RefreshJobService extends JobService {
             fetchPostDisposable = UserPostTableConnection.fetchPosts(boardName, threadId)
                     .flatMap(posts -> {
                         return HistoryTableConnection.fetchHistory(true)
-                                .flatMap((Function<List<History>, Publisher<List<ThreadRegistryModel>>>) histories -> {
+                                .flatMap((Function<List<History>, Single<List<ThreadRegistryModel>>>) histories -> {
                                     final List<ThreadRegistryModel> models = new ArrayList<>(histories.size());
                                     for (History history : histories) {
-                                        if (history.threadSize - 1 > history.lastReadPosition) {
+                                        if (history.unreadCount > 0) {
                                             models.add(new ThreadRegistryModel(history, posts));
                                         }
                                     }
-                                    return Flowable.just(models);
+                                    return Single.just(models);
                                 });
                     })
+                    .toFlowable()
                     .flatMapIterable(models -> {
                         Log.d(LOG_TAG, "Processing posts");
                         return models;
@@ -306,8 +299,7 @@ public class RefreshJobService extends JobService {
                             }
                     ))
                     .toList()
-                    .toFlowable()
-                    .doOnNext(threadList -> {
+                    .doOnSuccess(threadList -> {
                         if (threadList == null) {
                             return;
                         }
@@ -367,7 +359,7 @@ public class RefreshJobService extends JobService {
                         Log.e(LOG_TAG, "Error creating notification", throwable);
                         return new ArrayList<>();
                     })
-                    .compose(DatabaseUtils.applySchedulers())
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe(success -> {
 
                     }, throwable -> {
@@ -437,13 +429,15 @@ public class RefreshJobService extends JobService {
         private final ChanThread thread;
         private final int size;
         private final int lastReadPosition;
+        private final int unreadCount;
         private final ThreadInfo threadInfo;
 
 
-        ThreadMetadata(ChanThread thread, int size, int lastReadPosition, ThreadInfo threadInfo) {
+        ThreadMetadata(ChanThread thread, int size, int lastReadPosition, int unreadCount, ThreadInfo threadInfo) {
             this.thread = thread;
             this.size = size;
             this.lastReadPosition = lastReadPosition;
+            this.unreadCount = unreadCount;
             this.threadInfo = threadInfo;
         }
 
@@ -451,6 +445,7 @@ public class RefreshJobService extends JobService {
             this.thread = new ChanThread();
             this.size = -1;
             this.lastReadPosition = 0;
+            this.unreadCount = 0;
             this.threadInfo = new ThreadInfo();
         }
 

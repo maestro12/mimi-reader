@@ -38,7 +38,6 @@ import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.mimireader.chanlib.models.ChanPost;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,8 +95,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
             setTheme(MimiUtil.getInstance().getThemeResourceId());
         }
 
-        MimiUtil.setScreenOrientation(this);
-
         super.onCreate(savedInstanceState);
 
         final Bundle extras = getIntent().getExtras();
@@ -134,7 +131,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
     @Override
     protected void onResume() {
         super.onResume();
-        MimiUtil.setScreenOrientation(this);
 
         try {
             BusProvider.getInstance().register(this);
@@ -230,7 +226,6 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
         HistoryTableConnection.fetchHistory(true)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .single(new ArrayList<>())
                 .subscribe(new SingleObserver<List<History>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -242,7 +237,7 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
                         int unread = 0;
                         for (History history : histories) {
-                            unread += (history.threadSize - 1 - history.lastReadPosition);
+                            unread += history.unreadCount;
                         }
 
                         setNavigationIconWithBadge(navDrawable, unread);
@@ -399,7 +394,7 @@ public abstract class MimiActivity extends AppCompatActivity implements Preferen
 
         RxUtil.safeUnsubscribe(fetchPostSubscription);
         fetchPostSubscription = HistoryTableConnection.fetchPost(event.getThreadInfo().boardName, event.getThreadInfo().threadId)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(history -> {
                     if (history.threadId == -1) {
                         return;

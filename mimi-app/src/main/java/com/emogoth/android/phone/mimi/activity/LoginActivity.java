@@ -1,7 +1,13 @@
 package com.emogoth.android.phone.mimi.activity;
 
 import android.os.Bundle;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
+import com.google.android.material.snackbar.Snackbar;
+
+import android.text.Html;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -12,12 +18,17 @@ import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.ChanConnector;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class LoginActivity extends MimiActivity {
     private static final String LOG_TAG = LoginActivity.class.getSimpleName();
@@ -46,6 +57,8 @@ public class LoginActivity extends MimiActivity {
         final TextView errorMessage = findViewById(R.id.error_message);
         if (errorMessage == null) {
             return;
+        } else {
+            errorMessage.setMovementMethod(LinkMovementMethod.getInstance());
         }
 
         final View loginButton = findViewById(R.id.login_button);
@@ -59,6 +72,10 @@ public class LoginActivity extends MimiActivity {
                     return;
                 }
 
+                loginButton.setEnabled(false);
+
+                errorMessage.setText(R.string.loading);
+
                 final ChanConnector chanConnector = new FourChanConnector.Builder()
                         .setClient(HttpClientFactory.getInstance().getClient())
                         .setEndpoint(FourChanConnector.getDefaultEndpoint())
@@ -67,7 +84,11 @@ public class LoginActivity extends MimiActivity {
 
                 RxUtil.safeUnsubscribe(loginSubscription);
                 loginSubscription = chanConnector.login(token, pin)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(responseBodyResponse -> {
+                            loginButton.setEnabled(true);
+
                             try {
                                 String response;
                                 if (responseBodyResponse.errorBody() != null) {
@@ -76,24 +97,28 @@ public class LoginActivity extends MimiActivity {
                                     response = responseBodyResponse.body().string();
                                 }
 
-                                Log.i(LOG_TAG, "response=" + response);
+                                if (BuildConfig.DEBUG) {
+                                    Log.i(LOG_TAG, "response=" + response);
+                                }
 
-                                if (response.contains(INCORRECT_TOKEN)) {
-                                    errorMessage.setText(R.string.auth_failure);
-                                } else if (response.contains("Authentication Failed")) {
-                                    errorMessage.setText(R.string.login_error);
-                                } else if (response.contains("Authorization Successful")) {
+                                final Document doc = Jsoup.parse(response);
+                                Elements errElement = doc.getElementsByAttributeValue("class", "msg-error");
+                                Elements successElement = doc.getElementsByAttributeValue("class", "msg-success");
+                                if (!TextUtils.isEmpty(errElement.text())) {
+                                    errorMessage.setText(Html.fromHtml(errElement.html()));
+                                } else if (!TextUtils.isEmpty(successElement.text())) {
                                     Toast.makeText(LoginActivity.this, R.string.auth_success, Toast.LENGTH_SHORT).show();
                                     finish();
                                 }
                             } catch (IOException e) {
-                                e.printStackTrace();
+                                Log.e(LOG_TAG, "Error logging in with chanpass", e);
                             }
                         }, throwable -> {
+                            loginButton.setEnabled(true);
                             Log.w(LOG_TAG, "Error logging in", throwable);
                         });
 
-                errorMessage.setText(null);
+//                errorMessage.setText(null);
             });
         }
 

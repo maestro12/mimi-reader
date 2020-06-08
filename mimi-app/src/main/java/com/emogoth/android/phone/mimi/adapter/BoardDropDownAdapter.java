@@ -94,7 +94,7 @@ public class BoardDropDownAdapter extends BaseAdapter implements SpinnerAdapter 
 
         RxUtil.safeUnsubscribe(removeBoardSubscription);
         removeBoardSubscription = BoardTableConnection.setBoardVisibility(boardName, false)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe();
     }
 

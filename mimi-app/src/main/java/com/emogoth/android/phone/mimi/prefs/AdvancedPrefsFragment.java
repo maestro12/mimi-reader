@@ -17,17 +17,18 @@
 
 package com.emogoth.android.phone.mimi.prefs;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.Environment;
-import android.preference.Preference;
-import android.preference.PreferenceCategory;
-import android.preference.PreferenceFragment;
-import android.preference.SwitchPreference;
 import android.util.Log;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.LoginActivity;
@@ -36,57 +37,36 @@ import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.snackbar.Snackbar;
+
+import java.util.concurrent.Callable;
+
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 
-public class AdvancedPrefsFragment extends PreferenceFragment {
+public class AdvancedPrefsFragment extends PreferenceFragmentCompat {
     public static final String LOG_TAG = AdvancedPrefsFragment.class.getSimpleName();
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.advanced_prefs);
-
-
         setupPrefs();
     }
 
     private void setupPrefs() {
-        final Preference cacheDirPref = findPreference(getString(R.string.cache_external_pref));
-        if (cacheDirPref != null) {
-            final String state = Environment.getExternalStorageState();
-            if (state.equals(Environment.MEDIA_MOUNTED) && !state.equals(Environment.MEDIA_MOUNTED_READ_ONLY)) {
-                cacheDirPref.setEnabled(true);
-            } else {
-                cacheDirPref.setEnabled(false);
-            }
-        }
-
-        final SwitchPreference preventScreenRotation = (SwitchPreference) findPreference(getString(R.string.prevent_screen_rotation_pref));
-        if (preventScreenRotation != null) {
-            preventScreenRotation.setOnPreferenceChangeListener((preference, newValue) -> {
-                final Boolean v = (Boolean) newValue;
-                if (v) {
-                    getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                } else {
-                    getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
-                }
-
-                return true;
-            });
-        }
-
-        final Preference showAllBoardsPref = findPreference(getString(R.string.show_all_boards));
         final PreferenceCategory category = (PreferenceCategory) findPreference(getString(R.string.advanced_preference_category));
-
-        if (showAllBoardsPref != null) {
-            category.removePreference(showAllBoardsPref);
-        }
 
         final Preference clearHiddenThreadsPref = findPreference(getString(R.string.clear_hidden_threads_pref));
         if (clearHiddenThreadsPref != null) {
             clearHiddenThreadsPref.setOnPreferenceClickListener(preference -> {
-                HiddenThreadTableConnection.clearAll()
-                        .compose(DatabaseUtils.applySchedulers())
+                final Disposable dis = HiddenThreadTableConnection.clearAll()
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(success -> {
                             Log.d(LOG_TAG, "Clearing hidden threads: success=" + success);
 
@@ -117,7 +97,7 @@ public class AdvancedPrefsFragment extends PreferenceFragment {
         if (MimiUtil.getInstance().isLoggedIn()) {
             chanpassLogin.setTitle(R.string.chanpass_logout);
             chanpassLogin.setOnPreferenceClickListener(preference -> {
-                final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
+                final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(getActivity());
                 dialogBuilder.setTitle(R.string.chanpass_logout);
                 dialogBuilder.setMessage(R.string.are_you_sure);
                 dialogBuilder.setPositiveButton(R.string.yes, (dialog, which) -> {

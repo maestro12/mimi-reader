@@ -19,6 +19,8 @@ package com.mimireader.chanlib;
 
 import android.webkit.MimeTypeMap;
 
+import com.mimireader.chanlib.models.ArchivedChanThread;
+import com.mimireader.chanlib.models.ChanArchive;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanThread;
@@ -27,6 +29,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -47,11 +50,13 @@ public abstract class ChanConnector {
 
     public abstract Flowable<List<ChanBoard>> fetchBoards();
 
-    public abstract Flowable<ChanCatalog> fetchCatalog(String boardName, String boardTitle);
-
-    public abstract Flowable<ChanCatalog> fetchPage(int page, String boardName, String boardTitle);
+    public abstract Single<ChanCatalog> fetchCatalog(String boardName);
 
     public abstract Flowable<ChanThread> fetchThread(String boardName, long threadId, String cacheControl);
+
+    public abstract Single<List<ChanArchive>> fetchArchives();
+
+    public abstract Single<ArchivedChanThread> fetchArchivedThread(String board, long threadId, String name, String domain, String url);
 
     public abstract Single<Response<ResponseBody>> post(String boardName, Map<String, Object> params);
 
@@ -125,7 +130,7 @@ public abstract class ChanConnector {
         private String postEndpoint;
         private OkHttpClient client;
         private File cacheDir;
-        private int cacheSize = 75 * 1024 * 1024;
+        private int cacheSize = 10 * 1024 * 1024;
 
         public ChanConnectorBuilder setCacheDirectory(File dir) {
             this.cacheDir = dir;
@@ -154,7 +159,14 @@ public abstract class ChanConnector {
 
         protected Retrofit initRetrofit(boolean isPost) {
             if (client == null) {
-                OkHttpClient.Builder builder = new OkHttpClient.Builder();
+                OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                        .followRedirects(true)
+                        .followSslRedirects(true)
+                        .connectTimeout(20, TimeUnit.SECONDS)
+                        .callTimeout(20, TimeUnit.SECONDS)
+                        .writeTimeout(20, TimeUnit.SECONDS)
+                        .readTimeout(20, TimeUnit.SECONDS)
+                        .retryOnConnectionFailure(true);
                 if (cacheDir != null && cacheDir.exists()) {
                     builder.cache(new Cache(cacheDir, cacheSize));
                 }

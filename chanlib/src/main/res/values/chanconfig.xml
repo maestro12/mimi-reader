@@ -20,6 +20,7 @@
     <string name="sys_link">sys.4chan.org</string>
     <string name="api_link">a.4cdn.org</string>
     <string name="thumb_link">i.4cdn.org</string>
+    <string name="spoiler_link">s.4cdn.org</string>
     <string name="image_link">i.4cdn.org</string>
     <string name="board_link">boards.4chan.org</string>
     <string name="board_list_link">a.4cdn.org/boards.json</string>

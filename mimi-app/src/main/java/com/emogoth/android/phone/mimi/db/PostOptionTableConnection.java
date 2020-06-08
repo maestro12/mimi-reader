@@ -16,6 +16,7 @@ import java.util.List;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
@@ -23,14 +24,14 @@ import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQ
 public class PostOptionTableConnection {
     public static final String LOG_TAG = PostOptionTableConnection.class.getSimpleName();
 
-    public static Flowable<List<PostOption>> fetchPostOptions() {
+    public static Single<List<PostOption>> fetchPostOptions() {
         return DatabaseUtils.fetchTable(PostOption.class, PostOption.TABLE_NAME);
 //        From query = new Select()
 //                .all()
 //                .from(PostOption.class);
 //
 //        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-//        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), query.getArguments())
+//        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
 //                .take(1)
 //                .map(runQuery())
 //                .flatMap(PostOption.mapper())
@@ -50,7 +51,7 @@ public class PostOptionTableConnection {
                 .where(PostOption.OPTION + "=?", id);
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), query.getArguments())
+        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .take(1)
                 .map(runQuery())
@@ -80,7 +81,7 @@ public class PostOptionTableConnection {
         Log.d(LOG_TAG, "SQL=" + query.toSql());
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), query.getArguments())
+        return db.createQuery(PostOption.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .take(1)
                 .map(runQuery())

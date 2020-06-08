@@ -19,17 +19,24 @@ package com.emogoth.android.phone.mimi.activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.viewbinding.ViewBinding;
 import androidx.viewpager.widget.ViewPager;
 
 import com.emogoth.android.phone.mimi.R;
@@ -58,6 +65,8 @@ import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.Pages;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.badge.BadgeDrawable;
+import com.google.android.material.badge.BadgeUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
@@ -97,20 +106,15 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         final SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         closeTabOnBack = sp.getBoolean(getString(R.string.close_tab_on_back_pref), false);
 
-        tabLayout = (TabLayout) findViewById(R.id.tab_layout);
-        tabPager = (ViewPager) findViewById(R.id.tabs_pager);
-        toolbar = (Toolbar) findViewById(R.id.mimi_toolbar);
-        appBarLayout = (AppBarLayout) findViewById(R.id.appbar);
-        rateAppContainer = (ViewGroup) findViewById(R.id.app_rater_container);
+        tabLayout = findViewById(R.id.tab_layout);
+        tabPager = findViewById(R.id.tabs_pager);
+        toolbar = findViewById(R.id.mimi_toolbar);
+        appBarLayout = findViewById(R.id.appbar);
+        rateAppContainer = findViewById(R.id.app_rater_container);
 
         setToolbar(toolbar);
 
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                toggleNavDrawer();
-            }
-        });
+        toolbar.setNavigationOnClickListener(v -> toggleNavDrawer());
 
         final ArrayList<TabPagerAdapter.TabItem> tabItems;
         if (savedInstanceState != null && savedInstanceState.containsKey("tabItems")) {
@@ -136,13 +140,10 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                     return;
                 }
 
-                tabPager.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (position < tabPagerAdapter.getCount()) {
-                            currentFragment = (MimiFragmentBase) tabPagerAdapter.instantiateItem(tabPager, position);
-                            currentFragment.initMenu();
-                        }
+                tabPager.post(() -> {
+                    if (position < tabPagerAdapter.getCount()) {
+                        currentFragment = (MimiFragmentBase) tabPagerAdapter.instantiateItem(tabPager, position);
+                        currentFragment.initMenu();
                     }
                 });
 
@@ -182,9 +183,9 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                     TabPagerAdapter.TabItem item = tabItems.get(i);
 
                     if (i == 1 && item.getTabType() == TabPagerAdapter.TabType.POSTS) {
-                        tab.setText("/" + item.getTitle() + "/");
+                        tab.setText(getTabTitle(item.getTitle()));
                     } else if (i == 1 && item.getTabType() == TabPagerAdapter.TabType.HISTORY) {
-                        tab.setText(item.getTitle());
+                        tab.setText(item.getTitle().toUpperCase());
                     } else {
                         Bundle args = item.getBundle();
                         if (args != null) {
@@ -192,6 +193,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
                             String boardName = args.getString(Extras.EXTRAS_BOARD_NAME, "");
                             View tabView = createTabView(threadId, boardName);
                             tab.setCustomView(tabView);
+                            tab.select();
                         }
                     }
                 }
@@ -209,12 +211,9 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         }
 
         addContentFab = (FloatingActionButton) findViewById(R.id.fab_add_content);
-        addContentFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (currentFragment instanceof ContentInterface) {
-                    ((ContentInterface) currentFragment).addContent();
-                }
+        addContentFab.setOnClickListener(v -> {
+            if (currentFragment instanceof ContentInterface) {
+                ((ContentInterface) currentFragment).addContent();
             }
         });
 
@@ -276,6 +275,10 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         return "tabs_activity";
     }
 
+    protected String getTabTitle(String boardName) {
+        return "/" + boardName.toUpperCase() + "/";
+    }
+
     @Override
     public void onBoardItemClick(ChanBoard board, boolean saveBackStack) {
         final Bundle arguments = new Bundle();
@@ -287,7 +290,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         final TabPagerAdapter.TabItem tabItem = new TabPagerAdapter.TabItem(TabPagerAdapter.TabType.POSTS, arguments, PostItemsListFragment.TAB_ID, board.getName(), null);
         if (tabPagerAdapter.getCount() == 1) {
             final TabLayout.Tab postListTab = tabLayout.newTab();
-            postListTab.setText("/" + board.getName().toLowerCase() + "/");
+            postListTab.setText(getTabTitle(board.getName()));
 
             tabPagerAdapter.addItem(tabItem);
             tabLayout.addTab(postListTab);
@@ -295,7 +298,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             final TabLayout.Tab postListTab = tabLayout.getTabAt(1);
             if (postListTab != null) {
                 TabLayout.Tab newTab = tabLayout.newTab();
-                newTab.setText("/" + board.getName().toLowerCase() + "/");
+                newTab.setText(getTabTitle(board.getName()));
                 tabLayout.removeTabAt(1);
                 tabLayout.addTab(newTab, 1);
             }
@@ -384,6 +387,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
         View tabView = createTabView(threadId, boardName);
         threadTab.setCustomView(tabView);
+        threadTab.select();
 
         threadTabItem = new TabPagerAdapter.TabItem(TabPagerAdapter.TabType.THREAD, args, threadId, boardName, String.valueOf(threadId));
         final int itemCount = tabPagerAdapter.getCount();
@@ -396,6 +400,15 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
         }
         tabPager.setCurrentItem(pos, true);
     }
+
+//    @Override
+//    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+//        if (item.getItemId() == android.R.id.home) {
+//            toggleNavDrawer();
+//            return true;
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
 
     private View createTabView(final long threadId, final String boardName) {
         final View tabView = View.inflate(this, R.layout.tab_default, null);
@@ -428,15 +441,12 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             }
         });
 
-        tabView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final int pos = tabPagerAdapter.getIndex(threadId);
-                tabPager.setCurrentItem(pos, false);
-            }
+        tabView.setOnClickListener(v -> {
+            final int pos = tabPagerAdapter.getIndex(threadId);
+            tabPager.setCurrentItem(pos, false);
         });
 
-        title.setText("/" + boardName.toLowerCase() + "/");
+        title.setText(getTabTitle(boardName));
         subTitle.setText(String.valueOf(threadId));
 
         return tabView;
@@ -451,7 +461,7 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
 
                 if (t != null) {
                     Integer id = Integer.valueOf(t.getSubtitle());
-                    closeTab(id, t.getTitle().replaceAll("/", null), true);
+                    closeTab(id, t.getTitle().toLowerCase().replaceAll("/", null), true);
                 }
             }
         }
@@ -582,11 +592,12 @@ public class TabsActivity extends MimiActivity implements BoardItemClickListener
             if (tabIndex >= 0) {
                 TabLayout.Tab t = tabLayout.getTabAt(tabIndex);
                 if (t != null) {
+
                     View v = t.getCustomView();
                     if (v != null) {
                         View highlightView = v.findViewById(R.id.highlight);
                         if (highlightView != null) {
-                            if (event.getThreadSize() - 1 > event.getLastReadPosition() && event.getLastReadPosition() > 0) {
+                            if (event.getUnread() > 0) {
                                 highlightView.setVisibility(View.VISIBLE);
                             } else {
                                 highlightView.setVisibility(View.GONE);

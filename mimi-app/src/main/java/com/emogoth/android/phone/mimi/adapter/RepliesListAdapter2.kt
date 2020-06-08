@@ -20,6 +20,7 @@ import com.emogoth.android.phone.mimi.util.BusProvider
 import com.emogoth.android.phone.mimi.util.GlideApp
 import com.emogoth.android.phone.mimi.util.MimiUtil
 import com.emogoth.android.phone.mimi.view.LongClickLinkMovementMethod
+import com.mimireader.chanlib.models.ArchivedChanPost
 import com.mimireader.chanlib.models.ChanPost
 import com.mimireader.chanlib.models.ChanThread
 
@@ -59,7 +60,10 @@ class RepliesListAdapter2(val replies: List<ChanPost>, private val links: List<O
                     DateUtils.FORMAT_ABBREV_RELATIVE)
 
             if (post.filename != null && "" != post.filename) {
-                thumbUrlMap[post.no] = MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, boardName, post.tim)
+                thumbUrlMap[post.no] = if (post is ArchivedChanPost)
+                    post.thumbLink ?: MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, boardName, post.tim)
+                else
+                    MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, boardName, post.tim)
             }
 
             dateString

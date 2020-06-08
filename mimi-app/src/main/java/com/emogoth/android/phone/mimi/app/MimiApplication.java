@@ -19,8 +19,9 @@ package com.emogoth.android.phone.mimi.app;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 import com.activeandroid.ActiveAndroid;
 import com.activeandroid.Configuration;
@@ -28,8 +29,11 @@ import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
+import com.emogoth.android.phone.mimi.db.model.Archive;
+import com.emogoth.android.phone.mimi.db.model.ArchivedPost;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.db.model.CatalogPostModel;
 import com.emogoth.android.phone.mimi.db.model.Filter;
@@ -48,6 +52,7 @@ import com.squareup.sqlbrite3.BriteDatabase;
 import java.io.File;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 
@@ -77,10 +82,19 @@ public class MimiApplication extends Application {
                         PostOption.class,
                         Filter.class,
                         PostModel.class,
-                        CatalogPostModel.class
+                        CatalogPostModel.class,
+                        Archive.class,
+                        ArchivedPost.class
                 );
 
         ActiveAndroid.initialize(configurationBuilder.create());
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.THREAD_ID, DatabaseUtils.COLUMN_TYPE.LONG, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.POST_ID, DatabaseUtils.COLUMN_TYPE.LONG, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.BOARD_NAME, DatabaseUtils.COLUMN_TYPE.STRING, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.ARCHIVE_DOMAIN, DatabaseUtils.COLUMN_TYPE.STRING, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.ARCHIVE_NAME, DatabaseUtils.COLUMN_TYPE.STRING, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.MEDIA_LINK, DatabaseUtils.COLUMN_TYPE.STRING, false);
+        DatabaseUtils.createIfNeedColumn(ArchivedPost.class, ArchivedPost.THUMB_LINK, DatabaseUtils.COLUMN_TYPE.STRING, false);
 
         try {
             final File fullImageDir = new File(MimiUtil.getInstance().getCacheDir().getAbsolutePath(), "full_images/");
@@ -108,17 +122,17 @@ public class MimiApplication extends Application {
         final int historyPruneDays = Integer.valueOf(preferences.getString(getString(R.string.history_prune_time_pref), "0"));
 
         MimiUtil.pruneHistory(historyPruneDays)
-        .flatMap((Function<Boolean, Flowable<Boolean>>) aBoolean -> HiddenThreadTableConnection.prune(5))
-        .flatMap((Function<Boolean, Flowable<Boolean>>) aBoolean -> UserPostTableConnection.prune(7))
-        .subscribe(aBoolean -> {
-            if (aBoolean) {
-                Log.d(LOG_TAG, "Pruned history");
-            } else {
-                Log.e(LOG_TAG, "Failed to prune history");
-            }
-        }, throwable -> Log.e(LOG_TAG, "Caught exception while setting up database", throwable));
+                .flatMap((Function<Boolean, Single<Boolean>>) aBoolean -> HiddenThreadTableConnection.prune(5))
+                .flatMap((Function<Boolean, Single<Boolean>>) aBoolean -> UserPostTableConnection.prune(7))
+                .subscribe(aBoolean -> {
+                    if (aBoolean) {
+                        Log.d(LOG_TAG, "Pruned history");
+                    } else {
+                        Log.e(LOG_TAG, "Failed to prune history");
+                    }
+                }, throwable -> Log.e(LOG_TAG, "Caught exception while setting up database", throwable));
 
-                ThreadRegistry.getInstance().init();
+        ThreadRegistry.getInstance().init();
         BusProvider.getInstance();
         RefreshScheduler.getInstance();
 

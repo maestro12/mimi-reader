@@ -28,6 +28,7 @@ public class ThreadRegistryModel {
     private final String boardName;
     private final int threadSize;
     private final int lastReadPosition;
+    private final int unreadCount;
     private final boolean bookmarked;
     private final boolean active;
     private final List<Long> userPosts = new ArrayList<>();
@@ -37,6 +38,7 @@ public class ThreadRegistryModel {
         boardName = history.boardName;
         threadSize = history.threadSize;
         lastReadPosition = history.lastReadPosition;
+        unreadCount = history.unreadCount;
         bookmarked = history.watched == 1;
         active = true;
 

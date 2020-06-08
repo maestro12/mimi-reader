@@ -36,21 +36,20 @@ import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
 import com.emogoth.android.phone.mimi.activity.PostItemDetailActivity;
 import com.emogoth.android.phone.mimi.activity.PostItemListActivity;
 import com.emogoth.android.phone.mimi.adapter.RepliesListAdapter2;
-import com.emogoth.android.phone.mimi.async.ProcessThreadTask;
-import com.emogoth.android.phone.mimi.db.PostTableConnection;
-import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.UserPost;
+import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
-import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.gallery.GalleryPagerAdapter;
+import com.emogoth.android.phone.mimi.viewmodel.ChanDataSource;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 import com.squareup.otto.Subscribe;
+
+import org.reactivestreams.Publisher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,7 +58,9 @@ import java.util.List;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
+import kotlin.Pair;
 
 
 public class RepliesDialog extends DialogFragment {
@@ -164,36 +165,23 @@ public class RepliesDialog extends DialogFragment {
         });
 
         RxUtil.safeUnsubscribe(repliesSubscription);
-
-        repliesSubscription = Flowable.zip(UserPostTableConnection.fetchPosts(boardName, threadId),
-                PostTableConnection.watchThread(thread.getThreadId()), (userPosts, chanThread) -> {
-                    List<Long> posts = new ArrayList<>();
-                    for (UserPost userPost : userPosts) {
-                        if (userPost.boardName.equals(thread.getBoardName()) && userPost.threadId == thread.getThreadId()) {
-                            posts.add(userPost.postId);
-                        }
-                    }
-
-                    List<ChanPost> chanPosts = new ArrayList<>();
-                    List<ChanPost> postModels = PostTableConnection.convertDbPostsToChanThread(boardName, thread.getThreadId(), chanThread).getPosts();
-                    List<ChanPost> processedPosts = ProcessThreadTask.processThread(postModels, posts, thread.getBoardName(), thread.getThreadId(), id).getPosts();
-
+        ChanDataSource dataSource = new ChanDataSource();
+        repliesSubscription = dataSource.watchThread(boardName, threadId)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .flatMap((Function<Pair<History, ChanThread>, Publisher<List<ChanPost>>>) historyChanThreadPair -> {
+                    List<ChanPost> posts = new ArrayList<>();
                     for (String reply : replies) {
-                        for (ChanPost postModel : processedPosts) {
-                            if (postModel.getNo() == Integer.valueOf(reply)) {
-                                chanPosts.add(postModel);
+                        for (ChanPost post : historyChanThreadPair.getSecond().getPosts()) {
+                            if (post.getNo() == Integer.parseInt(reply)) {
+                                posts.add(post);
                             }
                         }
                     }
-
-                    return chanPosts;
-//                    return ProcessThreadTask.processThread(chanPosts, posts, thread.getBoardName(), thread.getThreadId(), id).getPosts();
+                    return Flowable.just(posts);
                 })
                 .first(Collections.emptyList())
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(posts -> {
-//                    final RepliesListAdapter adapter = new RepliesListAdapter(getActivity(), boardName, posts, outsideLinks, thread);
                     final RepliesListAdapter2 adapter = new RepliesListAdapter2(posts, outsideLinks, thread);
                     adapter.setLinkClickListener(outsideLink -> {
                         final Intent intent;

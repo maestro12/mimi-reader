@@ -30,6 +30,7 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -169,7 +170,7 @@ public class EditFiltersActivity extends MimiActivity {
     }
 
     protected void loadFilters(String boardName) {
-        final Flowable<List<Filter>> loadFiltersObservable;
+        final Single<List<Filter>> loadFiltersObservable;
         if (TextUtils.isEmpty(boardName)) {
             loadFiltersObservable = FilterTableConnection.fetchFilters();
         } else {
@@ -177,23 +178,15 @@ public class EditFiltersActivity extends MimiActivity {
         }
 
         filtersSubscription = loadFiltersObservable.subscribe(
-                new Consumer<List<Filter>>() {
-                    @Override
-                    public void accept(List<Filter> filters) {
-                        if (filterListAdapter == null) {
-                            filterListAdapter = new FilterListAdapter(filters);
-                            filterList.setAdapter(filterListAdapter);
-                        } else {
-                            filterListAdapter.setFilters(filters);
-                        }
+                filters -> {
+                    if (filterListAdapter == null) {
+                        filterListAdapter = new FilterListAdapter(filters);
+                        filterList.setAdapter(filterListAdapter);
+                    } else {
+                        filterListAdapter.setFilters(filters);
                     }
                 },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error fetching filters", throwable);
-                    }
-                });
+                throwable -> Log.e(LOG_TAG, "Error fetching filters", throwable));
 
     }
 

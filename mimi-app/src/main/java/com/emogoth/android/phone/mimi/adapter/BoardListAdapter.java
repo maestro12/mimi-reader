@@ -119,7 +119,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
 
         RxUtil.safeUnsubscribe(removeBoardSubscription);
         removeBoardSubscription = BoardTableConnection.setBoardVisibility(boardName, false)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe();
     }
 
@@ -185,7 +185,7 @@ public class BoardListAdapter extends RecyclerView.Adapter<BoardListAdapter.Boar
                             Log.e(LOG_TAG, "Error setting board favorite: board=" + board.getName() + ", favorite=" + isFavorite, throwable);
                             return false;
                         })
-                        .compose(DatabaseUtils.applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(success -> {
                             if (success) {
                                 board.setFavorite(isFavorite);

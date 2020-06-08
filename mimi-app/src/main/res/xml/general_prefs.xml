@@ -14,52 +14,56 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        android:key="@string/general_preference_category"
-        android:title="@string/general_title">
+        app:iconSpaceReserved="false"
+        app:key="@string/general_preference_category"
+        app:title="@string/general_title">
 
-        <SwitchPreference
-            android:title="@string/remember_thread_position_title"
-            android:summary="@string/remember_thread_position_summary"
-            android:key="@string/remember_thread_position_pref"
-            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/remember_thread_position_pref"
+            app:summary="@string/remember_thread_position_summary"
+            app:title="@string/remember_thread_position_title" />
 
-        <SwitchPreference
-            android:title="@string/open_links_externally"
-            android:summaryOn="@string/open_links_default_browser"
-            android:summaryOff="@string/open_links_internally"
-            android:key="@string/open_links_externally_pref"
-            android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/open_links_externally_pref"
+            app:summaryOff="@string/open_links_internally"
+            app:summaryOn="@string/open_links_default_browser"
+            app:title="@string/open_links_externally" />
 
         <ListPreference
-            android:title="@string/nav_drawer_bookmark_count"
-            android:key="@string/nav_drawer_bookmark_count_pref"
-            android:defaultValue="5"
-            android:entries="@array/nav_drawer_bookmark_list"
-            android:entryValues="@array/nav_drawer_bookmark_list" />
+            app:defaultValue="5"
+            app:entries="@array/nav_drawer_bookmark_list"
+            app:entryValues="@array/nav_drawer_bookmark_list"
+            app:iconSpaceReserved="false"
+            app:key="@string/nav_drawer_bookmark_count_pref"
+            app:title="@string/nav_drawer_bookmark_count" />
 
-        <SwitchPreference
-            android:title="@string/ask_before_closing_tabs"
-            android:key="@string/close_all_tabs_prompt_pref"
-            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/close_all_tabs_prompt_pref"
+            app:title="@string/ask_before_closing_tabs" />
 
-        <SwitchPreference
-            android:title="@string/close_tab_on_back_title"
-            android:summaryOn="@string/close_tab_on_back_summary_on"
-            android:summaryOff="@string/close_tab_on_back_summary_off"
-            android:key="@string/close_tab_on_back_pref"
-            android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/close_tab_on_back_pref"
+            app:summaryOff="@string/close_tab_on_back_summary_off"
+            app:summaryOn="@string/close_tab_on_back_summary_on"
+            app:title="@string/close_tab_on_back_title" />
 
-        <SwitchPreference
-            android:title="@string/enable_emoji_text"
-            android:summary="@string/enable_emoji_summary"
-            android:key="@string/enable_emoji_pref"
-            android:defaultValue="false" />
-
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/enable_image_spoilers_pref"
+            app:title="@string/enable_image_spoilers_title" />
     </PreferenceCategory>
 
 </PreferenceScreen>

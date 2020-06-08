@@ -30,80 +30,84 @@ import java.util.Objects;
 public class ChanPost implements Parcelable {
     private static final Boolean LOG_DEBUG = false;
     @Expose
-    private long no;
+    public long no;
     @Expose
-    private boolean closed;
+    public boolean closed;
     @Expose
-    private boolean sticky;
+    public boolean sticky;
     @Expose
-    private String now;
+    public String now;
     @Expose
-    private String name;
+    public String name;
     @Expose
-    private String com;
-    private transient CharSequence comment;
+    public String com;
+    public transient CharSequence comment;
     @Expose
-    private String sub;
-    private transient CharSequence subject;
+    public String sub;
+    public transient CharSequence subject;
     @Expose
-    private String filename;
+    public String filename;
     @Expose
-    private String ext;
+    public String ext;
     @Expose
-    private int w;
+    public int w;
     @Expose
-    private int h;
+    public int h;
     @Expose
-    private int tnW;
+    public int tnW;
     @Expose
-    private int tnH;
+    public int tnH;
     @Expose
-    private String tim;
+    public String tim;
     @Expose
-    private int time;
+    public long time;
     @Expose
-    private String md5;
+    public String md5;
     @Expose
-    private int fsize;
+    public int fsize;
     @Expose
-    private int resto;
+    public int resto;
     @Expose
-    private int bumplimit;
+    public int bumplimit;
     @Expose
-    private int imagelimit;
+    public int imagelimit;
     @Expose
-    private String semanticUrl;
+    public String semanticUrl;
     @Expose
-    private int replies;
+    public int replies;
     @Expose
-    private int images;
+    public int images;
     @Expose
-    private int omittedPosts;
+    public int omittedPosts;
     @Expose
-    private int omittedImages;
+    public int omittedImages;
     @Expose
-    private String email;
+    public String email;
     @Expose
-    private String trip;
+    public String trip;
     @Expose
-    private String id;
+    public String id;
     @Expose
-    private String capcode;
+    public String capcode;
     @Expose
-    private String country;
+    public String country;
     @Expose
-    private String countryName;
+    public String countryName;
     @Expose
-    private String trollCountry;
+    public String trollCountry;
     @Expose
-    private boolean watched;
-    private transient CharSequence displayedName;
+    public boolean watched;
+    public transient CharSequence displayedName;
+    @Expose
+    public int spoiler;
+    @Expose
+    public int custom_spoiler;
 
     @Expose
-    private ArrayList<String> repliesTo = new ArrayList<>();
-    private ArrayList<ChanPost> repliesFrom = new ArrayList<>();
+    public ArrayList<String> repliesTo = new ArrayList<>();
+    public ArrayList<ChanPost> repliesFrom = new ArrayList<>();
 
-    private String humanReadableFileSize;
+    public String humanReadableFileSize;
 
     public ChanPost(ChanPost other) {
         this.no = other.no;
@@ -145,6 +149,8 @@ public class ChanPost implements Parcelable {
         this.repliesFrom = other.repliesFrom;
         this.watched = other.watched;
         this.humanReadableFileSize = other.humanReadableFileSize;
+        this.spoiler = other.spoiler;
+        this.custom_spoiler = other.custom_spoiler;
     }
 
     public long getNo() {
@@ -243,11 +249,11 @@ public class ChanPost implements Parcelable {
         this.tim = tim;
     }
 
-    public int getTime() {
+    public long getTime() {
         return time;
     }
 
-    public void setTime(int time) {
+    public void setTime(long time) {
         this.time = time;
     }
 
@@ -463,6 +469,22 @@ public class ChanPost implements Parcelable {
         this.humanReadableFileSize = humanReadableFileSize;
     }
 
+    public int getSpoiler() {
+        return spoiler;
+    }
+
+    public void setSpoiler(int spoiler){
+        this.spoiler = spoiler;
+    }
+
+    public int getCustomSpoiler() {
+        return custom_spoiler;
+    }
+
+    public void setCustomSpoiler(int customSpoiler) {
+        this.custom_spoiler = customSpoiler;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -620,6 +642,10 @@ public class ChanPost implements Parcelable {
         no = -1;
     }
 
+    public boolean empty() {
+        return no == -1;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -642,7 +668,7 @@ public class ChanPost implements Parcelable {
         dest.writeInt(this.tnW);
         dest.writeInt(this.tnH);
         dest.writeString(this.tim);
-        dest.writeInt(this.time);
+        dest.writeLong(this.time);
         dest.writeString(this.md5);
         dest.writeInt(this.fsize);
         dest.writeInt(this.resto);
@@ -662,9 +688,11 @@ public class ChanPost implements Parcelable {
         dest.writeStringList(this.repliesTo);
         dest.writeTypedList(repliesFrom);
         dest.writeString(this.humanReadableFileSize);
+        dest.writeInt(this.spoiler);
+        dest.writeInt(this.custom_spoiler);
     }
 
-    protected ChanPost(Parcel in) {
+    public ChanPost(Parcel in) {
         this.no = in.readLong();
         this.closed = in.readByte() != 0;
         this.sticky = in.readByte() != 0;
@@ -680,7 +708,7 @@ public class ChanPost implements Parcelable {
         this.tnW = in.readInt();
         this.tnH = in.readInt();
         this.tim = in.readString();
-        this.time = in.readInt();
+        this.time = in.readLong();
         this.md5 = in.readString();
         this.fsize = in.readInt();
         this.resto = in.readInt();
@@ -700,6 +728,8 @@ public class ChanPost implements Parcelable {
         this.repliesTo = in.createStringArrayList();
         this.repliesFrom = in.createTypedArrayList(ChanPost.CREATOR);
         this.humanReadableFileSize = in.readString();
+        this.spoiler = in.readInt();
+        this.custom_spoiler = in.readInt();
     }
 
     public static final Creator<ChanPost> CREATOR = new Creator<ChanPost>() {

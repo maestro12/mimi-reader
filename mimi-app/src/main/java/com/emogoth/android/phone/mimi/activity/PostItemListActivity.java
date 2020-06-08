@@ -207,7 +207,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
             if (boardName != null) {
                 RxUtil.safeUnsubscribe(boardInfoSubscription);
                 boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                        .compose(DatabaseUtils.applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(board -> {
                             if (!TextUtils.isEmpty(board.getName())) {
                                 onBoardItemClick(board, false);
@@ -453,7 +453,7 @@ public class PostItemListActivity extends MimiActivity implements BoardItemClick
     @Subscribe
     public void openBookmark(final BookmarkClickedEvent event) {
         Disposable sub = HistoryTableConnection.fetchHistory(true)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(bookmarks -> {
                     final Bundle args = new Bundle();
                     final Class clazz;

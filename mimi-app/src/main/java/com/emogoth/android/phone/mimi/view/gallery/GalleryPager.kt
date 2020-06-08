@@ -398,7 +398,7 @@ abstract class GalleryPagerItemViewHolder(itemView: View) : RecyclerView.ViewHol
         }
 }
 
-// These need to be different classes to prevent the RecyclerView from using a
+// These need to be different classes to prevent the RecyclerView from reusing the wrong viewholder
 class GalleryImageViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)
 class GalleryWebmViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)
 class GalleryGifViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)

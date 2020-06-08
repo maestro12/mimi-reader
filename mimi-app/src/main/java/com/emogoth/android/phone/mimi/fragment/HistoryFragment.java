@@ -18,11 +18,6 @@ package com.emogoth.android.phone.mimi.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,6 +29,12 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
@@ -49,7 +50,6 @@ import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
 import com.emogoth.android.phone.mimi.model.ThreadInfo;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
-import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
@@ -59,9 +59,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 public class HistoryFragment extends MimiFragmentBase {
@@ -323,22 +322,21 @@ public class HistoryFragment extends MimiFragmentBase {
     private void loadHistory(boolean watched) {
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
         fetchHistorySubscription = HistoryTableConnection.fetchHistory(watched)
-                .flatMap((Function<List<History>, Flowable<List<History>>>) histories -> {
+                .flatMap((Function<List<History>, Single<List<History>>>) histories -> {
                     FourChanCommentParser.Builder builder = new FourChanCommentParser.Builder();
                     builder.setContext(getActivity())
                             .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                             .setReplyColor(MimiUtil.getInstance().getReplyColor())
                             .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                            .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                            .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                            .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
                     for (History history : histories) {
                         history.comment = builder.setComment(history.text).build().parse();
                     }
 
-                    return Flowable.just(histories);
+                    return Single.just(histories);
                 })
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(historyList -> {
                     if (historyList != null && getActivity() != null) {
                         postList = historyList;

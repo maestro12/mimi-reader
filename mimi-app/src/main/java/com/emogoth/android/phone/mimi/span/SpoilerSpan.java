@@ -17,7 +17,6 @@
 package com.emogoth.android.phone.mimi.span;
 
 import android.graphics.Color;
-import androidx.appcompat.app.AlertDialog;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.style.ClickableSpan;
@@ -25,6 +24,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.emogoth.android.phone.mimi.R;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class SpoilerSpan extends ClickableSpan {
     private static final int SPOILER_COLOR = Color.parseColor("#505050");
@@ -46,7 +46,7 @@ public class SpoilerSpan extends ClickableSpan {
                 int start = s.getSpanStart(this);
                 int end = s.getSpanEnd(this);
 
-                new AlertDialog.Builder(widget.getContext())
+                new MaterialAlertDialogBuilder(widget.getContext())
                         .setTitle(R.string.spoiler)
                         .setMessage(s.subSequence(start, end).toString())
                         .setCancelable(true)

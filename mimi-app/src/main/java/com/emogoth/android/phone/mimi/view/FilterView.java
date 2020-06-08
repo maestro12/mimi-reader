@@ -1,12 +1,6 @@
 package com.emogoth.android.phone.mimi.view;
 
 import android.content.Context;
-
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.AppCompatButton;
-import androidx.appcompat.widget.AppCompatCheckBox;
-import androidx.appcompat.widget.AppCompatEditText;
-import androidx.appcompat.widget.AppCompatSpinner;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -15,6 +9,11 @@ import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.appcompat.widget.AppCompatButton;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatSpinner;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.BoardDropDownAdapter;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
@@ -22,6 +21,7 @@ import com.emogoth.android.phone.mimi.db.FilterTableConnection;
 import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.ArrayList;
@@ -235,7 +235,7 @@ public class FilterView extends LinearLayout implements View.OnClickListener {
     }
 
     private void showOverwriteDialog(final String name, final String filter, final String board, final boolean isRegex) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getContext());
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(getContext());
         dialogBuilder.setCancelable(false)
                 .setTitle(R.string.filter_already_exists)
                 .setMessage(R.string.overwite_filter_question)

@@ -248,31 +248,29 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
         } else {
             RxUtil.safeUnsubscribe(fetchHistorySubscription);
             fetchHistorySubscription = HistoryTableConnection.fetchHistory(true)
-                    .compose(DatabaseUtils.<List<History>>applySchedulers())
-                    .subscribe(new Consumer<List<History>>() {
-                        @Override
-                        public void accept(List<History> bookmarks) {
-                            final Bundle args = new Bundle();
-                            final Class clazz;
+                    .compose(DatabaseUtils.applySingleSchedulers())
+                    .subscribe(bookmarks -> {
+                        final Bundle args = new Bundle();
+                        final Class clazz;
 
-                            args.putBoolean(Extras.EXTRAS_USE_BOOKMARKS, true);
-                            args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_BOOKMARKS);
+                        args.putBoolean(Extras.EXTRAS_USE_BOOKMARKS, true);
+                        args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_BOOKMARKS);
 
-                            if (!TextUtils.isEmpty(event.getBoardTitle())) {
-                                args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardTitle());
-                            }
+                        if (!TextUtils.isEmpty(event.getBoardTitle())) {
+                            args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardTitle());
+                        }
 
-                            args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardName());
-                            args.putLong(Extras.EXTRAS_THREAD_ID, event.getThreadId());
-                            args.putInt(Extras.EXTRAS_POSITION, event.getPosition());
-                            final ArrayList<ThreadInfo> threadList = new ArrayList<>(bookmarks.size());
+                        args.putString(Extras.EXTRAS_BOARD_NAME, event.getBoardName());
+                        args.putLong(Extras.EXTRAS_THREAD_ID, event.getThreadId());
+                        args.putInt(Extras.EXTRAS_POSITION, event.getPosition());
+                        final ArrayList<ThreadInfo> threadList = new ArrayList<>(bookmarks.size());
 
-                            for (final History post : bookmarks) {
-                                final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched == 1);
-                                threadList.add(threadInfo);
-                            }
+                        for (final History post : bookmarks) {
+                            final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched == 1);
+                            threadList.add(threadInfo);
+                        }
 
-                            args.putParcelableArrayList(Extras.EXTRAS_THREAD_LIST, threadList);
+                        args.putParcelableArrayList(Extras.EXTRAS_THREAD_LIST, threadList);
 
 //                        if (getResources().getBoolean(R.bool.two_pane)) {
 //                            clazz = PostItemListActivity.class;
@@ -280,10 +278,9 @@ public class PostItemDetailActivity extends MimiActivity implements Toolbar.OnCl
 //                            clazz = PostItemDetailActivity.class;
 //                        }
 
-                            final Intent intent = new Intent(PostItemDetailActivity.this, PostItemListActivity.class);
-                            intent.putExtras(args);
-                            startActivity(intent);
-                        }
+                        final Intent intent = new Intent(PostItemDetailActivity.this, PostItemListActivity.class);
+                        intent.putExtras(args);
+                        startActivity(intent);
                     });
         }
     }
