@@ -17,19 +17,19 @@
 package com.emogoth.android.phone.mimi.prefs;
 
 import android.os.Bundle;
-import android.preference.ListPreference;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
+
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
 
 import com.emogoth.android.phone.mimi.R;
 
 
-public class AppearancePrefsFragment extends PreferenceFragment {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.appearance_prefs);
+public class AppearancePrefsFragment extends PreferenceFragmentCompat {
 
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+        addPreferencesFromResource(R.xml.appearance_prefs);
         setupPrefs();
     }
 

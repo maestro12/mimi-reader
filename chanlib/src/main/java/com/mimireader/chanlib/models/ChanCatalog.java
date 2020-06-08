@@ -23,7 +23,6 @@ import java.util.List;
 public class ChanCatalog {
 
     private String boardName;
-    private String boardTitle;
     private List<ChanPost> posts;
 
     public ChanCatalog() {
@@ -36,14 +35,6 @@ public class ChanCatalog {
 
     public void setBoardName(String boardName) {
         this.boardName = boardName;
-    }
-
-    public String getBoardTitle() {
-        return boardTitle;
-    }
-
-    public void setBoardTitle(String boardTitle) {
-        this.boardTitle = boardTitle;
     }
 
     public List<ChanPost> getPosts() {

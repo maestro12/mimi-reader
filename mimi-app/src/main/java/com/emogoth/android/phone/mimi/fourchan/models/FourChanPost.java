@@ -129,6 +129,14 @@ public class FourChanPost implements PostConverter {
     @Expose
     private String trollCountry;
 
+    @SerializedName("spoiler")
+    @Expose
+    private int spoiler;
+
+    @SerializedName("custom_spoiler")
+    @Expose
+    private int customSpoiler;
+
     private CharSequence comment;
 
     public int getNo() {
@@ -447,6 +455,9 @@ public class FourChanPost implements PostConverter {
         post.setCountryName(countryName);
         post.setTrollCountry(trollCountry);
 
+        post.setSpoiler(spoiler);
+        post.setCustomSpoiler(customSpoiler);
+
         return post;
     }
 
@@ -460,8 +471,7 @@ public class FourChanPost implements PostConverter {
                     .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                     .setReplyColor(MimiUtil.getInstance().getReplyColor())
                     .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                    .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                    .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                    .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
             comment = parserBuilder.build().parse();
         }

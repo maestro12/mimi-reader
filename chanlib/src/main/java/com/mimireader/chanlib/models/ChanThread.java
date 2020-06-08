@@ -18,6 +18,9 @@ package com.mimireader.chanlib.models;
 
 
 import android.text.TextUtils;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.Expose;
 
@@ -86,5 +89,16 @@ public class ChanThread {
 
     public static boolean isEmpty(ChanThread thread) {
         return thread == null || (TextUtils.isEmpty(thread.boardName) && thread.threadId == -1 && thread.posts.size() == 0);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "ChanThread{" +
+                "board='" + boardName + '\'' +
+                ", title='" + boardTitle + '\'' +
+                ", thread id='" + threadId + '\'' +
+                ", post count='" + posts.size() + '\'' +
+                '}';
     }
 }

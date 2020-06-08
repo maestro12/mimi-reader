@@ -1,7 +1,8 @@
 package com.emogoth.android.phone.mimi.db;
 
-import androidx.sqlite.db.SupportSQLiteOpenHelper;
 import android.database.Cursor;
+
+import androidx.sqlite.db.SupportSQLiteOpenHelper;
 
 import com.squareup.sqlbrite3.BriteDatabase;
 import com.squareup.sqlbrite3.SqlBrite;
@@ -25,9 +26,7 @@ public class ActiveAndroidSqlBriteBridge {
             } else {
                 return helper;
             }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
+        } catch (IllegalAccessException | NoSuchFieldException e) {
             e.printStackTrace();
         }
 

@@ -17,7 +17,7 @@ import io.reactivex.functions.Function;
 public class CatalogTableConnection {
     public static final String LOG_TAG = CatalogTableConnection.class.getSimpleName();
 
-    public static Flowable<List<CatalogPostModel>> fetchPosts() {
+    public static Single<List<CatalogPostModel>> fetchPosts() {
         return DatabaseUtils.fetchTable(CatalogPostModel.class, CatalogPostModel.TABLE_NAME);
     }
 
@@ -53,6 +53,14 @@ public class CatalogTableConnection {
         }
 
         return DatabaseUtils.insert(catalogPosts).first(false).toObservable();
+    }
+
+    public static Single<Boolean> removeThread(long threadId) {
+        CatalogPostModel model = new CatalogPostModel();
+        DatabaseUtils.WhereArg[] args = new DatabaseUtils.WhereArg[1];
+
+        args[0] = new DatabaseUtils.WhereArg(CatalogPostModel.KEY_POST_ID + "=?", threadId);
+        return DatabaseUtils.remove(model, true, args).single(false);
     }
 
     public static Single<Boolean> clear() {

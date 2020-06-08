@@ -19,9 +19,7 @@ package com.emogoth.android.phone.mimi.fragment;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Parcelable;
-import android.preference.PreferenceManager;
 import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,16 +31,20 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.MenuItemCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -66,25 +68,19 @@ import com.emogoth.android.phone.mimi.db.model.HiddenThread;
 import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.event.RemovePostEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
-import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
 import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.FourChanUtil;
-import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.LayoutType;
-import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.FilterDialog;
 import com.emogoth.android.phone.mimi.view.FilterView;
-import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
-import com.emogoth.android.phone.mimi.widget.WrappedLinearLayoutManager;
-import com.emogoth.android.phone.mimi.widget.WrappedStaggeredGridLayoutManager;
+import com.emogoth.android.phone.mimi.viewmodel.CatalogViewModel;
 import com.google.android.material.snackbar.Snackbar;
-import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
@@ -97,6 +93,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
@@ -130,8 +127,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     public static final int TAB_ID = 101;
     private static final String LIST_VIEW_STATE = "post_list_state";
 
-    private int mActivatedPosition = ListView.INVALID_POSITION;
-    private MimiRecyclerView listView;
+    private RecyclerView listView;
 
     private String boardName;
     private String boardTitle;
@@ -158,7 +154,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     private Spinner toolbarSpinner;
     private Toolbar toolbar;
     private OnPostItemClickListener clickListener;
-    private ChanConnector chanConnector;
 
     private Disposable catalogSubscription;
     private Disposable fetchBoardsSubscription;
@@ -169,11 +164,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     private boolean createNewPostFragment;
     private Disposable fetchBoardsDisposable;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setRetainInstance(false);
-    }
+    private CatalogViewModel viewModel;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -191,19 +182,12 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        chanConnector = new FourChanConnector.Builder()
-                .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
-                .setClient(HttpClientFactory.getInstance().getClient())
-                .setEndpoint(FourChanConnector.getDefaultEndpoint())
-                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
-                .build();
-
         boolean forceRefresh = false;
         if (savedInstanceState == null) {
             extractExtras(getArguments());
             RxUtil.safeUnsubscribe(lastAccessSubscription);
             lastAccessSubscription = BoardTableConnection.updateLastAccess(boardName)
-                    .compose(DatabaseUtils.<Boolean>applySchedulers())
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe();
         } else {
             String boardNameFromSavedInstance = savedInstanceState.getString(Extras.EXTRAS_BOARD_NAME, "");
@@ -218,10 +202,21 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 extractExtras(getArguments());
                 RxUtil.safeUnsubscribe(lastAccessSubscription);
                 lastAccessSubscription = BoardTableConnection.updateLastAccess(boardName)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe();
             }
         }
+
+        ViewModelProvider.Factory factory = new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new CatalogViewModel();
+            }
+        };
+        viewModel = ViewModelProviders
+                .of(this, factory)
+                .get(CatalogViewModel.class);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
         sortType = preferences.getInt(SORT_PREF_STRING, SORT_TYPE_DEFAULT);
@@ -249,7 +244,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         if (isGrid) {
             RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
             if (layoutManager instanceof LinearLayoutManager || layoutManager == null) {
-                layoutManager = new WrappedStaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+                layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
                 ((StaggeredGridLayoutManager) layoutManager).setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
                 layoutManager.setItemPrefetchEnabled(false);
                 listView.setLayoutManager(layoutManager);
@@ -258,14 +253,14 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         } else {
             RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
             if (layoutManager instanceof StaggeredGridLayoutManager || layoutManager == null) {
-                layoutManager = new WrappedLinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
+                layoutManager = new LinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
                 listView.setLayoutManager(layoutManager);
             }
             adapterType = PostItemsAdapter.ManagerType.LIST;
             listRefreshLayout.setVisibility(View.VISIBLE);
         }
 
-        initAdapter();
+        initAdapter(false);
 
         loadingLayout = view.findViewById(R.id.loading_layout);
         errorContainer = view.findViewById(R.id.error_container);
@@ -278,13 +273,13 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe();
 
-//
+
             fetchCatalog(true);
 
             Log.i(LOG_TAG, "Fetching catalog");
             showLoadingLayout();
 
-//
+
         } else {
             Parcelable listState = savedInstanceState.getParcelable(LIST_VIEW_STATE);
             fetchFromDb(listState);
@@ -293,15 +288,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         if (getUserVisibleHint()) {
             initMenu();
         }
-
-        // Restore the previously serialized activated item position.
-        if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(STATE_ACTIVATED_POSITION)) {
-                setActivatedPosition(savedInstanceState.getInt(STATE_ACTIVATED_POSITION));
-            }
-
-        }
-
     }
 
     private void switchToList() {
@@ -319,7 +305,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             layoutManager = new LinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
             listView.setLayoutManager(layoutManager);
 
-            initAdapter();
+            initAdapter(true);
 
             refreshBoard(true);
         }
@@ -342,20 +328,22 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             layoutManager.setItemPrefetchEnabled(false);
             listView.setLayoutManager(layoutManager);
 
-            initAdapter();
+            initAdapter(true);
 
             refreshBoard(true);
         }
     }
 
-    private void initAdapter() {
+    private void initAdapter(boolean force) {
         if (BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "Initializing adapter");
         }
 
-        postItemsAdapter = new PostItemsAdapter(boardName, boardTitle, postList, chanConnector, clickListener);
-        postItemsAdapter.setLayoutManager(listView.getLayoutManager());
-        listView.setAdapter(postItemsAdapter);
+        if (postItemsAdapter == null || force) {
+            postItemsAdapter = new PostItemsAdapter(boardName, boardTitle, postList, clickListener);
+            postItemsAdapter.setLayoutManager(listView.getLayoutManager());
+            listView.setAdapter(postItemsAdapter);
+        }
     }
 
     private void catalogResponse(final ChanCatalog catalog, @Nullable final Parcelable listState, final boolean refreshing) {
@@ -373,7 +361,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
                     RxUtil.safeUnsubscribe(fetchHistorySubscription);
                     fetchHistorySubscription = HistoryTableConnection.fetchHistory()
-                            .compose(DatabaseUtils.applySchedulers())
+                            .compose(DatabaseUtils.applySingleSchedulers())
                             .subscribe(histories -> {
                                 List<ChanPost> posts = catalog.getPosts();
                                 for (History history : histories) {
@@ -461,9 +449,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         if (bundle.containsKey(Extras.EXTRAS_PAGE)) {
             currentPage = bundle.getInt(Extras.EXTRAS_PAGE);
         }
-        if (bundle.containsKey(STATE_ACTIVATED_POSITION)) {
-            mActivatedPosition = bundle.getInt(STATE_ACTIVATED_POSITION);
-        }
         if (bundle.containsKey(Extras.EXTRAS_POSITION)) {
             currentPositionY = bundle.getInt(Extras.EXTRAS_POSITION);
             Log.i(LOG_TAG, "scroll position=" + currentPositionY);
@@ -487,8 +472,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                     .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                     .setReplyColor(MimiUtil.getInstance().getReplyColor())
                     .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                    .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                    .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                    .setLinkColor(MimiUtil.getInstance().getLinkColor());
             for (int i = 0; i < posts.size(); i++) {
 
                 if (posts.get(i).getCom() != null) {
@@ -519,10 +503,9 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         RxUtil.safeUnsubscribe(catalogSubscription);
         catalogSubscription = CatalogTableConnection.fetchPosts()
                 .map(CatalogTableConnection.convertDbPostsToChanPosts())
-                .flatMap((Function<List<ChanPost>, Flowable<ChanCatalog>>) posts -> {
+                .flatMap((Function<List<ChanPost>, Single<ChanCatalog>>) posts -> {
                     ChanCatalog catalog = new ChanCatalog();
                     catalog.setBoardName(boardName);
-                    catalog.setBoardTitle(boardTitle);
                     catalog.setPosts(posts == null ? new ArrayList<>() : posts);
 
                     final FragmentManager fm = getChildFragmentManager();
@@ -531,11 +514,11 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                         postFragment.setPostListener(createPostCompleteListener());
                     }
 
-                    return Flowable.just(catalog);
+                    return Single.just(catalog);
                 })
                 .flatMap(sortPosts())
                 .map(chanCatalog -> processCatalog(chanCatalog))
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(chanCatalog -> {
                     if (chanCatalog.getPosts().size() > 0) {
                         catalogResponse(chanCatalog, listState, false);
@@ -550,28 +533,33 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
     private void fetchCatalog(final boolean refreshing) {
         RxUtil.safeUnsubscribe(catalogSubscription);
-        catalogSubscription = Flowable.zip(
-                chanConnector.fetchCatalog(boardName, boardTitle),
+        Log.w(LOG_TAG, viewModel == null ? "Viewmodel is null" : "Viewmodel is not null");
+        catalogSubscription = Single.zip(
+                viewModel.fetchCatalog(boardName),
                 HiddenThreadTableConnection.fetchHiddenThreads(boardName),
                 FilterTableConnection.fetchFiltersByBoard(boardName),
                 hideThreads())
-//        catalogSubscription = chanConnector.fetchCatalog(getActivity(), boardName, boardTitle)
-                .flatMap(sortPosts())
                 .map(catalog -> {
                     if (catalog != null) {
+                        Log.d(LOG_TAG, "Processing catalog");
                         return processCatalog(catalog);
                     }
-
+                    Log.d(LOG_TAG, "No catalog to process");
                     return new ChanCatalog();
                 })
                 .map(chanCatalog -> {
+                    Log.d(LOG_TAG, "Putting catalog into database");
                     CatalogTableConnection.putPosts(chanCatalog).subscribe();
                     return chanCatalog;
                 })
-                .compose(DatabaseUtils.applySchedulers())
+                .flatMap(sortPosts())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(catalog -> {
+                    Log.d(LOG_TAG, "Finished fetching catalog");
                     if (catalog.getPosts().size() > 0) {
                         catalogResponse(catalog, null, refreshing);
+                    } else {
+                        throw new Exception("Catalog response is empty");
                     }
                 }, throwable -> {
                     showError(getString(R.string.error_loading_board));
@@ -588,27 +576,32 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                     for (HiddenThread hiddenThread : hiddenThreads) {
                         if (hiddenThread.threadId == post.getNo()) {
                             found = true;
+                            break;
                         }
                     }
 
-                    if (filters != null && filters.size() > 0) {
+                    if (filters != null && filters.size() > 0 && !found) {
                         for (Filter filter : filters) {
+                            if (found) {
+                                break;
+                            }
+
                             Pattern filterPattern = Pattern.compile(filter.filter, Pattern.CASE_INSENSITIVE);
 
                             Matcher matcher;
-                            if (post.getCom() != null && !found) {
+                            if (post.getCom() != null) {
                                 matcher = filterPattern.matcher(post.getCom());
-                                found = matcher.find() && !found;
+                                found = matcher.find();
                             }
 
                             if (post.getSub() != null && !found) {
                                 matcher = filterPattern.matcher(post.getSub());
-                                found = matcher.find() && !found;
+                                found = matcher.find();
                             }
 
                             if (post.getName() != null && !found) {
                                 matcher = filterPattern.matcher(post.getName());
-                                found = matcher.find() && !found;
+                                found = matcher.find();
                             }
                         }
                     }
@@ -629,14 +622,14 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         return chanCatalog -> null;
     }
 
-    private Function<ChanCatalog, Flowable<ChanCatalog>> sortPosts() {
+    private Function<ChanCatalog, Single<ChanCatalog>> sortPosts() {
         return chanCatalog -> {
             if (chanCatalog != null) {
                 List<ChanPost> posts = chanCatalog.getPosts();
                 chanCatalog.setPosts(sortPosts(posts, sortType, invertSort));
             }
 
-            return Flowable.just(chanCatalog);
+            return Single.just(chanCatalog);
         };
     }
 
@@ -743,7 +736,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
                 RxUtil.safeUnsubscribe(fetchBoardsDisposable);
                 fetchBoardsDisposable = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()))
-                        .compose(DatabaseUtils.applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(boards -> {
                             if (boards != null) {
                                 int boardPos = -1;
@@ -778,8 +771,8 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
                 RxUtil.safeUnsubscribe(fetchBoardsSubscription);
                 fetchBoardsSubscription = BoardTableConnection.fetchBoards(boardOrder)
-                        .flatMap((Function<List<Board>, Flowable<List<ChanBoard>>>) boards -> Flowable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
-                        .compose(DatabaseUtils.applySchedulers())
+                        .flatMap((Function<List<Board>, Single<List<ChanBoard>>>) boards -> Single.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(this::initSpinner);
             }
         }
@@ -1003,10 +996,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (mActivatedPosition != ListView.INVALID_POSITION) {
-            // Serialize and persist the activated item position.
-            outState.putInt(STATE_ACTIVATED_POSITION, mActivatedPosition);
-        }
 
         if (listView != null) {
             outState.putInt(Extras.EXTRAS_POSITION, listView.getScrollY());
@@ -1069,13 +1058,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 try {
                     Log.i(LOG_TAG, "Post ID: " + postId);
                     showPostStatus(getString(R.string.success));
-
                     postFragment = null;
-
-                    final Handler handler = new Handler();
-                    final Runnable statusRunnable = () -> showReplyText();
-
-                    handler.postDelayed(statusRunnable, 200);
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Error creating a new post", e);
                 }
@@ -1116,14 +1099,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     private void showPostStatus(final String status) {
         Snackbar.make(listRefreshLayout, status, Snackbar.LENGTH_SHORT).show();
 
-    }
-
-    public void showReplyText() {
-
-    }
-
-    private void setActivatedPosition(int position) {
-        mActivatedPosition = position;
     }
 
     @Override

@@ -17,7 +17,6 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -45,6 +44,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.collection.LongSparseArray;
@@ -64,10 +64,14 @@ import com.emogoth.android.phone.mimi.dialog.RepliesDialog;
 import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ReplyMenuClickListener;
 import com.emogoth.android.phone.mimi.util.GlideApp;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.LongClickLinkMovementMethod;
 import com.emogoth.android.phone.mimi.view.gallery.GalleryPagerAdapter;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.mimireader.chanlib.models.ArchivedChanPost;
+import com.mimireader.chanlib.models.ArchivedChanThread;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 import com.mimireader.chanlib.util.ChanUtil;
@@ -130,6 +134,10 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     private int foundPos = FIND_NO_RESULTS;
     private OnFilterUpdateCallback filterUpdateCallback;
 
+    private Boolean imageSpoilersEnabled;
+    private String customSpoilerUrl;
+    private String spoilerUrl;
+
 
     public ThreadListAdapter(@NonNull final ChanThread thread) {
         this.items.addAll(thread.getPosts());
@@ -160,6 +168,11 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         Pair<VectorDrawableCompat, VectorDrawableCompat> metadataDrawables = initMetadataDrawables();
         pinDrawable = metadataDrawables.first;
         lockDrawable = metadataDrawables.second;
+
+        Context appContext = MimiApplication.getInstance().getApplicationContext();
+        imageSpoilersEnabled = MimiPrefs.imageSpoilersEnabled(appContext);
+        spoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.spoiler_path);
+        customSpoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.custom_spoiler_path);
 
         setupThread();
 
@@ -308,7 +321,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             return;
         }
 
-        if (thread.getPosts().size() > this.items.size() && this.items.size() > 1) {
+        if ((thread.getPosts().size() > this.items.size() && this.items.size() > 1) || thread instanceof ArchivedChanThread) {
 
 //            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new ThreadDiff(this.thread, thread), false);
 //            final DiffUtil.DiffResult result = DiffUtil.calculateDiff(new ThreadDiff(this.thread, thread));
@@ -393,8 +406,24 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             }
         });
 
-        final String thumbUrl = thumbUrlMap.get(postItem.getNo());
-        final String imageUrl = fullImageUrlMap.get(postItem.getNo());
+        final String thumbUrl;
+        final String imageUrl;
+        if (items.get(position) instanceof ArchivedChanPost) {
+            thumbUrl = ((ArchivedChanPost) postItem).thumbLink;
+            imageUrl = ((ArchivedChanPost) postItem).mediaLink;
+        } else {
+            if (!imageSpoilersEnabled) {
+                thumbUrl = thumbUrlMap.get(postItem.getNo());
+            } else if (items.get(position).spoiler > 0 && items.get(position).custom_spoiler > 0) {
+                thumbUrl = String.format(customSpoilerUrl, boardName, items.get(position).custom_spoiler);
+            } else if (items.get(position).spoiler > 0) {
+                thumbUrl = spoilerUrl;
+            } else {
+                thumbUrl = thumbUrlMap.get(postItem.getNo());
+            }
+
+            imageUrl = fullImageUrlMap.get(postItem.getNo());
+        }
 
         if (viewHolder.flagIcon != null) {
             final String country;
@@ -418,7 +447,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
                 viewHolder.flagIcon.setVisibility(View.VISIBLE);
                 viewHolder.flagIcon.setOnClickListener(v -> {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(viewHolder.flagIcon.getContext());
+                    MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(viewHolder.flagIcon.getContext());
                     builder.setMessage(postItem.getCountryName())
                             .setCancelable(true)
                             .show()
@@ -648,7 +677,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
 
         if (viewHolder.replyButton != null) {
-            if (postItem.isClosed()) {
+            if (postItem.isClosed() || items.get(position) instanceof ArchivedChanPost) {
                 viewHolder.replyButton.setVisibility(View.GONE);
             } else {
                 viewHolder.replyButton.setVisibility(View.VISIBLE);
@@ -831,7 +860,7 @@ public class ThreadListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         final View google = root.findViewById(R.id.google_button);
         final View saucenao = root.findViewById(R.id.saucenao_button);
         final View yandex = root.findViewById(R.id.yandex_button);
-        final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        final MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity);
         final AlertDialog dialog;
 
         fileName.setText(postItem.getFilename() + postItem.getExt());

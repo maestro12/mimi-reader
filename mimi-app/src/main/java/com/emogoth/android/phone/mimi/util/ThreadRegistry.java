@@ -60,7 +60,7 @@ public class ThreadRegistry {
         }
 
         Disposable sub = HistoryTableConnection.fetchHistory(true, 0, false)
-                .compose(DatabaseUtils.<List<History>>applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(historyList -> {
                     for (History historyDbModel : historyList) {
                         final ThreadRegistryModel t = new ThreadRegistryModel(historyDbModel, Collections.emptyList());

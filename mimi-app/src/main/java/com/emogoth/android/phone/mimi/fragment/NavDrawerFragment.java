@@ -21,7 +21,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -35,8 +34,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.BuildConfig;
@@ -53,7 +52,7 @@ import com.emogoth.android.phone.mimi.event.HomeButtonPressedEvent;
 import com.emogoth.android.phone.mimi.event.OpenHistoryEvent;
 import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
-import com.emogoth.android.phone.mimi.prefs.MimiSettings;
+import com.emogoth.android.phone.mimi.prefs.SettingsActivity;
 import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.LayoutType;
@@ -61,7 +60,7 @@ import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.DrawerViewHolder;
-import com.mimireader.chanlib.models.ChanBoard;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
@@ -116,7 +115,7 @@ public class NavDrawerFragment extends Fragment {
 
         final View settingsRow = view.findViewById(R.id.settings_row);
         settingsRow.setOnClickListener(v -> {
-            startActivityForResult(new Intent(getActivity(), MimiSettings.class), MimiActivity.SETTINGS_ID);
+            startActivityForResult(new Intent(getActivity(), SettingsActivity.class), MimiActivity.SETTINGS_ID);
             toggleDrawer();
         });
 
@@ -168,7 +167,7 @@ public class NavDrawerFragment extends Fragment {
 
     private void closeAllTabs() {
         final LayoutInflater inflater = LayoutInflater.from(getActivity());
-        final android.app.AlertDialog.Builder dialogBuilder = new android.app.AlertDialog.Builder(getActivity());
+        final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(getActivity());
         final View dialogView = inflater.inflate(R.layout.dialog_close_tabs_prompt, null, false);
         final CheckBox dontShow = (CheckBox) dialogView.findViewById(R.id.dialog_dont_show);
         final SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
@@ -197,6 +196,10 @@ public class NavDrawerFragment extends Fragment {
     }
 
     public void populateBookmarks() {
+        if (getActivity() == null || !isAdded()) {
+            return;
+        }
+
         final int bookmarkCount = MimiPrefs.navDrawerBookmarkCount(getActivity());
 
 //        HistoryTableConnection.fetchPost(12345)
@@ -206,6 +209,10 @@ public class NavDrawerFragment extends Fragment {
                 .subscribe(new Consumer<List<History>>() {
                     @Override
                     public void accept(List<History> bookmarks) {
+                        if (getActivity() == null || !isAdded()) {
+                            return;
+                        }
+
                         currentBookmarks = bookmarks;
 
                         bookmarksItemContainer.removeAllViews();
@@ -244,7 +251,7 @@ public class NavDrawerFragment extends Fragment {
     private void sendBookmarkClickedEvent(final History bookmark) {
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(bookmark.boardName)
-                .compose(DatabaseUtils.<ChanBoard>applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(chanBoard -> {
                     if (!TextUtils.isEmpty(chanBoard.getName())) {
                         BusProvider.getInstance().post(new BookmarkClickedEvent(bookmark.threadId, chanBoard.getName(), chanBoard.getTitle(), bookmark.orderId));
@@ -270,16 +277,13 @@ public class NavDrawerFragment extends Fragment {
                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
                 .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
         viewHolder.text.setText(parserBuilder.build().parse());
 
         if (bookmark.watched == 1) {
-            final int count = bookmark.threadSize - 1 - bookmark.lastReadPosition;
-
-            if (count > 0) {
-                viewHolder.unreadcount.setText(String.valueOf(count));
+            if (bookmark.unreadCount > 0) {
+                viewHolder.unreadcount.setText(String.valueOf(bookmark.unreadCount));
                 viewHolder.unreadcount.setVisibility(View.VISIBLE);
             } else {
                 viewHolder.unreadcount.setVisibility(View.GONE);
@@ -299,10 +303,6 @@ public class NavDrawerFragment extends Fragment {
                     .into(viewHolder.image);
 
             viewHolder.image.setVisibility(View.VISIBLE);
-
-//            viewHolder.image.setDefaultImageResId(R.drawable.ic_content_picture);
-//            viewHolder.image.setErrorImageResId(R.drawable.ic_content_picture);
-//            viewHolder.image.setImageUrl(url, imageLoader);
 
         } else {
             viewHolder.image.setVisibility(View.INVISIBLE);
@@ -405,7 +405,6 @@ public class NavDrawerFragment extends Fragment {
         HistoryTableConnection.fetchPost(boardName, threadId)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .single(new History())
                 .subscribe(new SingleObserver<History>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -414,9 +413,7 @@ public class NavDrawerFragment extends Fragment {
 
                     @Override
                     public void onSuccess(History history) {
-
-                        int unread = history.threadSize - 1 - history.lastReadPosition;
-                        callback.OnUnreadCountUpdate(unread);
+                        callback.OnUnreadCountUpdate(history.unreadCount);
                     }
 
                     @Override
@@ -430,7 +427,6 @@ public class NavDrawerFragment extends Fragment {
         HistoryTableConnection.fetchHistory(true)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .single(new ArrayList<>())
                 .subscribe(new SingleObserver<List<History>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -442,7 +438,7 @@ public class NavDrawerFragment extends Fragment {
 
                         int unread = 0;
                         for (History history : histories) {
-                            unread += (history.threadSize - 1 - history.lastReadPosition);
+                            unread += history.unreadCount;
                         }
 
                         callback.OnUnreadCountUpdate(unread);

@@ -1,40 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:key="@string/gallery_prefs_screen">
-    <SwitchPreference
-        android:title="@string/scroll_thread_with_gallery_title"
-        android:summary="@string/scroll_thread_with_gallery_summary"
-        android:key="@string/scroll_thread_with_gallery_pref"
-        android:defaultValue="true" />
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:key="@string/gallery_prefs_screen">
+    <PreferenceCategory
+        app:iconSpaceReserved="false"
+        app:key="@string/general_preference_category"
+        app:title="@string/gallery_title">
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/scroll_thread_with_gallery_pref"
+            app:summary="@string/scroll_thread_with_gallery_summary"
+            app:title="@string/scroll_thread_with_gallery_title" />
 
-    <SwitchPreference
-        android:title="@string/close_gallery_on_click_title"
-        android:key="@string/close_gallery_on_click_pref"
-        android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:key="@string/close_gallery_on_click_pref"
+            app:title="@string/close_gallery_on_click_title" />
 
-    <SwitchPreference
-        android:title="@string/auto_play_audio"
-        android:key="@string/webm_audio_lock_pref"
-        android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:iconSpaceReserved="false"
+            app:key="@string/webm_audio_lock_pref"
+            app:title="@string/auto_play_audio" />
 
-    <SwitchPreference
-        android:title="@string/use_original_filename_title"
-        android:summary="@string/use_original_filename_summary"
-        android:key="@string/use_original_filename_pref" />
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="@string/use_original_filename_pref"
+            app:summary="@string/use_original_filename_summary"
+            app:title="@string/use_original_filename_title" />
 
-    <SwitchPreference
-        android:title="@string/use_old_video_player_title"
-        android:key="@string/use_crappy_video_player" />
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="@string/use_crappy_video_player"
+            app:title="@string/use_old_video_player_title" />
 
-    <Preference
-        android:title="@string/image_file_location"
-        android:defaultValue=""
-        android:key="@string/image_file_location_pref" />
+        <Preference
+            app:defaultValue=""
+            app:iconSpaceReserved="false"
+            app:key="@string/image_file_location_pref"
+            app:title="@string/image_file_location" />
 
-    <ListPreference
-        android:title="@string/gallery_preload_title"
-        android:key="@string/gallery_preload_pref"
-        android:defaultValue="@string/gallery_preload_default_value"
-        android:entries="@array/gallery_preload_options"
-        android:entryValues="@array/gallery_preload_values" />
+        <ListPreference
+            app:defaultValue="@string/gallery_preload_default_value"
+            app:entries="@array/gallery_preload_options"
+            app:entryValues="@array/gallery_preload_values"
+            app:iconSpaceReserved="false"
+            app:key="@string/gallery_preload_pref"
+            app:title="@string/gallery_preload_title" />
+    </PreferenceCategory>
 </PreferenceScreen>

@@ -17,10 +17,7 @@
 package com.emogoth.android.phone.mimi.activity;
 
 
-import android.content.DialogInterface;
 import android.os.Bundle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,12 +28,15 @@ import android.widget.ArrayAdapter;
 import android.widget.GridLayout;
 import android.widget.Spinner;
 
+import androidx.appcompat.widget.Toolbar;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.ThreadListAdapter;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.ColorImageView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.rarepebble.colorpicker.ColorPickerView;
 
 import java.util.ArrayList;
@@ -45,9 +45,6 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 
@@ -74,49 +71,38 @@ public class ThemeSettingsActivity extends MimiActivity {
             toolbar.setLogo(null);
             toolbar.setTitle(R.string.settings);
             toolbar.setNavigationIcon(R.drawable.ic_nav_arrow_back);
-            toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    finish();
-                }
-            });
+            toolbar.setNavigationOnClickListener(v -> finish());
             setToolbar(toolbar);
         }
 
-        final ViewGroup container = (ViewGroup) findViewById(R.id.container);
+        final ViewGroup container = findViewById(R.id.container);
         final View postView = LayoutInflater.from(this).inflate(R.layout.thread_post_item, container, false);
 
-        final ColorImageView selectedColorView = (ColorImageView) findViewById(R.id.current_color);
+        final ColorImageView selectedColorView = findViewById(R.id.current_color);
         if (selectedColorView != null) {
-            selectedColorView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    final ColorPickerView pickerView = new ColorPickerView(ThemeSettingsActivity.this);
-                    pickerView.setColor(currentColor);
-                    pickerView.showAlpha(false);
+            selectedColorView.setOnClickListener(v -> {
+                final ColorPickerView pickerView = new ColorPickerView(ThemeSettingsActivity.this);
+                pickerView.setColor(currentColor);
+                pickerView.showAlpha(false);
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(ThemeSettingsActivity.this);
-                    builder.setView(pickerView)
-                            .setCancelable(true)
-                            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    currentColor = pickerView.getColor();
-                                    selectedColorView.setBackgroundColor(currentColor);
-                                    setSelectedColor(selectedItem, currentColor);
-                                    updateDemoView(postView);
-                                }
-                            })
-                            .setNegativeButton(R.string.cancel, null)
-                            .show();
-                }
+                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(ThemeSettingsActivity.this);
+                builder.setView(pickerView)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.ok, (dialog, which) -> {
+                            currentColor = pickerView.getColor();
+                            selectedColorView.setBackgroundColor(currentColor);
+                            setSelectedColor(selectedItem, currentColor);
+                            updateDemoView(postView);
+                        })
+                        .setNegativeButton(R.string.cancel, null)
+                        .show();
             });
         }
 
         initColors(selectedColorView, postView);
         currentColor = getSelectedColor(0);
 
-        final Spinner spinner = (Spinner) findViewById(R.id.color_type_spinner);
+        final Spinner spinner = findViewById(R.id.color_type_spinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.color_types_list, android.R.layout.simple_spinner_item);
 
         spinner.setAdapter(adapter);
@@ -144,16 +130,16 @@ public class ThemeSettingsActivity extends MimiActivity {
     private void initColors(ColorImageView selectedColorView, View postView) {
         final List<ColorImageView> views = new ArrayList<>(10);
 
-        views.add((ColorImageView) findViewById(R.id.default_reply));
-        views.add((ColorImageView) findViewById(R.id.default_highlight));
-        views.add((ColorImageView) findViewById(R.id.default_quote));
-        views.add((ColorImageView) findViewById(R.id.default_link));
-        views.add((ColorImageView) findViewById(R.id.material_blue));
-        views.add((ColorImageView) findViewById(R.id.material_red));
-        views.add((ColorImageView) findViewById(R.id.material_green));
-        views.add((ColorImageView) findViewById(R.id.material_yellow));
-        views.add((ColorImageView) findViewById(R.id.material_light_grey));
-        views.add((ColorImageView) findViewById(R.id.material_dark_grey));
+        views.add(findViewById(R.id.default_reply));
+        views.add(findViewById(R.id.default_highlight));
+        views.add(findViewById(R.id.default_quote));
+        views.add(findViewById(R.id.default_link));
+        views.add(findViewById(R.id.material_blue));
+        views.add(findViewById(R.id.material_red));
+        views.add(findViewById(R.id.material_green));
+        views.add(findViewById(R.id.material_yellow));
+        views.add(findViewById(R.id.material_light_grey));
+        views.add(findViewById(R.id.material_dark_grey));
 
         for (ColorImageView view : views) {
             view.setOnClickListener(setupClickListener(selectedColorView, postView));
@@ -162,17 +148,14 @@ public class ThemeSettingsActivity extends MimiActivity {
     }
 
     private View.OnClickListener setupClickListener(final ColorImageView selectedColor, final View postView) {
-        return new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (v instanceof ColorImageView) {
-                    final ColorImageView view = (ColorImageView) v;
-                    currentColor = view.getBackgroundColor();
+        return v -> {
+            if (v instanceof ColorImageView) {
+                final ColorImageView view = (ColorImageView) v;
+                currentColor = view.getBackgroundColor();
 
-                    selectedColor.setBackgroundColor(currentColor);
-                    setSelectedColor(selectedItem, currentColor);
-                    updateDemoView(postView);
-                }
+                selectedColor.setBackgroundColor(currentColor);
+                setSelectedColor(selectedItem, currentColor);
+                updateDemoView(postView);
             }
         };
     }
@@ -182,44 +165,38 @@ public class ThemeSettingsActivity extends MimiActivity {
         demoViewSubscription = Observable.just(postView)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(new Function<View, ThreadListAdapter.ViewHolder>() {
-                    @Override
-                    public ThreadListAdapter.ViewHolder apply(View view) {
-                        List<Long> highlightedPostIDs = new ArrayList<>();
-                        highlightedPostIDs.add(88765432L);
+                .map(view -> {
+                    List<Long> highlightedPostIDs = new ArrayList<>();
+                    highlightedPostIDs.add(88765432L);
 
-                        FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
-                        parserBuilder.setContext(ThemeSettingsActivity.this)
-                                .setComment(DEMO_COMMENT)
-                                .setThreadId(12345678L)
-                                .setHighlightedPosts(highlightedPostIDs)
-                                .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
-                                .setReplyColor(MimiUtil.getInstance().getReplyColor())
-                                .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                                .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                                .setDemoMode(true);
+                    FourChanCommentParser.Builder parserBuilder = new FourChanCommentParser.Builder();
+                    parserBuilder.setContext(ThemeSettingsActivity.this)
+                            .setComment(DEMO_COMMENT)
+                            .setThreadId(12345678L)
+                            .setHighlightedPosts(highlightedPostIDs)
+                            .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
+                            .setReplyColor(MimiUtil.getInstance().getReplyColor())
+                            .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
+                            .setLinkColor(MimiUtil.getInstance().getLinkColor())
+                            .setDemoMode(true);
 
-                        CharSequence date = DateUtils.getRelativeTimeSpanString(
-                                System.currentTimeMillis() - 60000,
-                                System.currentTimeMillis(),
-                                DateUtils.MINUTE_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_RELATIVE);
+                    CharSequence date = DateUtils.getRelativeTimeSpanString(
+                            System.currentTimeMillis() - 60000,
+                            System.currentTimeMillis(),
+                            DateUtils.MINUTE_IN_MILLIS,
+                            DateUtils.FORMAT_ABBREV_RELATIVE);
 
-                        ThreadListAdapter.ViewHolder viewHolder = new ThreadListAdapter.ThreadPostViewHolder(view);
-                        viewHolder.userName.setText("Anonymous");
-                        viewHolder.flagIcon.setVisibility(View.GONE);
-                        viewHolder.thumbnailContainer.setVisibility(View.GONE);
-                        viewHolder.postTime.setText(date);
-                        viewHolder.threadId.setText("83736278");
-                        viewHolder.comment.setText(parserBuilder.build().parse());
-                        return viewHolder;
-                    }
+                    ThreadListAdapter.ViewHolder viewHolder = new ThreadListAdapter.ThreadPostViewHolder(view);
+                    viewHolder.userName.setText("Anonymous");
+                    viewHolder.flagIcon.setVisibility(View.GONE);
+                    viewHolder.thumbnailContainer.setVisibility(View.GONE);
+                    viewHolder.postTime.setText(date);
+                    viewHolder.threadId.setText("83736278");
+                    viewHolder.comment.setText(parserBuilder.build().parse());
+                    return viewHolder;
                 })
-                .subscribe(new Consumer<ThreadListAdapter.ViewHolder>() {
-                    @Override
-                    public void accept(ThreadListAdapter.ViewHolder viewHolder) {
+                .subscribe(viewHolder -> {
 
-                    }
                 });
 
     }

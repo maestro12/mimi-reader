@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
@@ -24,7 +26,7 @@ public class HiddenThreadTableConnection {
 
     public static final String LOG_TAG = HiddenThreadTableConnection.class.getSimpleName();
 
-    public static Flowable<List<HiddenThread>> fetchHiddenThreads(String boardName) {
+    public static Single<List<HiddenThread>> fetchHiddenThreads(String boardName) {
         From query = new Select()
                 .all()
                 .from(HiddenThread.class)
@@ -33,8 +35,7 @@ public class HiddenThreadTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
 
         return db.createQuery(HiddenThread.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(HiddenThread.mapper())
                 .onErrorReturn(throwable -> {
@@ -72,22 +73,21 @@ public class HiddenThreadTableConnection {
                 });
     }
 
-    public static Flowable<Boolean> clearAll() {
+    public static Single<Boolean> clearAll() {
         From query = new Delete().from(HiddenThread.class);
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(HiddenThread.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(HiddenThread.mapper())
-                .flatMap((Function<List<HiddenThread>, Flowable<Boolean>>) hiddenThreads -> Flowable.just(true))
+                .flatMap((Function<List<HiddenThread>, Single<Boolean>>) hiddenThreads -> Single.just(true))
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Error clearing hidden threads", throwable);
                     return false;
                 });
     }
 
-    public static Flowable<Boolean> prune(final int days) {
+    public static Single<Boolean> prune(final int days) {
         Long oldestTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
         From query = new Delete()
                 .from(HiddenThread.class)
@@ -96,11 +96,10 @@ public class HiddenThreadTableConnection {
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(HiddenThread.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(HiddenThread.mapper())
-                .flatMap((Function<List<HiddenThread>, Flowable<Boolean>>) hiddenThreads -> Flowable.just(true))
+                .flatMap((Function<List<HiddenThread>, Single<Boolean>>) hiddenThreads -> Single.just(true))
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Error pruning hidden threads from the last " + days + " days", throwable);
                     return false;

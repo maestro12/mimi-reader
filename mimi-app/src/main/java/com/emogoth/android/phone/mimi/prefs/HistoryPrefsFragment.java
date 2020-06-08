@@ -17,33 +17,28 @@
 package com.emogoth.android.phone.mimi.prefs;
 
 import android.os.Bundle;
-import android.preference.ListPreference;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.SwitchPreference;
+
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
-import com.emogoth.android.phone.mimi.db.PostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.google.android.material.snackbar.Snackbar;
 
-import java.util.List;
-
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
-import io.reactivex.SingleSource;
-import io.reactivex.functions.Function;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
-public class HistoryPrefsFragment extends PreferenceFragment {
+public class HistoryPrefsFragment extends PreferenceFragmentCompat {
+
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.history_prefs);
-
         setupPrefs();
     }
 
@@ -96,10 +91,18 @@ public class HistoryPrefsFragment extends PreferenceFragment {
             return true;
         });
 
-        final SwitchPreference saveHistory = (SwitchPreference) findPreference(getString(R.string.save_history_pref));
+        final SwitchPreferenceCompat saveHistory = findPreference(getString(R.string.save_history_pref));
         saveHistory.setOnPreferenceChangeListener((preference, newValue) -> {
             if (!((Boolean) newValue)) {
-                MimiUtil.pruneHistory(0).subscribe();
+                Disposable pruneSubscriber = MimiUtil.pruneHistory(0)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(aBoolean -> Snackbar.make(getView(), R.string.clearing_history, Snackbar.LENGTH_SHORT).show(), throwable -> Snackbar.make(getView(), R.string.error_while_clearing_history, Snackbar.LENGTH_SHORT).show());
+                BoardTableConnection.resetStats()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .onErrorReturn(throwable -> false)
+                        .subscribe();
             }
             return true;
         });
@@ -121,7 +124,15 @@ public class HistoryPrefsFragment extends PreferenceFragment {
 
         final Preference clearHistory = findPreference(getString(R.string.clear_history_pref));
         clearHistory.setOnPreferenceClickListener(preference -> {
-            MimiUtil.pruneHistory(0).subscribe();
+            Disposable pruneSubscriber = MimiUtil.pruneHistory(0)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(aBoolean -> Snackbar.make(getView(), R.string.clearing_history, Snackbar.LENGTH_SHORT).show(), throwable -> Snackbar.make(getView(), R.string.error_while_clearing_history, Snackbar.LENGTH_SHORT).show());
+            BoardTableConnection.resetStats()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorReturn(throwable -> false)
+                    .subscribe();
             return true;
         });
     }

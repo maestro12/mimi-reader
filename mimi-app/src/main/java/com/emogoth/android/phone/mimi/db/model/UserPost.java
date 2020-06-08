@@ -29,6 +29,7 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 @Table(name = UserPost.TABLE_NAME)
@@ -95,7 +96,21 @@ public class UserPost extends BaseModel {
         return TextUtils.isEmpty(boardName) && threadId <= 0 && postId <= 0;
     }
 
-    public static Function<Cursor, Flowable<List<UserPost>>> mapper() {
+    public static Function<Cursor, Single<List<UserPost>>> mapper() {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<UserPost> userPostList = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                UserPost userPost = new UserPost();
+                userPost.loadFromCursor(cursor);
+
+                userPostList.add(userPost);
+            }
+            return Single.just(userPostList);
+        };
+    }
+
+    public static Function<Cursor, Flowable<List<UserPost>>> flowableMapper() {
         return cursor -> {
             cursor.moveToPosition(-1);
             List<UserPost> userPostList = new ArrayList<>(cursor.getCount());

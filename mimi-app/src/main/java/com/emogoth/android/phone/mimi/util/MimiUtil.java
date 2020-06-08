@@ -17,13 +17,11 @@
 package com.emogoth.android.phone.mimi.util;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -34,7 +32,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
-import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
 import android.util.Log;
@@ -45,7 +42,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -53,6 +49,7 @@ import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -63,6 +60,7 @@ import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.db.ArchivedPostTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.PostTableConnection;
@@ -140,7 +138,7 @@ public class MimiUtil {
     private Context context;
 
     private File cacheDir;
-    private String cacheDirPrefString;
+    //    private String boardOrderPrefString;
     private ThreadPoolExecutor executorPool;
     private boolean ready = false;
 
@@ -244,24 +242,7 @@ public class MimiUtil {
 //            boardOrderPrefString = context.getString(R.string.board_order_pref);
 //        }
 
-        cacheDirPrefString = context.getString(R.string.cache_external_pref);
-        if (sh.getBoolean(cacheDirPrefString, false)) {
-            Log.i(LOG_TAG, "Setting cache dir to sd card storage");
-            String state = Environment.getExternalStorageState();
-            if (Environment.MEDIA_MOUNTED.equals(state)) {
-                cacheDir = new File(context.getExternalFilesDir(state), "cache");
-                if (!cacheDir.exists()) {
-                    if (!cacheDir.mkdirs()) {
-                        cacheDir = context.getCacheDir();
-                    }
-                }
-            } else {
-                cacheDir = context.getCacheDir();
-            }
-        } else {
-            Log.i(LOG_TAG, "Setting cache dir to internal storage");
-            cacheDir = context.getCacheDir();
-        }
+        cacheDir = context.getCacheDir();
 
         nextLoaderId = 0;
         loaderIdMap = new HashMap<>();
@@ -357,6 +338,18 @@ public class MimiUtil {
         return loaderId;
     }
 
+    private static File getPicturesDirectoryAsFile() {
+        return new File(Environment.getExternalStorageDirectory(), Environment.DIRECTORY_PICTURES);
+    }
+
+    public static DocumentFile getPicturesDirectory() {
+        return DocumentFile.fromFile(getPicturesDirectoryAsFile());
+    }
+
+    public static boolean canWriteToPicturesFolder() {
+        return getPicturesDirectory().canWrite();
+    }
+
     @Nullable
     public static DocumentFile getSaveDir() {
         final Context context = MimiApplication.getInstance().getApplicationContext();
@@ -364,21 +357,25 @@ public class MimiUtil {
         return directoryToDocumentFile(context, dir);
     }
 
-    public static DocumentFile directoryToDocumentFile(final Context context, final String dir) {
+    private static DocumentFile directoryToDocumentFile(final Context context, final String dir) {
         if (!TextUtils.isEmpty(dir)) {
-            if (dir.startsWith(Utils.SCHEME_CONTENT)) {
-                return DocumentFile.fromTreeUri(context, Uri.parse(dir));
-            } else {
-                return DocumentFile.fromFile(new File(dir));
+            try {
+                if (dir.startsWith(Utils.SCHEME_CONTENT)) {
+                    return DocumentFile.fromTreeUri(context, Uri.parse(dir));
+                } else {
+                    return DocumentFile.fromFile(new File(dir));
+                }
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error creating DocumentFile from " + dir, e);
+                return null;
             }
         } else {
-            DocumentFile defaultDir = DocumentFile.fromFile(new File(Environment.getExternalStorageDirectory(), "/Mimi"));
+            DocumentFile defaultDir = DocumentFile.fromFile(new File(getPicturesDirectoryAsFile(), "/Mimi"));
             if (!defaultDir.exists()) {
-                DocumentFile externalStorageDir = DocumentFile.fromFile(Environment.getExternalStorageDirectory());
-                return externalStorageDir.createDirectory("Mimi");
-            } else {
-                return defaultDir;
+                DocumentFile externalStorageDir = getPicturesDirectory();
+                DocumentFile mimiFolder = externalStorageDir.createDirectory("Mimi");
             }
+            return defaultDir;
         }
     }
 
@@ -422,26 +419,28 @@ public class MimiUtil {
         themeResource = themeArray[theme][colorId];
     }
 
-    public static Flowable<Boolean> removeHistory(final boolean watched) {
+    public static Single<Boolean> removeHistory(final boolean watched) {
         return HistoryTableConnection.fetchHistory(watched)
-                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
-                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
-                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
-                .toList()
                 .toFlowable()
-                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.removeAllHistory(watched))
-                .compose(DatabaseUtils.applySchedulers());
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<History>>) history -> Flowable.just(history))
+                .doOnNext(history -> PostTableConnection.removeThread(history.threadId))
+                .doOnNext(history -> ArchivedPostTableConnection.removeThread(history.boardName, history.threadId))
+                .toList()
+                .flatMap((Function<List<History>, Single<Boolean>>) booleans -> HistoryTableConnection.removeAllHistory(watched))
+                .compose(DatabaseUtils.applySingleSchedulers());
     }
 
-    public static Flowable<Boolean> pruneHistory(final int days) {
+    public static Single<Boolean> pruneHistory(final int days) {
         return HistoryTableConnection.getHistoryToPrune(days)
-                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
-                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
-                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
-                .toList()
                 .toFlowable()
-                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.pruneHistory(days))
-                .compose(DatabaseUtils.applySchedulers());
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<History>>) Flowable::just)
+                .doOnNext(history -> PostTableConnection.removeThread(history.threadId))
+                .doOnNext(history -> ArchivedPostTableConnection.removeThread(history.boardName,  history.threadId))
+                .toList()
+                .flatMap((Function<List<History>, Single<Boolean>>) booleans -> HistoryTableConnection.pruneHistory(days))
+                .compose(DatabaseUtils.applySingleSchedulers());
     }
 
 //    public static Observable<Boolean> pruneHistory(final int days) {
@@ -526,21 +525,6 @@ public class MimiUtil {
 
     public static int getDeviceOrientation(Context context) {
         return context.getResources().getConfiguration().orientation;
-    }
-
-    public static void setScreenOrientation(final Activity activity) {
-        final String orientationPref = activity.getString(R.string.prevent_screen_rotation_pref);
-
-        if (PreferenceManager.getDefaultSharedPreferences(activity).getBoolean(orientationPref, false)) {
-            try {
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            } catch (Exception e) {
-                Toast.makeText(activity, R.string.could_not_set_orientation, Toast.LENGTH_SHORT).show();
-            }
-
-        } else {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
-        }
     }
 
     public View createActionBarNotification(final LayoutInflater inflater, final ViewGroup container, final int count) {
@@ -951,6 +935,10 @@ public class MimiUtil {
     }
 
     public static void deleteRecursive(File fileOrDirectory, boolean keepDir) {
+        if (fileOrDirectory == null) {
+            return;
+        }
+
         if (fileOrDirectory.isDirectory()) {
             for (File child : fileOrDirectory.listFiles()) {
                 deleteRecursive(child, keepDir);

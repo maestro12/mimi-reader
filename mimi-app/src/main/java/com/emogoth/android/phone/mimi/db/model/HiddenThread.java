@@ -13,6 +13,7 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 @Table(name = HiddenThread.TABLE_NAME)
@@ -57,20 +58,17 @@ public class HiddenThread extends BaseModel {
         return values;
     }
 
-    public static Function<Cursor, Flowable<List<HiddenThread>>> mapper() {
-        return new Function<Cursor, Flowable<List<HiddenThread>>>() {
-            @Override
-            public Flowable<List<HiddenThread>> apply(Cursor cursor) {
-                cursor.moveToPosition(-1);
-                List<HiddenThread> hiddenThreads = new ArrayList<>(cursor.getCount());
-                while (cursor.moveToNext()) {
-                    HiddenThread thread = new HiddenThread();
-                    thread.loadFromCursor(cursor);
+    public static Function<Cursor, Single<List<HiddenThread>>> mapper() {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<HiddenThread> hiddenThreads = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                HiddenThread thread = new HiddenThread();
+                thread.loadFromCursor(cursor);
 
-                    hiddenThreads.add(thread);
-                }
-                return Flowable.just(hiddenThreads);
+                hiddenThreads.add(thread);
             }
+            return Single.just(hiddenThreads);
         };
     }
 

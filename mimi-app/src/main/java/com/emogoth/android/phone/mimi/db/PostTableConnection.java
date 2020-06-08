@@ -17,7 +17,7 @@ public class PostTableConnection {
     public static final String LOG_TAG = PostTableConnection.class.getSimpleName();
 
     public static Single<List<PostModel>> fetchThread(long threadId) {
-        return DatabaseUtils.fetchTable(PostModel.class, PostModel.TABLE_NAME, "post_id", PostModel.KEY_THREAD_ID + "=?", String.valueOf(threadId)).single(Collections.emptyList());
+        return DatabaseUtils.fetchTable(PostModel.class, PostModel.TABLE_NAME, "post_id", PostModel.KEY_THREAD_ID + "=?", String.valueOf(threadId));
     }
 
     public static Flowable<List<PostModel>> watchThread(long threadId) {
@@ -41,9 +41,18 @@ public class PostTableConnection {
         return new ChanThread(boardName, threadId, posts);
     }
 
-    public static Flowable<Boolean> putThread(final ChanThread thread) {
+    public static Flowable<Boolean> putThreadFlowable(final ChanThread thread) {
+        List<PostModel> posts = convertToPostModels(thread);
+        return DatabaseUtils.insert(posts);
+    }
+
+    public static boolean putThread(final ChanThread thread) {
+        return DatabaseUtils.insertModels(convertToPostModels(thread)) > 0;
+    }
+
+    private static List<PostModel> convertToPostModels(ChanThread thread) {
         if (thread == null || thread.getPosts() == null || thread.getPosts().size() == 0) {
-            return Flowable.just(false);
+            return Collections.emptyList();
         }
 
         List<PostModel> posts = new ArrayList<>(thread.getPosts().size());
@@ -51,11 +60,11 @@ public class PostTableConnection {
             posts.add(new PostModel(thread.getThreadId(), thread.getPosts().get(i)));
         }
 
-        return DatabaseUtils.insert(posts);
+        return posts;
     }
 
-    public static Flowable<Boolean> removeThread(final long threadId) {
+    public static Single<Boolean> removeThread(final long threadId) {
         DatabaseUtils.WhereArg arg = new DatabaseUtils.WhereArg(PostModel.KEY_THREAD_ID + "=?", threadId);
-        return DatabaseUtils.remove(new PostModel(), false, arg);
+        return DatabaseUtils.remove(new PostModel(), false, arg).first(false);
     }
 }

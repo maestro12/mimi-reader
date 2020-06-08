@@ -30,43 +30,45 @@ import com.emogoth.android.phone.mimi.db.model.Board;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.squareup.sqlbrite3.BriteDatabase;
 
+import org.reactivestreams.Publisher;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 public class BoardTableConnection {
     public static final String LOG_TAG = BoardTableConnection.class.getSimpleName();
 
-    public static Flowable<List<Board>> fetchBoards(int orderBy) {
+    public static Single<List<Board>> fetchBoards(int orderBy) {
         return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, Board.sortOrder(orderBy), Board.KEY_VISIBLE + "=?", true);
     }
 
     public static Flowable<List<ChanBoard>> observeBoards(int orderBy) {
         return DatabaseUtils.observeTable(Board.class, Board.TABLE_NAME, Board.sortOrder(orderBy), Board.KEY_VISIBLE + "=?", true)
-                .map(BoardTableConnection::convertBoardDbModelsToChanBoards);
+                .flatMap((Function<List<Board>, Publisher<List<ChanBoard>>>) boards -> Flowable.just(convertBoardDbModelsToChanBoards(boards)));
     }
 
-    public static Flowable<ChanBoard> fetchBoard(final String boardName) {
+    public static Single<ChanBoard> fetchBoard(final String boardName) {
         if (TextUtils.isEmpty(boardName)) {
-            return Flowable.just(new ChanBoard());
+            return Single.just(new ChanBoard());
         }
         return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, null, Board.KEY_NAME + "=?", boardName)
-                .flatMap((Function<List<Board>, Flowable<ChanBoard>>) boards -> {
+                .flatMap((Function<List<Board>, Single<ChanBoard>>) boards -> {
                     if (boards != null && boards.size() > 0) {
-                        return Flowable.just(convertBoardDbModelToBoard(boards.get(0)));
+                        return Single.just(convertBoardDbModelToBoard(boards.get(0)));
                     }
-                    return Flowable.just(new ChanBoard());
+                    return Single.just(new ChanBoard());
                 });
     }
 
-    public static Flowable<Boolean> setBoardFavorite(final String boardName, final boolean favorite) {
+    public static Single<Boolean> setBoardFavorite(final String boardName, final boolean favorite) {
         Board b = new Board();
         b.name = boardName;
 
@@ -78,21 +80,21 @@ public class BoardTableConnection {
         return DatabaseUtils.updateTable(b);
     }
 
-    public static Flowable<Boolean> incrementAccessCount(final String boardName) {
+    public static Single<Boolean> incrementAccessCount(final String boardName) {
         return updateBoard(boardName, 2);
     }
 
-    public static Flowable<Boolean> incrementPostCount(final String boardName) {
+    public static Single<Boolean> incrementPostCount(final String boardName) {
         return updateBoard(boardName, 1);
     }
 
-    public static Flowable<Boolean> updateLastAccess(final String boardName) {
+    public static Single<Boolean> updateLastAccess(final String boardName) {
         return updateBoard(boardName, 0);
     }
 
-    private static Flowable<Boolean> updateBoard(final String boardName, final int type) {
+    private static Single<Boolean> updateBoard(final String boardName, final int type) {
         return DatabaseUtils.fetchTable(Board.class, Board.TABLE_NAME, null, Board.KEY_NAME + "=?", boardName)
-                .flatMap((Function<List<Board>, Flowable<Boolean>>) boards -> {
+                .flatMap((Function<List<Board>, Single<Boolean>>) boards -> {
                     if (boards != null && boards.size() > 0) {
                         Board board = boards.get(0);
                         ContentValues values = null;
@@ -110,7 +112,7 @@ public class BoardTableConnection {
                         }
                     }
 
-                    return Flowable.just(false);
+                    return Single.just(false);
                 });
     }
 
@@ -137,6 +139,32 @@ public class BoardTableConnection {
         values.put(Board.KEY_ACCESS_COUNT, count);
 
         return values;
+    }
+
+    public static Single<Boolean> resetStats() {
+        return Single.defer((Callable<SingleSource<Boolean>>) () -> {
+            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+            BriteDatabase.Transaction transaction = db.newTransaction();
+
+            ContentValues values = new ContentValues();
+
+            values.put(Board.KEY_ACCESS_COUNT, 0);
+            values.put(Board.KEY_LAST_ACCESSED, 0);
+            values.put(Board.KEY_POST_COUNT, 0);
+
+            int val = 0;
+            try {
+                val = db.update(Board.TABLE_NAME, SQLiteDatabase.CONFLICT_IGNORE, values, null, null);
+                transaction.markSuccessful();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error putting post options into the database", e);
+            } finally {
+                transaction.end();
+            }
+
+            return Single.just(val > 0);
+        });
+
     }
 
     public static Flowable<Boolean> updateBoardOrder(final List<ChanBoard> boards) {
@@ -244,25 +272,25 @@ public class BoardTableConnection {
         return Collections.emptyList();
     }
 
-    public static Flowable<List<ChanBoard>> initDefaultBoards(final Context context) {
-        return Flowable
-                .defer((Callable<Flowable<String[]>>) () -> Flowable.just(context.getResources().getStringArray(R.array.boards)))
+    public static Single<List<ChanBoard>> initDefaultBoards(final Context context) {
+        return Single
+                .defer((Callable<Single<String[]>>) () -> Single.just(context.getResources().getStringArray(R.array.boards)))
                 .map(strings -> {
                     List<ChanBoard> boards = new ArrayList<>(strings.length);
                     for (String boardName : strings) {
                         ChanBoard board = new ChanBoard();
                         board.setName(boardName);
-                        board.setTitle("TEMPORARY");
-                        board.setWsBoard(0);
+                        board.setTitle("");
+                        board.setWsBoard(1);
                         boards.add(board);
                     }
                     return boards;
                 })
-                .doOnNext(BoardTableConnection.saveBoards())
+                .doOnSuccess(BoardTableConnection.saveBoards())
+                .toFlowable()
                 .flatMapIterable((Function<List<ChanBoard>, Iterable<ChanBoard>>) board -> board)
-                .flatMap((Function<ChanBoard, Flowable<ChanBoard>>) s -> setBoardVisibility(s.getName(), true))
-                .toList()
-                .toFlowable();
+                .flatMap((Function<ChanBoard, Flowable<ChanBoard>>) s -> setBoardVisibility(s.getName(), true).toFlowable())
+                .toList();
     }
 
     public static Consumer<? extends BaseModel> saveToDatabase() {
@@ -308,12 +336,12 @@ public class BoardTableConnection {
         }
     }
 
-    public static Flowable<ChanBoard> setBoardVisibility(final String boardPath, final Boolean visible) {
+    public static Single<ChanBoard> setBoardVisibility(final String boardPath, final Boolean visible) {
         if (TextUtils.isEmpty(boardPath)) {
-            return Flowable.just(new ChanBoard());
+            return Single.just(new ChanBoard());
         }
 
-        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+        return Single.defer((Callable<Single<Boolean>>) () -> {
             BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
             BriteDatabase.Transaction transaction = db.newTransaction();
 
@@ -333,16 +361,16 @@ public class BoardTableConnection {
                 transaction.end();
             }
 
-            return Flowable.just(val > 0);
+            return Single.just(val > 0);
         })
-                .flatMap((Function<Boolean, Flowable<ChanBoard>>) success -> {
+                .flatMap((Function<Boolean, Single<ChanBoard>>) success -> {
                     if (success) {
                         return fetchBoard(boardPath);
                     }
 
-                    return Flowable.just(new ChanBoard());
+                    return Single.just(new ChanBoard());
                 })
-                .compose(DatabaseUtils.applySchedulers());
+                .compose(DatabaseUtils.applySingleSchedulers());
     }
 
 }

@@ -2,7 +2,9 @@ package com.emogoth.android.phone.mimi.util
 
 import android.content.Context
 import android.net.ConnectivityManager
-import android.preference.PreferenceManager
+import android.net.NetworkCapabilities
+import android.os.Build
+import androidx.preference.PreferenceManager
 import com.emogoth.android.phone.mimi.R
 import com.emogoth.android.phone.mimi.app.MimiApplication
 import com.emogoth.android.phone.mimi.autorefresh.RefreshJobService
@@ -19,18 +21,30 @@ class MimiPrefs {
         @JvmStatic
         fun wifiConnected(app: Context): Boolean {
             val connManager = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val wifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val wifi = connManager.activeNetwork
+                if (wifi != null) {
+                    val nc = connManager.getNetworkCapabilities(wifi)
+                    if (nc != null) {
+                        return (nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) || nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))
+                    }
 
-            return wifi.isConnected
+                    return false
+                }
+
+                return false
+            } else {
+                val wifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+                return wifi?.isConnected ?: false
+            }
         }
 
         @JvmStatic
         fun preloadEnabled(context: Context): Boolean {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val pref = prefs.getString(context.getString(R.string.gallery_preload_pref), "2")
-            val value = pref?.toInt() ?: 2
 
-            return when (value) {
+            return when (pref?.toInt() ?: 2) {
                 2 -> {
                     wifiConnected(context)
                 }
@@ -64,16 +78,15 @@ class MimiPrefs {
             return prefs.getBoolean(context.getString(R.string.use_original_filename_pref), false)
         }
 
+        @JvmStatic
+        fun imageSpoilersEnabled(context: Context): Boolean {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            return prefs.getBoolean(context.getString(R.string.enable_image_spoilers_pref), true)
+        }
+
         fun removeWatch(threadId: Long) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(MimiApplication.getInstance().applicationContext)
             prefs.edit().remove("${RefreshJobService.NOTIFICATIONS_KEY_THREAD_SIZE}.$threadId").apply()
-        }
-
-        @JvmStatic
-        fun isEmojiEnabled(): Boolean {
-            val context = MimiApplication.getInstance().applicationContext
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            return prefs.getBoolean(context.getString(R.string.enable_emoji_pref), false)
         }
     }
 }

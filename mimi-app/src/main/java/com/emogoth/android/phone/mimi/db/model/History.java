@@ -30,6 +30,7 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 @Table(name = "History")
@@ -49,6 +50,7 @@ public class History extends BaseModel {
     public static final String KEY_REPLIES = "post_replies";
     public static final String KEY_THREAD_REMOVED = "thread_removed";
     public static final String KEY_LAST_READ_POS = "last_read_position";
+    public static final String KEY_UNREAD_COUNT = "unread_count";
 
     @Column(name = KEY_ID, index = true)
     public Integer id;
@@ -89,12 +91,16 @@ public class History extends BaseModel {
     @Column(name = KEY_LAST_READ_POS)
     public int lastReadPosition;
 
+    @Column(name = KEY_UNREAD_COUNT)
+    public int unreadCount;
+
     public CharSequence comment;
 
     public History() {
         this.threadId = -1L;
         this.lastReadPosition = 0;
         this.threadSize = 0;
+        this.unreadCount = 0;
     }
 
     @Override
@@ -128,10 +134,25 @@ public class History extends BaseModel {
 
         values.put(KEY_THREAD_REMOVED, removed);
         values.put(KEY_LAST_READ_POS, lastReadPosition);
+        values.put(KEY_UNREAD_COUNT, unreadCount);
         return values;
     }
 
-    public static Function<Cursor, Flowable<List<History>>> mapper() {
+    public static Function<Cursor, Single<List<History>>> mapper() {
+        return cursor -> {
+            cursor.moveToPosition(-1);
+            List<History> historyList = new ArrayList<>(cursor.getCount());
+            while (cursor.moveToNext()) {
+                History history = new History();
+                history.loadFromCursor(cursor);
+
+                historyList.add(history);
+            }
+            return Single.just(historyList);
+        };
+    }
+
+    public static Function<Cursor, Flowable<List<History>>> flowableMapper() {
         return cursor -> {
             cursor.moveToPosition(-1);
             List<History> historyList = new ArrayList<>(cursor.getCount());
@@ -173,6 +194,7 @@ public class History extends BaseModel {
             threadSize = history.threadSize;
             replies = history.replies;
             removed = history.removed;
+            unreadCount = history.unreadCount;
         }
     }
 

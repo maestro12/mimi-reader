@@ -39,6 +39,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.Single;
 import io.reactivex.functions.Function;
 
 import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
@@ -50,8 +51,8 @@ public class HistoryTableConnection {
     public static final int HISTORY = 1;
     public static final int BOOKMARKS = 2;
 
-    public static Flowable<History> fetchPost(final String boardName, final long threadId) {
-        return watchThread(boardName, threadId).take(1);
+    public static Single<History> fetchPost(final String boardName, final long threadId) {
+        return watchThread(boardName, threadId).first(new History());
     }
 
     public static Flowable<History> watchThread(final String boardName, final long threadId) {
@@ -62,10 +63,10 @@ public class HistoryTableConnection {
 
         Log.d(LOG_TAG, "SQL=" + query.toSql());
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
+        return db.createQuery(History.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .map(runQuery())
-                .flatMap(History.mapper())
+                .flatMap(History.flowableMapper())
                 .flatMap((Function<List<History>, Flowable<History>>) histories -> {
                     if (histories == null || histories.size() == 0) {
                         return Flowable.just(new History());
@@ -79,19 +80,19 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<List<History>> fetchHistory() {
+    public static Single<List<History>> fetchHistory() {
         return fetchHistory(null);
     }
 
-    public static Flowable<List<History>> fetchHistory(final Boolean watched) {
+    public static Single<List<History>> fetchHistory(final Boolean watched) {
         return fetchHistory(watched, 0);
     }
 
-    public static Flowable<List<History>> fetchHistory(final Boolean watched, final int count) {
+    public static Single<List<History>> fetchHistory(final Boolean watched, final int count) {
         return fetchHistory(watched, count, null);
     }
 
-    public static Flowable<List<History>> fetchHistory(final Boolean watched, final int count, final Boolean showRemoved) {
+    public static Single<List<History>> fetchHistory(final Boolean watched, final int count, final Boolean showRemoved) {
         From query = new Select()
                 .from(History.class)
                 .orderBy(History.KEY_ORDER_ID + " ASC");
@@ -109,8 +110,7 @@ public class HistoryTableConnection {
         Log.d(LOG_TAG, "SQL=" + query.toSql());
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
                 .onErrorReturn(throwable -> {
@@ -118,7 +118,7 @@ public class HistoryTableConnection {
 
                     return Collections.emptyList();
                 })
-                .compose(DatabaseUtils.applySchedulers());
+                .compose(DatabaseUtils.applySingleSchedulers());
     }
 
     public static Flowable<Boolean> setHistoryRemovedStatus(final String boardName, final long threadId, final boolean removed) {
@@ -150,14 +150,14 @@ public class HistoryTableConnection {
         });
     }
 
-    public static Flowable<Boolean> putHistory(final String boardName, final ChanPost firstPost, final Integer postCount, final int lastReadPosition, final boolean isWatched) {
+    public static Single<Boolean> putHistory(final String boardName, final ChanPost firstPost, final Integer postCount, final int lastReadPosition, final boolean isWatched, final int unreadCount) {
         if (firstPost == null) {
-            return Flowable.just(false);
+            return Single.just(false);
         }
 
         Log.d(LOG_TAG, "putHistory: name=" + boardName + ", thread=" + firstPost.getNo() + ", current watched=" + firstPost.isWatched() + ", new watched=" + isWatched);
 
-        return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
+        return Single.defer((Callable<Single<Boolean>>) () -> {
             BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
             BriteDatabase.Transaction transaction = db.newTransaction();
             long val = -1;
@@ -172,6 +172,7 @@ public class HistoryTableConnection {
                 history.lastReadPosition = lastReadPosition;
                 history.watched = (byte) (isWatched ? 1 : 0);
                 history.orderId = 0;
+                history.unreadCount = unreadCount;
 
                 final String text;
                 if (!TextUtils.isEmpty(firstPost.getSubject())) {
@@ -200,7 +201,7 @@ public class HistoryTableConnection {
                 transaction.end();
             }
 
-            return Flowable.just(val > 0);
+            return Single.just(val > 0);
         })
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Error adding history: name=" + boardName + ", thread=" + firstPost.getNo(), throwable);
@@ -208,17 +209,16 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<Boolean> removeHistory(final String boardName, final long threadId) {
+    public static Single<Boolean> removeHistory(final String boardName, final long threadId) {
 
         if (boardName == null || threadId <= 0) {
-            return Flowable.just(false);
+            return Single.just(false);
         }
 
         From query = new Delete().from(History.class).where(History.KEY_THREAD_ID + "=?", threadId);
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
                 .flatMap(validateHistoryDeleted())
@@ -228,12 +228,11 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<Boolean> removeAllHistory(final boolean watched) {
+    public static Single<Boolean> removeAllHistory(final boolean watched) {
         From query = new Delete().from(History.class).where(History.KEY_WATCHED + "=?", watched);
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
                 .flatMap(validateHistoryDeleted())
@@ -243,30 +242,36 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<Boolean> updateHistoryOrder(final List<History> historyList) {
+    public static Single<Boolean> updateHistoryOrder(final List<History> historyList) {
         if (historyList == null || historyList.size() == 0) {
             Log.e(LOG_TAG, "Cannot update history order: history list is blank");
-            return Flowable.just(false);
+            return Single.just(false);
         }
 
-        return Flowable.defer((Callable<Flowable<List<History>>>) () -> Flowable.just(historyList))
+        return Single.defer((Callable<Single<List<History>>>) () -> Single.just(historyList))
+                .toFlowable()
                 .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> {
-            for (int i = 0; i < histories.size(); i++) {
-                histories.get(i).orderId = i;
-            }
-            return histories;
-        }).flatMap((Function<History, Flowable<Boolean>>) history -> updateHistory(history))
+                    for (int i = 0; i < histories.size(); i++) {
+                        histories.get(i).orderId = i;
+                    }
+                    return histories;
+                }).single(new History())
+                .flatMap((Function<History, Single<Boolean>>) history -> updateHistory(history))
                 .onErrorReturn(throwable -> {
-            Log.e(LOG_TAG, "Error updating history order: size=" + historyList.size(), throwable);
-            return false;
-        });
+                    Log.e(LOG_TAG, "Error updating history order: size=" + historyList.size(), throwable);
+                    return false;
+                });
     }
 
-    public static Flowable<Boolean> updateHistory(final History history) {
-        return DatabaseUtils.updateTable(history);
+    public static Single<Boolean> updateHistory(final History history) {
+        if (history.threadId > -1) {
+            return DatabaseUtils.updateTable(history);
+        } else {
+            return Single.just(false);
+        }
     }
 
-    public static Flowable<Boolean> pruneHistory(final int days) {
+    public static Single<Boolean> pruneHistory(final int days) {
         final Long oldestHistoryTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
         From query = new Delete()
                 .from(History.class)
@@ -275,8 +280,7 @@ public class HistoryTableConnection {
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
                 .flatMap(validateHistoryDeleted())
@@ -286,7 +290,7 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<List<History>> getHistoryToPrune(final int days) {
+    public static Single<List<History>> getHistoryToPrune(final int days) {
         final Long oldestHistoryTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
         From query = new Select()
                 .from(History.class)
@@ -295,8 +299,7 @@ public class HistoryTableConnection {
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
                 .onErrorReturn(throwable -> {
@@ -305,28 +308,52 @@ public class HistoryTableConnection {
                 });
     }
 
-    public static Flowable<Boolean> setLastReadPost(final long threadId, final int pos) {
+    public static Single<Boolean> setLastReadPost(final long threadId, final int pos) {
         From query = new Select().from(History.class).where(History.KEY_THREAD_ID + "=?", threadId);
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
         return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(History.mapper())
+                .toFlowable()
                 .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
                 .flatMap((Function<History, Flowable<Boolean>>) history -> {
                     history.lastReadPosition = pos;
                     return DatabaseUtils.insertOrUpdateRow(history);
                 })
+                .single(false)
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Failed to set the last read position", throwable);
                     return false;
                 })
-                .compose(DatabaseUtils.applySchedulers());
+                .compose(DatabaseUtils.applySingleSchedulers());
 
     }
 
-    private static Function<List<History>, Flowable<Boolean>> validateHistoryDeleted() {
-        return histories -> Flowable.just(histories != null && histories.size() == 0);
+    public static Single<Boolean> setUnreadCount(final long threadId, final int unread) {
+        From query = new Select().from(History.class).where(History.KEY_THREAD_ID + "=?", threadId);
+        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+        return db.createQuery(History.TABLE_NAME, query.toSql(), query.getArguments())
+                .firstOrError()
+                .map(runQuery())
+                .flatMap(History.mapper())
+                .toFlowable()
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<Boolean>>) history -> {
+                    history.unreadCount = unread;
+                    return DatabaseUtils.insertOrUpdateRow(history);
+                })
+                .single(false)
+                .onErrorReturn(throwable -> {
+                    Log.e(LOG_TAG, "Failed to set the unread count", throwable);
+                    return false;
+                })
+                .compose(DatabaseUtils.applySingleSchedulers());
+
+    }
+
+
+    private static Function<List<History>, Single<Boolean>> validateHistoryDeleted() {
+        return histories -> Single.just(histories != null && histories.size() == 0);
     }
 }

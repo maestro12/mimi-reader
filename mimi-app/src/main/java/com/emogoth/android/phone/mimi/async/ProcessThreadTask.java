@@ -23,7 +23,6 @@ import android.text.Html;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.util.FourChanUtil;
-import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
@@ -107,8 +106,7 @@ public class ProcessThreadTask {
                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
                 .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
         final CharSequence nameSpan = FourChanUtil.getUserName(
                 context.getResources(),
@@ -144,8 +142,7 @@ public class ProcessThreadTask {
                 .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                 .setReplyColor(MimiUtil.getInstance().getReplyColor())
                 .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
         for (int i = 0; i < posts.size(); i++) {
             final ChanPost post = new ChanPost(posts.get(i));

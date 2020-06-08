@@ -181,8 +181,6 @@
     <string name="theme_pref">theme_pref</string>
     <string name="theme_color_pref">theme_color_pref</string>
     <string name="board_order_pref">board_order_pref</string>
-    <string name="cache_external_pref">cache_external_pref</string>
-    <string name="prevent_screen_rotation_pref">prevent_screen_rotation_pref</string>
     <string name="use_catalog_pref">use_catalog_pref</string>
     <string name="app_auto_refresh_time">app_auto_refresh_time</string>
     <string name="background_auto_refresh_time">background_auto_refresh_time</string>
@@ -241,6 +239,7 @@
     <string name="close_tab_on_back_pref">close_tab_on_back_pref</string>
 
     <string name="clear_hidden_threads_pref">clear_hidden_threads_pref</string>
+    <string name="clear_cache_pref">clear_cache_pref</string>
 
     <string name="use_crappy_video_player">use_crappy_video_player</string>
     <string name="crappy_samsung_default_set">crappy_samsung_default_set</string>
@@ -251,6 +250,9 @@
     <string name="ad_personalization_pref">ad_personalization_pref</string>
     <string name="gallery_prefs_screen">gallery_prefs_screen</string>
     <string name="gallery_preload_pref">gallery_preload_pref</string>
-    <string name="enable_emoji_pref">enable_emoji_pref</string>
+
+    <string name="text_colors_pref">text_colors_pref</string>
+
+    <string name="enable_image_spoilers_pref">enable_image_spoilers_pref</string>
 
 </resources>

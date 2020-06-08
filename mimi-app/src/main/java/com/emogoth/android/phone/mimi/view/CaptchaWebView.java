@@ -37,7 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class CaptchaWebView extends WebView {
+public class CaptchaWebView extends MimiWebView {
     private final static String LOG_TAG = CaptchaWebView.class.getSimpleName();
 
     private final Context context;

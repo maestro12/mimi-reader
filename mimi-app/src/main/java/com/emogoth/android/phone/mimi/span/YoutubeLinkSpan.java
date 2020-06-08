@@ -16,7 +16,6 @@
 
 package com.emogoth.android.phone.mimi.span;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -32,6 +31,7 @@ import androidx.annotation.NonNull;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 
 public class YoutubeLinkSpan extends LongClickableSpan {
@@ -59,7 +59,7 @@ public class YoutubeLinkSpan extends LongClickableSpan {
         final String url = MimiUtil.https() + "youtube.com/watch?v=" + videoId;
         final Handler handler = new Handler(Looper.getMainLooper());
 
-        handler.post(() -> new AlertDialog.Builder(context)
+        handler.post(() -> new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.youtube_link)
                 .setItems(R.array.youtube_dialog_list, (dialog, which) -> {
                     if (which == 0) {

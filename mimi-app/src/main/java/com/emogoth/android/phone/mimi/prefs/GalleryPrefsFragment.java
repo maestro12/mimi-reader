@@ -23,24 +23,23 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceScreen;
 import android.util.Log;
 import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.documentfile.provider.DocumentFile;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
 
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.PermissionChecker;
-import androidx.documentfile.provider.DocumentFile;
-
 import static android.app.Activity.RESULT_OK;
 
-public class GalleryPrefsFragment extends PreferenceFragment {
+public class GalleryPrefsFragment extends PreferenceFragmentCompat {
     public static final String LOG_TAG = GalleryPrefsFragment.class.getSimpleName();
     private static final String DIR_CHOOSER_TAG = "directory_chooser_tag";
     public static final int REQUEST_CODE_DIR_CHOOSER = 41;
@@ -52,11 +51,8 @@ public class GalleryPrefsFragment extends PreferenceFragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Load the preferences from an XML resource
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.gallery_prefs);
-
         setupPrefs();
     }
 

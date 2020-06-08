@@ -18,25 +18,36 @@ package com.emogoth.android.phone.mimi.db;
 
 
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.activeandroid.ActiveAndroid;
+import com.activeandroid.Model;
+import com.activeandroid.TableInfo;
 import com.activeandroid.query.Delete;
 import com.activeandroid.query.From;
 import com.activeandroid.query.Select;
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.model.BaseModel;
 import com.squareup.sqlbrite3.BriteDatabase;
 import com.squareup.sqlbrite3.QueryObservable;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableTransformer;
+import io.reactivex.Single;
+import io.reactivex.SingleTransformer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
@@ -63,8 +74,13 @@ public class DatabaseUtils {
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
-    public static <K extends BaseModel> Flowable<List<K>> fetchTable(final Class<K> c, String tableName, String order, String whereClause, Object... whereArgs) {
-        return observeTable(c, tableName, order, whereClause, whereArgs).take(1);
+    public static <T> SingleTransformer<T, T> applySingleSchedulers() {
+        return f -> f.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
+    }
+
+    public static <K extends BaseModel> Single<List<K>> fetchTable(final Class<K> c, String tableName, String order, String whereClause, Object... whereArgs) {
+        return observeTable(c, tableName, order, whereClause, whereArgs).first(Collections.emptyList());
     }
 
     public static <K extends BaseModel> Flowable<List<K>> observeTable(final Class<K> c, String tableName, String order, String whereClause, Object... whereArgs) {
@@ -84,8 +100,19 @@ public class DatabaseUtils {
             query.orderBy(order);
         }
 
+        if (BuildConfig.DEBUG) {
+            StringBuilder sb = new StringBuilder(query.toSql()).append(": Values=");
+            sb.append("[");
+            for (String argument : query.getArguments()) {
+                sb.append(argument).append(",");
+            }
+            sb.append("]");
+
+            Log.d(LOG_TAG, sb.toString());
+        }
+
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(tableName, query.toSql(), query.getArguments())
+        return db.createQuery(tableName, query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .map(runQuery())
                 .map(BaseModel.mapper(c))
@@ -97,16 +124,16 @@ public class DatabaseUtils {
 
     }
 
-    public static <K extends BaseModel> Flowable<List<K>> fetchTable(final Class<K> c, String tableName, String whereClause, Object... whereArgs) {
+    public static <K extends BaseModel> Single<List<K>> fetchTable(final Class<K> c, String tableName, String whereClause, Object... whereArgs) {
         return fetchTable(c, tableName, null, whereClause, whereArgs);
     }
 
-    public static <K extends BaseModel> Flowable<List<K>> fetchTable(final Class<K> c, String tableName) {
+    public static <K extends BaseModel> Single<List<K>> fetchTable(final Class<K> c, String tableName) {
         return fetchTable(c, tableName, null);
     }
 
-    public static <K extends BaseModel> Flowable<Boolean> updateTable(final K model) {
-        return Flowable.defer(() -> {
+    public static <K extends BaseModel> Single<Boolean> updateTable(final K model) {
+        return Single.defer(() -> {
             BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
             BriteDatabase.Transaction transaction = db.newTransaction();
             int val = 0;
@@ -119,7 +146,7 @@ public class DatabaseUtils {
                 transaction.end();
             }
 
-            return Flowable.just(val > 0);
+            return Single.just(val > 0);
         });
     }
 
@@ -144,7 +171,7 @@ public class DatabaseUtils {
         Log.d(LOG_TAG, "SQL=" + query.toSql());
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        return db.createQuery(model.getTableName(), query.toSql(), query.getArguments())
+        return db.createQuery(model.getTableName(), query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .take(1)
                 .map(runQuery())
@@ -179,26 +206,29 @@ public class DatabaseUtils {
     public static <K extends BaseModel> Flowable<Boolean> insert(final List<K> models) {
 
         return Flowable.defer((Callable<Flowable<Boolean>>) () -> {
-            BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-            BriteDatabase.Transaction transaction = db.newTransaction();
-
-            long val = 0;
-
-            for (K model : models) {
-                try {
-                    val = db.insert(model.getTableName(), SQLiteDatabase.CONFLICT_REPLACE, model.toContentValues());
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Error putting model " + model.getClass().getSimpleName() + " into the database", e);
-                }
-            }
-
-            transaction.markSuccessful();
-            transaction.end();
-
+            long val = insertModels(models);
             return Flowable.just(val > 0);
         });
+    }
 
+    public static <K extends BaseModel> long insertModels(final List<K> models) {
+        BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
+        BriteDatabase.Transaction transaction = db.newTransaction();
 
+        long val = 0;
+
+        for (K model : models) {
+            try {
+                val = db.insert(model.getTableName(), SQLiteDatabase.CONFLICT_REPLACE, model.toContentValues());
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error putting model " + model.getClass().getSimpleName() + " into the database", e);
+            }
+        }
+
+        transaction.markSuccessful();
+        transaction.end();
+
+        return val;
     }
 
     public static <K extends BaseModel> Flowable<Boolean> remove(final K model, boolean removeAll, WhereArg... wheres) {
@@ -221,7 +251,7 @@ public class DatabaseUtils {
         }
 
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
-        Flowable<Boolean> executor = db.createQuery(model.getTableName(), query.toSql(), query.getArguments())
+        Flowable<Boolean> executor = db.createQuery(model.getTableName(), query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .take(1)
                 .map(runQuery())
@@ -233,10 +263,10 @@ public class DatabaseUtils {
                 });
         if (!removeAll) {
             return executor.take(1)
-                    .compose(DatabaseUtils.<Boolean>applySchedulers());
+                    .compose(DatabaseUtils.applySchedulers());
         }
 
-        return executor.compose(DatabaseUtils.<Boolean>applySchedulers());
+        return executor.compose(DatabaseUtils.applySchedulers());
     }
 
     public static <K extends BaseModel> Flowable<Boolean> remove(final K model, WhereArg wheres) {
@@ -288,6 +318,57 @@ public class DatabaseUtils {
         }
 
         return Flowable.just(val > 0);
+    }
+
+    public enum COLUMN_TYPE {
+        STRING("VARCHAR", ""), LONG("LONG", ""), INT("INT", "");
+
+        private final String name;
+        private final String defaultValue;
+        COLUMN_TYPE(String name, String defaultValue) {
+            this.name = name;
+            this.defaultValue = defaultValue;
+        }
+
+        public String getName() {
+            return this.name;
+        }
+    }
+
+    public static boolean createIfNeedColumn(Class<? extends Model> model, String column, COLUMN_TYPE type, boolean nullable) {
+        boolean isFound = false;
+        TableInfo tableInfo = new TableInfo(model);
+
+        Collection<Field> columns = tableInfo.getFields();
+        for (Field f : columns) {
+            if (column.equals(f.getName())) {
+                isFound = true;
+                break;
+            }
+        }
+        if (!isFound) {
+            // ALTER TABLE History ADD COLUMN unread_count INT NOT NULL DEFAULT(0);
+            final StringBuilder sb = new StringBuilder("ALTER TABLE");
+            sb.append(tableInfo.getTableName()).append(" ADD COLUMN ").append(column).append(" ").append(type.name);
+            if (!nullable) {
+                final String defaultVal;
+                if (type == COLUMN_TYPE.STRING) {
+                    defaultVal = "''";
+                } else {
+                    defaultVal = type.defaultValue;
+                }
+                sb.append(" NOT NULL DEFAULT(").append(defaultVal).append(")");
+            }
+            final String sql = "ALTER TABLE " + tableInfo.getTableName() + " ADD COLUMN " + column + " " + type.name;
+            try {
+                ActiveAndroid.execSQL(sql);
+            } catch (SQLiteException e) {
+                Log.w(LOG_TAG, "Skipping column creation for " + tableInfo.getTableName() + " table because " + column + " already exists");
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error while executing sql: " + sql, e);
+            }
+        }
+        return isFound;
     }
 
     public static class WhereArg {

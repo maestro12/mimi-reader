@@ -20,16 +20,14 @@ public class UpdateHistoryEvent {
 
     private final String boardName;
     private final long threadId;
-    private final int threadSize;
-    private final int lastReadPosition;
+    private final int unread;
     private final boolean closed;
     private final boolean watched;
 
-    public UpdateHistoryEvent(final long threadId, final String boardName, final int size, final int lastRead, final boolean closed, final boolean watched) {
+    public UpdateHistoryEvent(final long threadId, final String boardName, final int unread, final boolean closed, final boolean watched) {
         this.boardName = boardName;
         this.threadId = threadId;
-        this.threadSize = size;
-        this.lastReadPosition = lastRead;
+        this.unread = unread;
         this.closed = closed;
         this.watched = watched;
     }
@@ -46,12 +44,8 @@ public class UpdateHistoryEvent {
         return threadId;
     }
 
-    public int getThreadSize() {
-        return threadSize;
-    }
-
-    public int getLastReadPosition() {
-        return lastReadPosition;
+    public int getUnread() {
+        return unread;
     }
 
     public boolean isWatched() {

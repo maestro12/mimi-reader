@@ -10,7 +10,8 @@ import io.reactivex.FlowableSubscriber
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import okhttp3.*
-import okio.*
+import okio.buffer
+import okio.sink
 import org.reactivestreams.Subscription
 import java.io.File
 import java.io.IOException
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class DownloadManager(private val client: OkHttpClient, private val downloadItems: List<DownloadItem>, concurrentDownloads: Int, private val app: Context? = null) {
     companion object {
-        val LOG_TAG = DownloadManager::class.java.simpleName
+        val TAG = DownloadManager::class.java.simpleName
         const val BUFFER_SIZE = 1024L
     }
 
@@ -38,6 +39,36 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
     private val publisherMap = ConcurrentHashMap<Long, Flowable<Int>>()
     private val subscriberMap = ConcurrentHashMap<Long, Subscription>()
     private val callbackMap = ConcurrentHashMap<Long, DownloadListener>()
+
+//    private val client: OkHttpClient by lazy {
+//        val cookiePersistor = SharedPrefsCookiePersistor(MimiApplication.getInstance())
+//        val jar = PersistentCookieJar(SetCookieCache(), cookiePersistor)
+//
+//        val builder = OkHttpClient.Builder()
+////                .cache(cache)
+//                .cookieJar(jar)
+//                .followRedirects(true)
+//                .followSslRedirects(true)
+//                .connectTimeout(90, TimeUnit.SECONDS)
+//                .readTimeout(90, TimeUnit.SECONDS)
+//                .writeTimeout(90, TimeUnit.SECONDS)
+//                .retryOnConnectionFailure(true)
+//
+//        builder.addNetworkInterceptor { chain: Interceptor.Chain ->
+//            val originalRequest = chain.request()
+//            val modifiedRequest = originalRequest.newBuilder()
+//                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36")
+//                    .build()
+//            chain.proceed(modifiedRequest)
+//        }
+//
+//        if (BuildConfig.DEBUG) {
+//            builder.addNetworkInterceptor(loggingInterceptor())
+//            builder.addNetworkInterceptor(StethoInterceptor())
+//        }
+//
+//        builder.build()
+//    }
 
     private var maxConcurrent: Int = concurrentDownloads
         get() {
@@ -67,12 +98,12 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
         }
 
         if (BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "Running start() with a size of $size")
+            Log.d(TAG, "Running start() with a size of $size")
         }
 
         for (i in 0 until size) {
             if (BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "Starting download for ${downloadItems[i].url}")
+                Log.d(TAG, "Starting download for ${downloadItems[i].url}")
             }
             createSubscriber(downloadItems[i])
         }
@@ -96,6 +127,7 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
                 }
             }
         }, 2000)
+
     }
 
     fun addListener(id: Long, listener: DownloadListener): DownloadItem {
@@ -152,7 +184,7 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
 
             if (publisherMap[item.id] != null) {
                 if (BuildConfig.DEBUG) {
-                    Log.d(LOG_TAG, "Download already started; skipping")
+                    Log.d(TAG, "Download already started; skipping")
                 }
                 return
             }
@@ -166,7 +198,7 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
 
                     publisherMap.remove(item.id)
                     if (BuildConfig.DEBUG) {
-                        Log.d(LOG_TAG, "Finished download for ${item.url}")
+                        Log.d(TAG, "Finished download for ${item.url}")
                     }
                     runNext()
                 }
@@ -195,11 +227,11 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
 
     fun clear() {
         if (BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "Removing listeners from subscriber map")
+            Log.d(TAG, "Removing listeners from subscriber map")
         }
         for (entry in subscriberMap) {
             if (BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "Cancelling ${entry.key}")
+                Log.d(TAG, "Cancelling ${entry.key}")
             }
             entry.value.cancel()
         }
@@ -214,19 +246,19 @@ class DownloadManager(private val client: OkHttpClient, private val downloadItem
 
 fun downloadToFile(client: OkHttpClient, url: String, file: File?): Flowable<Int> {
     if (BuildConfig.DEBUG) {
-        Log.d(DownloadManager.LOG_TAG, "Downloading file: ${file?.absolutePath}")
+        Log.d(DownloadManager.TAG, "Downloading file: ${file?.absolutePath}")
     }
     return Flowable.create({ emitter ->
         if (file != null && file.exists()) {
             if (BuildConfig.DEBUG) {
-                Log.d(DownloadManager.LOG_TAG, "File exists: ${file.absolutePath}; manually calling onComplete()")
+                Log.d(DownloadManager.TAG, "File exists: ${file.absolutePath}; manually calling onComplete()")
             }
             emitter.onComplete()
             return@create
         }
 
         if (BuildConfig.DEBUG) {
-            Log.d(DownloadManager.LOG_TAG, "Starting file download: ${file?.absolutePath}")
+            Log.d(DownloadManager.TAG, "Starting file download: ${file?.absolutePath}")
         }
 
         val req = Request.Builder().url(url).get().build()
@@ -250,7 +282,7 @@ fun downloadToFile(client: OkHttpClient, url: String, file: File?): Flowable<Int
                         file.createNewFile()
                         file.sink().buffer()
                     } else null
-                    val sinkBuffer = sink?.buffer()
+                    val sinkBuffer = sink?.buffer
 
                     if (sinkBuffer == null) {
                         emitter.tryOnError(IllegalStateException("Could not write to file; File object is null"))
@@ -279,10 +311,12 @@ fun downloadToFile(client: OkHttpClient, url: String, file: File?): Flowable<Int
 
                     if (totalBytes <= 0L) {
                         val fileException = if (file == null) Exception("Could not write to null file") else NoSuchFileException(file, null, "Wrote a 0-byte file")
-                        Log.e(DownloadManager.LOG_TAG, "Error writing file", fileException)
-                    }
+                        Log.e(DownloadManager.TAG, "Error writing file", fileException)
 
-                    emitter.onComplete()
+                        emitter.tryOnError(fileException)
+                    } else {
+                        emitter.onComplete()
+                    }
                 } catch (e: Exception) {
                     emitter.tryOnError(e)
                 } finally {

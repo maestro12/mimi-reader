@@ -45,6 +45,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
     public static final String KEY_COUNTRY = "country";
     public static final String KEY_COUNTRY_NAME = "country_name";
     public static final String KEY_TROLL_COUNTRY = "troll_country";
+    public static final String KEY_SPOILER = "spoiler";
+    public static final String KEY_CUSTOM_SPOILER = "custom_spoiler";
 
     @Column(name = KEY_POST_ID, onUniqueConflicts = Column.ConflictAction.REPLACE, onUniqueConflict = Column.ConflictAction.REPLACE, unique = true)             private long postId;
     @Column(name = KEY_CLOSED)              private int closed;
@@ -60,7 +62,7 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
     @Column(name = KEY_FILE_HEIGHT)         private int fileHeight;
     @Column(name = KEY_THUMB_WIDTH)         private int thumbnailWidth;
     @Column(name = KEY_THUMB_HEIGHT)        private int thumbnailHeight;
-    @Column(name = KEY_EPOCH)               private int epoch;
+    @Column(name = KEY_EPOCH)               private long epoch;
     @Column(name = KEY_MD5)                 private String md5;
     @Column(name = KEY_FILE_SIZE)           private int fileSize;
     @Column(name = KEY_RESTO)               private int resto;
@@ -78,6 +80,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
     @Column(name = KEY_COUNTRY)             private String country;
     @Column(name = KEY_COUNTRY_NAME)        private String countryName;
     @Column(name = KEY_TROLL_COUNTRY)       private String trollCountry;
+    @Column(name = KEY_SPOILER)             private int spoiler;
+    @Column(name = KEY_CUSTOM_SPOILER)      private int customSpoiler;
 
     public CatalogPostModel() { }
 
@@ -118,6 +122,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
         this.country = other.getCountry();
         this.countryName = other.getCountryName();
         this.trollCountry = other.getTrollCountry();
+        this.spoiler = other.getSpoiler();
+        this.customSpoiler = other.getCustomSpoiler();
     }
 
     @Override
@@ -155,6 +161,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
         values.put(KEY_COUNTRY, country);
         values.put(KEY_COUNTRY_NAME, countryName);
         values.put(KEY_TROLL_COUNTRY, trollCountry);
+        values.put(KEY_SPOILER, spoiler);
+        values.put(KEY_CUSTOM_SPOILER, customSpoiler);
         return values;
     }
 
@@ -207,6 +215,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
             this.country = other.country;
             this.countryName = other.countryName;
             this.trollCountry = other.trollCountry;
+            this.spoiler = other.spoiler;
+            this.customSpoiler = other.customSpoiler;
         }
     }
 
@@ -250,6 +260,8 @@ public class CatalogPostModel extends BaseModel implements PostConverter {
         post.setCountry(country);
         post.setCountryName(countryName);
         post.setTrollCountry(trollCountry);
+        post.setSpoiler(spoiler);
+        post.setCustomSpoiler(customSpoiler);
 
         return post;
     }

@@ -27,20 +27,22 @@ import com.emogoth.android.phone.mimi.db.model.UserPost;
 import com.squareup.sqlbrite3.BriteDatabase;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 import static com.emogoth.android.phone.mimi.db.ActiveAndroidSqlBriteBridge.runQuery;
 
 public class UserPostTableConnection {
     public static final String LOG_TAG = UserPostTableConnection.class.getSimpleName();
 
-    public static Flowable<List<UserPost>> fetchPosts(final String boardName, final long threadId) {
-        return watchPosts(boardName, threadId).take(1);
+    public static Single<List<UserPost>> fetchPosts(final String boardName, final long threadId) {
+        return watchPosts(boardName, threadId).first(Collections.emptyList());
     }
     public static Flowable<List<UserPost>> watchPosts(final String boardName, final long threadId) {
         From query = new Select()
@@ -53,7 +55,7 @@ public class UserPostTableConnection {
         return db.createQuery(UserPost.TABLE_NAME, query.toSql(), (Object[]) query.getArguments())
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .map(runQuery())
-                .flatMap(UserPost.mapper())
+                .flatMap(UserPost.flowableMapper())
                 .compose(DatabaseUtils.<List<UserPost>>applySchedulers());
     }
 
@@ -109,7 +111,7 @@ public class UserPostTableConnection {
         });
     }
 
-    public static Flowable<Boolean> prune(int days) {
+    public static Single<Boolean> prune(int days) {
         final Long deleteTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
         From query = new Delete()
                 .from(UserPost.class)
@@ -118,8 +120,7 @@ public class UserPostTableConnection {
         BriteDatabase db = MimiApplication.getInstance().getBriteDatabase();
 
         return db.createQuery(UserPost.TABLE_NAME, query.toSql(), query.getArguments())
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .take(1)
+                .firstOrError()
                 .map(runQuery())
                 .flatMap(UserPost.mapper())
                 .map(userPosts -> true)

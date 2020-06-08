@@ -1,10 +1,8 @@
 package com.emogoth.android.phone.mimi.fragment;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
@@ -27,8 +25,10 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -54,16 +54,26 @@ import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RequestQueueUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 
+import org.reactivestreams.Publisher;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 
 /**
@@ -137,6 +147,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
     private Disposable boardInfoSubscription;
     private Disposable fetchBoardsSubscription;
+    private Disposable watchDatabaseSubscription;
     private Disposable boardFetchDisposable;
     private Disposable initDatabaseDisposable;
 
@@ -283,7 +294,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
             return;
         }
 
-        final AlertDialog.Builder alertBuilder = new AlertDialog.Builder(getActivity());
+        final MaterialAlertDialogBuilder alertBuilder = new MaterialAlertDialogBuilder(getActivity());
         final EditText input = new EditText(getActivity());
 
         input.setHint(R.string.board_name_input_hint);
@@ -296,7 +307,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
         alertBuilder.setTitle(R.string.add_board);
 
-        final AlertDialog d = alertBuilder.create();
+        AlertDialog d = alertBuilder.create();
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         d.show();
 
@@ -319,14 +330,14 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         String boardName = rawBoardName.replaceAll("/", "").toLowerCase().trim();
         boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                .flatMap((Function<ChanBoard, Flowable<ChanBoard>>) chanBoard -> BoardTableConnection.setBoardVisibility(chanBoard.getName(), true))
-                .flatMap((Function<ChanBoard, Flowable<List<Board>>>) success -> {
+                .flatMap((Function<ChanBoard, Single<ChanBoard>>) chanBoard -> BoardTableConnection.setBoardVisibility(chanBoard.getName(), true))
+                .flatMap((Function<ChanBoard, Single<List<Board>>>) success -> {
                     final int orderId = MimiUtil.getBoardOrder(getActivity());
                     return BoardTableConnection.fetchBoards(orderId);
                 })
-                .flatMap((Function<List<Board>, Flowable<List<ChanBoard>>>) boards -> Flowable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                .flatMap((Function<List<Board>, Single<List<ChanBoard>>>) boards -> Single.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
                 .onErrorReturn(throwable -> null)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(boards -> {
                     if (boards != null && boards.size() > 0) {
                         boardListAdapter.setBoards(boards);
@@ -345,6 +356,10 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        if (getActivity() == null) {
+            return;
+        }
+
         setupHeader(view);
 
         if (getUserVisibleHint()) {
@@ -357,6 +372,23 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
         int lastVersion = preferences.getInt(getString(R.string.last_version_code_pref), 0);
         if (BuildConfig.VERSION_CODE > lastVersion) {
             showChangeLog();
+
+            Single.defer(
+                    (Callable<SingleSource<Boolean>>) () -> {
+                        final long timer = System.currentTimeMillis();
+                        Log.d(LOG_TAG, "Starting clearing cache...");
+                        MimiUtil.deleteRecursive(getActivity().getCacheDir(), true);
+                        Log.d(LOG_TAG, "Cache cleared in " + (System.currentTimeMillis() - timer) + " ms");
+                        return Single.just(true);
+                    })
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorReturn(throwable -> {
+                        Log.e(LOG_TAG, "Cache could not be cleared on app upgrade", throwable);
+                        return false;
+                    })
+                    .subscribe();
+
             preferences.edit().putInt(getString(R.string.last_version_code_pref), BuildConfig.VERSION_CODE).apply();
         }
 
@@ -383,23 +415,58 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
     private void initDatabase() {
         RxUtil.safeUnsubscribe(initDatabaseDisposable);
         initDatabaseDisposable = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(getActivity()))
+                .observeOn(Schedulers.io())
                 .map(BoardTableConnection::convertBoardDbModelsToChanBoards)
-                .flatMap((Function<List<ChanBoard>, Flowable<List<ChanBoard>>>) chanBoards -> {
+                .flatMap((Function<List<ChanBoard>, Single<List<ChanBoard>>>) chanBoards -> {
                     if (chanBoards == null || chanBoards.size() == 0) {
-                        return BoardTableConnection.initDefaultBoards(getActivity());
+                        if (BuildConfig.SHOW_ALL_BOARDS) {
+                            Log.d(LOG_TAG, "Fetching all boards for debug version");
+                            return chanConnector.fetchBoards()
+                                    .observeOn(Schedulers.io())
+                                    .doOnNext(BoardTableConnection.saveBoards())
+                                    .flatMapIterable((Function<List<ChanBoard>, Iterable<ChanBoard>>) chanBoards1 -> chanBoards1)
+                                    .doOnNext(chanBoard -> Log.d(LOG_TAG, "Setting visibility for " + chanBoard.getTitle()))
+                                    .flatMap((Function<ChanBoard, Publisher<ChanBoard>>) chanBoard -> BoardTableConnection.setBoardVisibility(chanBoard.getName(), true).toFlowable())
+                                    .toList();
+
+                        } else {
+                            return BoardTableConnection.initDefaultBoards(getActivity())
+                                    .observeOn(Schedulers.io())
+                                    .flatMap(chanBoards12 -> chanConnector.fetchBoards()
+                                            .doOnNext(BoardTableConnection.saveBoards())
+                                            .single(Collections.emptyList()));
+                        }
                     } else {
-                        return Flowable.just(chanBoards);
+                        return Single.just(chanBoards);
                     }
                 })
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(chanBoards -> {
+                    Log.d(LOG_TAG, "Fetching boards was a success; starting database watch: boards=" + chanBoards.size());
                     watchDatabase();
-                    loadBoards();
-                }, throwable -> showError());
+
+                    if (chanBoards.size() > 0) {
+                        loadBoards();
+                    } else {
+                        showError();
+                    }
+                }, throwable -> {
+                    Log.e(LOG_TAG, "Error while initializing database with boards", throwable);
+                    watchDatabase();
+                    showError();
+                });
     }
 
     private void loadBoards() {
         RxUtil.safeUnsubscribe(boardFetchDisposable);
         boardFetchDisposable = chanConnector.fetchBoards()
+                .observeOn(AndroidSchedulers.mainThread())
+                .onErrorReturn(throwable -> {
+                    Log.e(LOG_TAG, "Error while fetching list of boards from the network", throwable);
+                    showError();
+                    return Collections.emptyList();
+                })
+                .observeOn(Schedulers.io())
                 .doOnNext(BoardTableConnection.saveBoards())
                 .compose(DatabaseUtils.applySchedulers())
                 .subscribe();
@@ -408,10 +475,20 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
     private void watchDatabase() {
         errorSwitcher.setDisplayedChildId(boardsList.getId());
-        RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-        fetchBoardsSubscription = BoardTableConnection.observeBoards(MimiUtil.getBoardOrder(getActivity()))
-                .onErrorReturn(throwable -> new ArrayList<>())
+        RxUtil.safeUnsubscribe(watchDatabaseSubscription);
+        watchDatabaseSubscription = BoardTableConnection.observeBoards(MimiUtil.getBoardOrder(getActivity()))
+                .flatMap((Function<List<ChanBoard>, Publisher<List<ChanBoard>>>) chanBoards -> {
+                    if (chanBoards.size() > 0) {
+                        return Flowable.just(chanBoards);
+                    }
+
+                    return BoardTableConnection.initDefaultBoards(getActivity()).toFlowable();
+                })
                 .subscribe(chanBoards -> {
+                    if (chanBoards.size() == 0 || TextUtils.isEmpty(chanBoards.get(0).getTitle())) {
+                        return;
+                    }
+
                     if (manageBoardsMenuItem != null) {
                         manageBoardsMenuItem.setEnabled(true);
                     }
@@ -419,6 +496,8 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
                     if (boardsList != null) {
                         boardOrderContainer.setVisibility(View.VISIBLE);
                         boardListAdapter.setBoards(chanBoards);
+
+                        errorSwitcher.setDisplayedChildId(boardsList.getId());
                     }
                 });
     }
@@ -496,7 +575,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
         }
 
         BoardTableConnection.incrementAccessCount(board.getName())
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe();
         mCallbacks.onBoardItemClick(board, true);
 
@@ -523,6 +602,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
         RxUtil.safeUnsubscribe(initDatabaseDisposable);
         RxUtil.safeUnsubscribe(fetchBoardsSubscription);
+        RxUtil.safeUnsubscribe(watchDatabaseSubscription);
         RxUtil.safeUnsubscribe(boardInfoSubscription);
     }
 
@@ -534,16 +614,6 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
         if (getActivity() != null) {
             AppRater.appLaunched(getActivity());
-        }
-
-        if (getActivity() != null) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            boolean showAllBoards = prefs.getBoolean(getString(R.string.show_all_boards), false);
-
-            if (showAllBoards) {
-                loadBoards();
-                prefs.edit().putBoolean(getString(R.string.show_all_boards), false).apply();
-            }
         }
     }
 
@@ -561,7 +631,7 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
     private void showManageBoardsTutorial() {
         final LayoutInflater inflater = LayoutInflater.from(getActivity());
-        final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getActivity());
+        final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(getActivity());
         final View dialogView = inflater.inflate(R.layout.dialog_manage_boards_tutorial, null, false);
         final CheckBox dontShow = dialogView.findViewById(R.id.manage_boards_dont_show);
 
@@ -734,8 +804,8 @@ public class BoardItemListFragment extends MimiFragmentBase implements BoardList
 
             RxUtil.safeUnsubscribe(fetchBoardsSubscription);
             fetchBoardsSubscription = BoardTableConnection.fetchBoards(orderType)
-                    .flatMap((Function<List<Board>, Flowable<List<ChanBoard>>>) boards -> Flowable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
-                    .compose(DatabaseUtils.applySchedulers())
+                    .flatMap((Function<List<Board>, Single<List<ChanBoard>>>) boards -> Single.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe(orderedBoards -> {
                         if (orderedBoards.size() > 0) {
                             updateBoardsAdapter(orderedBoards);

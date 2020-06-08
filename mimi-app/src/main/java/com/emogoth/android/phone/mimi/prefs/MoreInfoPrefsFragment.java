@@ -16,59 +16,44 @@
 
 package com.emogoth.android.phone.mimi.prefs;
 
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.db.BoardTableConnection;
-import com.emogoth.android.phone.mimi.db.DatabaseUtils;
-import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.mimireader.chanlib.models.ChanBoard;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-
-import io.reactivex.Flowable;
-import io.reactivex.functions.Function;
 
 
-public class MoreInfoPrefsFragment extends PreferenceFragment {
-    private static final String LOG_TAG = MoreInfoPrefsFragment.class.getSimpleName();
-    private int aboutCounter = 0;
+public class MoreInfoPrefsFragment extends PreferenceFragmentCompat {
+
+    public static final String LOG_TAG = MoreInfoPrefsFragment.class.getSimpleName();
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.more_info_prefs);
-
         setupPrefs();
     }
 
     private void setupPrefs() {
-        final Handler handler = new Handler();
-        final Runnable countRunnable = () -> aboutCounter = 0;
-
         final Preference changelogPreference = findPreference(getString(R.string.changelog_pref));
         if (changelogPreference != null) {
             changelogPreference.setOnPreferenceClickListener(preference -> {
                 // Create and show the dialog.
-                LicensesFragment.displayLicensesFragment(getFragmentManager(), R.raw.changelog, "ChangeLog");
+                LicensesFragment.displayLicensesFragment(getParentFragmentManager(), R.raw.changelog, "ChangeLog");
                 return true;
             });
         }
@@ -113,8 +98,8 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
         final Preference privacy = findPreference(getString(R.string.privacy_pref));
         privacy.setOnPreferenceClickListener(preference -> {
             // Create & show a licenses fragment just as you would any other DialogFragment.
-            FragmentTransaction ft = getFragmentManager().beginTransaction();
-            Fragment prev = getFragmentManager().findFragmentByTag("privacyDialogFragment");
+            FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+            Fragment prev = getParentFragmentManager().findFragmentByTag("privacyDialogFragment");
             if (prev != null) {
                 ft.remove(prev);
             }
@@ -129,8 +114,8 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
         final Preference license = findPreference(getString(R.string.licenses_pref));
         license.setOnPreferenceClickListener(preference -> {
             // Create & show a licenses fragment just as you would any other DialogFragment.
-            FragmentTransaction ft = getFragmentManager().beginTransaction();
-            Fragment prev = getFragmentManager().findFragmentByTag("licensesDialogFragment");
+            FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+            Fragment prev = getParentFragmentManager().findFragmentByTag("licensesDialogFragment");
             if (prev != null) {
                 ft.remove(prev);
             }
@@ -144,40 +129,6 @@ public class MoreInfoPrefsFragment extends PreferenceFragment {
 
         final Preference version = findPreference(getString(R.string.version_pref));
         version.setSummary(BuildConfig.VERSION_NAME);
-        version.setOnPreferenceClickListener(preference -> {
-            aboutCounter++;
-
-            if (aboutCounter == 7) {
-                final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                final boolean fullBoardEnabled = prefs.getBoolean(getString(R.string.full_board_list_enabled), false);
-
-                if (fullBoardEnabled) {
-                    Toast.makeText(getActivity(), "Full board list is already active", Toast.LENGTH_SHORT).show();
-                } else {
-                    BoardTableConnection.fetchBoards(0)
-                            .compose(DatabaseUtils.applySchedulers())
-                            .flatMapIterable((Function<List<Board>, Iterable<Board>>) boards -> boards)
-                            .flatMap((Function<Board, Flowable<ChanBoard>>) boards -> BoardTableConnection.setBoardVisibility(null, true))
-                            .onErrorResumeNext((Function<Throwable, Flowable<ChanBoard>>) throwable -> {
-                                Log.w("MoreInfoFragment", "Error setting board visibility", throwable);
-                                return Flowable.just(new ChanBoard());
-                            })
-                            .subscribe();
-
-                    prefs.edit()
-                            .putBoolean(getString(R.string.show_all_boards), true)
-                            .apply();
-
-                    Toast.makeText(getActivity(), "Full board list is available", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                handler.removeCallbacks(countRunnable);
-            }
-
-            handler.postDelayed(countRunnable, 1000);
-
-            return true;
-        });
     }
 
     void sendLogcatMail(boolean attachLogcat, boolean attachDeviceInfo) {

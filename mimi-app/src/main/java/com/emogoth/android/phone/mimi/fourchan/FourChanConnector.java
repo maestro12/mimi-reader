@@ -21,11 +21,15 @@ import android.util.Log;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.fourchan.api.FourChanApi;
 import com.emogoth.android.phone.mimi.fourchan.api.FourChanPostApi;
+import com.emogoth.android.phone.mimi.fourchan.models.FourChanArchive;
 import com.emogoth.android.phone.mimi.fourchan.models.FourChanBoards;
 import com.emogoth.android.phone.mimi.fourchan.models.FourChanPost;
 import com.emogoth.android.phone.mimi.fourchan.models.FourChanThread;
 import com.emogoth.android.phone.mimi.fourchan.models.FourChanThreadPage;
+import com.emogoth.android.phone.mimi.fourchan.models.archives.FoolFuukaThreadConverter;
 import com.mimireader.chanlib.ChanConnector;
+import com.mimireader.chanlib.models.ArchivedChanThread;
+import com.mimireader.chanlib.models.ChanArchive;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
@@ -37,8 +41,11 @@ import java.util.List;
 import java.util.Map;
 
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -59,23 +66,18 @@ public class FourChanConnector extends ChanConnector {
     @Override
     public Flowable<List<ChanBoard>> fetchBoards() {
         return api.fetchBoards()
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(FourChanBoards::toBoardList)
-                .onErrorReturn(throwable -> Collections.emptyList());
+                .observeOn(Schedulers.io())
+                .map(FourChanBoards::toBoardList);
     }
 
     @Override
-    public Flowable<ChanCatalog> fetchCatalog(final String boardName, final String boardTitle) {
+    public Single<ChanCatalog> fetchCatalog(final String boardName) {
         return api.fetchCatalog(boardName)
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .map(fourChanThreadPages -> {
+                    Log.d(LOG_TAG, "Fetched catalog");
                     ChanCatalog cat = new ChanCatalog();
                     cat.setBoardName(boardName);
-                    cat.setBoardTitle(boardTitle);
                     for (FourChanThreadPage fourChanThreadPage : fourChanThreadPages) {
                         List<ChanPost> posts = new ArrayList<>();
                         for (FourChanPost fourChanPost : fourChanThreadPage.getThreads()) {
@@ -90,32 +92,9 @@ public class FourChanConnector extends ChanConnector {
     }
 
     @Override
-    public Flowable<ChanCatalog> fetchPage(final int page, final String boardName, final String boardTitle) {
-        return api.fetchPage(page, boardName)
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(fourChanThreads -> {
-                    ChanCatalog cat = new ChanCatalog();
-                    List<ChanPost> posts = new ArrayList<>();
-                    for (FourChanThread fourChanThread : fourChanThreads.getThreads()) {
-                        FourChanPost post = fourChanThread.getPosts().get(0);
-                        post.processComment(MimiApplication.getInstance().getApplicationContext(), boardName, 0);
-                        posts.add(post.toPost());
-                    }
-                    cat.setBoardName(boardName);
-                    cat.setBoardTitle(boardTitle);
-                    cat.addPosts(posts);
-                    return cat;
-                });
-    }
-
-    @Override
     public Flowable<ChanThread> fetchThread(final String boardName, final long threadId, final String cacheControl) {
         return api.fetchThread(boardName, threadId, cacheControl)
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .map(fourChanThread -> {
                     List<ChanPost> posts = new ArrayList<>();
                     for (FourChanPost fourChanPost : fourChanThread.getPosts()) {
@@ -127,13 +106,42 @@ public class FourChanConnector extends ChanConnector {
     }
 
     @Override
+    public Single<List<ChanArchive>> fetchArchives() {
+        return api.fetchArchives("https://raw.githubusercontent.com/ccd0/4chan-x/master/src/Archive/archives.json")
+                .observeOn(Schedulers.io())
+                .toObservable()
+                .flatMapIterable((Function<List<FourChanArchive>, Iterable<FourChanArchive>>) fourChanArchives -> fourChanArchives)
+                .flatMap((Function<FourChanArchive, ObservableSource<ChanArchive>>) fourChanArchive -> {
+                    final ChanArchive chanArchive = new ChanArchive.Builder()
+                            .boards(fourChanArchive.getBoards())
+                            .files(fourChanArchive.getFiles())
+                            .domain(fourChanArchive.getDomain())
+                            .http(fourChanArchive.getHttp())
+                            .https(fourChanArchive.getHttps())
+                            .software(fourChanArchive.getSoftware())
+                            .uid(fourChanArchive.getUid())
+                            .name(fourChanArchive.getName())
+                            .reports(fourChanArchive.getReports())
+                            .build();
+
+                    return Observable.just(chanArchive);
+                })
+                .toList();
+    }
+
+    @Override
+    public Single<ArchivedChanThread> fetchArchivedThread(String board, long threadId, String name, String domain, String url) {
+        return api.fetchArchivedThread(url)
+                .observeOn(Schedulers.io())
+                .map(foolFuukaThread -> new FoolFuukaThreadConverter(foolFuukaThread).toArchivedThread(board, threadId, name, domain));
+    }
+
+    @Override
     public Single<Response<ResponseBody>> post(String boardName, Map<String, Object> params) {
         final Map<String, RequestBody> parts = getPartsFromMap(params);
 
         return postApi.post(boardName, parts)
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Error posting comment", throwable);
                     return badResponse(throwable);
@@ -149,9 +157,7 @@ public class FourChanConnector extends ChanConnector {
         RequestBody longLoginRequestBody = RequestBody.create(type, "no");
         RequestBody actRequestBody = RequestBody.create(type, "do_login");
         return postApi.login(tokenRequestBody, pinRequestBody, longLoginRequestBody, actRequestBody)
-                .subscribeOn(Schedulers.io())
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .onErrorReturn(FourChanConnector::badResponse);
     }
 

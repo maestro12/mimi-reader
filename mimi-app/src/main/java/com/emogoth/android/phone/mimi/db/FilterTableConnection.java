@@ -6,21 +6,22 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 
 public class FilterTableConnection {
-    public static Flowable<List<Filter>> fetchFilters() {
+    public static Single<List<Filter>> fetchFilters() {
         return DatabaseUtils.fetchTable(Filter.class, Filter.TABLE_NAME);
     }
 
-    public static Flowable<List<Filter>> fetchFilters(String boardName, String filterName) {
+    public static Single<List<Filter>> fetchFilters(String boardName, String filterName) {
         return DatabaseUtils.fetchTable(Filter.class, Filter.TABLE_NAME, null, Filter.BOARD + "=? AND " + Filter.NAME + "=?", boardName, filterName);
     }
 
-    public static Flowable<List<Filter>> fetchFiltersByBoard(String boardName) {
+    public static Single<List<Filter>> fetchFiltersByBoard(String boardName) {
         return DatabaseUtils.fetchTable(Filter.class, Filter.TABLE_NAME, null, Filter.BOARD + "=?", boardName);
     }
 
-    public static Flowable<List<Filter>> fetchFiltersByName(String filterName) {
+    public static Single<List<Filter>> fetchFiltersByName(String filterName) {
         return DatabaseUtils.fetchTable(Filter.class, Filter.TABLE_NAME, null, Filter.NAME + "=?", filterName);
     }
 
