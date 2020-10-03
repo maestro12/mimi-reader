@@ -8,9 +8,9 @@ This README attempts to document how to set up this crappy project.
 
 Mimi Reader is an Android app that lets you browse 4chan on your phone.
 
-The current open source release is 7.0.1.
+The current open source release is 7.0.1. It is based off of the 7.0.1 release on the play store. The latest version of Mimi can always be found on the [Google Play Store](https://play.google.com/store/apps/details?id=com.emogoth.android.phone.mimi).
 
-Note that the open source version has Google Play services removed as well as ads. This may change some functionality.
+*Note that the open source version has Google Play services removed as well as ads. This may change some functionality.*
 
 ### How do I get set up? ###
 
