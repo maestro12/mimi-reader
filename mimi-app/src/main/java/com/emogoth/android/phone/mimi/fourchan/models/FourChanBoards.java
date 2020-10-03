@@ -17,6 +17,8 @@
 package com.emogoth.android.phone.mimi.fourchan.models;
 
 
+import android.util.Log;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import com.mimireader.chanlib.models.ChanBoard;
