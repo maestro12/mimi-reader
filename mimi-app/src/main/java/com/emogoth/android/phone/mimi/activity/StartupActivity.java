@@ -28,7 +28,6 @@ import androidx.preference.PreferenceManager;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.autorefresh.RefreshNotification;
-import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
 import com.emogoth.android.phone.mimi.db.ArchiveTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.RefreshQueueTableConnection;
@@ -43,13 +42,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.reactivex.ObservableSource;
 import io.reactivex.SingleObserver;
 import io.reactivex.SingleSource;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
