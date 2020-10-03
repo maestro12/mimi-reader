@@ -1,7 +1,4 @@
-sudo: false
 language: android
-jdk:
-  - oraclejdk8
 android:
   components:
     - platform-tools
@@ -11,6 +8,7 @@ android:
     - android-30
     
 before_install:
+ - yes | sdkmanager "platforms;android-30"
  - chmod +x gradlew
 
 script:
