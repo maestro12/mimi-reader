@@ -18,8 +18,9 @@ package com.emogoth.android.phone.mimi.util;
 
 
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.SocketFactory;
@@ -45,11 +47,14 @@ import okhttp3.Request;
 
 public class HttpClientFactory {
     private static final String LOG_TAG = HttpClientFactory.class.getSimpleName();
-    private static final int MAX_CACHE_SIZE = 100 * 1024 * 1024;
+    private static final int MAX_CACHE_SIZE = 50 * 1024 * 1024;
 
     private static HttpClientFactory ourInstance = new HttpClientFactory();
     private OkHttpClient client;
     private SharedPrefsCookiePersistor cookiePersistor;
+
+    private String defaultUserAgent;
+    private String archiveUserAgent;
 
     public enum ClientType {
         API, DOWNLOAD
@@ -60,6 +65,20 @@ public class HttpClientFactory {
     }
 
     private HttpClientFactory() {
+        defaultUserAgent = System.getProperty("http.agent");
+        Random r = new Random(System.nanoTime());
+        switch(r.nextInt(3)) {
+            case 0:
+                archiveUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36";
+                break;
+            case 1:
+                archiveUserAgent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2919.83 Safari/537.36";
+                break;
+            case 2:
+            default:
+                archiveUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36";
+        }
+
     }
 
     private void init(ClientType type) {
@@ -71,12 +90,11 @@ public class HttpClientFactory {
 
         builder.cache(cache)
                 .cookieJar(jar)
-                .followRedirects(true)
-                .followSslRedirects(true)
                 .connectTimeout(90, TimeUnit.SECONDS)
                 .readTimeout(90, TimeUnit.SECONDS)
                 .writeTimeout(90, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true);
+                .retryOnConnectionFailure(false)
+                .addNetworkInterceptor(headerInterceptor());
 
         if (BuildConfig.DEBUG) {
             builder.addNetworkInterceptor(loggingInterceptor());
@@ -88,14 +106,14 @@ public class HttpClientFactory {
 //            builder.sslSocketFactory(sslSocketFactory, new MyX509TrustManager());
 //        } catch (NoSuchAlgorithmException | KeyStoreException e) {
 //            Log.e(LOG_TAG, "Could not enable SSL", e);
-//            Crashlytics.logException(e);
+//            Log.e(LOG_TAG, "Caught exception", e);
 //        }
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(MimiApplication.getInstance());
         String prefsKey = MimiApplication.getInstance().getString(R.string.http_buffer_size_pref);
         String defaultValue = MimiApplication.getInstance().getString(R.string.http_buffer_size_default);
 
-        int bufferSize = Integer.valueOf(prefs.getString(prefsKey, defaultValue));
+        int bufferSize = Integer.parseInt(prefs.getString(prefsKey, defaultValue));
         if (bufferSize > 0) {
             builder.socketFactory(new DelegatingSocketFactory(SocketFactory.getDefault()) {
                 @Override
@@ -108,6 +126,24 @@ public class HttpClientFactory {
             });
         }
         client = builder.build();
+    }
+
+    private Interceptor headerInterceptor() {
+        return chain -> {
+            Request request = chain.request();
+            Request.Builder newRequestBuilder = request.newBuilder();
+
+            final String userAgent;
+            if (!chain.request().url().host().endsWith("thebarchive.com") && !chain.request().url().host().endsWith("archived.moe")) {
+                userAgent = defaultUserAgent;
+            } else {
+                userAgent = archiveUserAgent;
+            }
+
+            newRequestBuilder.removeHeader("User-Agent").addHeader("User-Agent", userAgent);
+
+            return chain.proceed(newRequestBuilder.build());
+        };
     }
 
     private Interceptor loggingInterceptor() {

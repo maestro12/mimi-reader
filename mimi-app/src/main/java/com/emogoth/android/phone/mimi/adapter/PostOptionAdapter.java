@@ -1,103 +1,84 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.widget.ArrayAdapter;
 import android.widget.Filter;
-import android.widget.Filterable;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.LayoutRes;
+import androidx.annotation.NonNull;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.PostOptionTableConnection;
-import com.emogoth.android.phone.mimi.db.model.PostOption;
+import com.emogoth.android.phone.mimi.db.models.PostOption;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.functions.Consumer;
+public class PostOptionAdapter extends ArrayAdapter<PostOption> {
 
-public class PostOptionAdapter extends BaseAdapter implements Filterable {
+    private final Context context;
 
-    private final LayoutInflater inflater;
-    private List<PostOption> items = new ArrayList<>();
-    private List<PostOption> originalList = new ArrayList<>();
+    @LayoutRes
+    private final int layoutRes;
 
-    public void setItems(List<PostOption> items) {
-        this.items.clear();
-        this.items.addAll(items);
+    private List<PostOption> items;
+    private List<PostOption> originalList;
 
-        originalList.clear();
-        originalList.addAll(items);
+    public PostOptionAdapter(@NonNull Context context, @LayoutRes int resource, @NonNull List<PostOption> objects) {
+        super(context, resource, objects);
 
-        notifyDataSetChanged();
-    }
-
-    public PostOptionAdapter(Context context) {
-        inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        this.items = new ArrayList<>(objects);
+        this.originalList = new ArrayList<>(objects);
+        this.context = context;
+        this.layoutRes = resource;
     }
 
     @Override
     public int getCount() {
-        return items != null ? items.size() : 0;
-    }
-
-    @Override
-    public String getItem(int i) {
-        return items != null ? items.get(i).option : null;
-    }
-
-    @Override
-    public long getItemId(int i) {
-        return items != null ? items.get(i).getId() : -1;
+        return items.size();
     }
 
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         final int pos = i;
-        View v = inflater.inflate(R.layout.post_option_item, viewGroup, false);
+
+        View v = LayoutInflater.from(this.context).inflate(this.layoutRes, viewGroup, false);
 
         TextView optionsText = (TextView) v.findViewById(R.id.option_text);
-        optionsText.setText(items.get(pos).option);
+        optionsText.setText(items.get(pos).getOption());
 
         View deleteButton = v.findViewById(R.id.option_delete);
-        deleteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                PostOptionTableConnection.deletePostOption(items.get(pos).option)
-                        .subscribe(new Consumer<Boolean>() {
-                            @Override
-                            public void accept(Boolean success) {
-                                if (success) {
-                                    String name = items.get(pos).option;
-                                    items.remove(pos);
-                                    notifyDataSetChanged();
+        deleteButton.setOnClickListener(v1 ->
+                PostOptionTableConnection.deletePostOption(items.get(pos).getOption())
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(success -> {
+                    if (success) {
+                        String name = items.get(pos).getOption();
+                        items.remove(pos);
+                        notifyDataSetChanged();
 
-                                    for (int i = 0; i < originalList.size(); i++) {
-                                        if (name.equals(originalList.get(i).option)) {
-                                            originalList.remove(i);
-                                        }
-                                    }
-                                } else {
-                                    Toast.makeText(MimiApplication.getInstance(), R.string.error_deleting_name, Toast.LENGTH_SHORT).show();
-                                }
-
+                        for (int i1 = 0; i1 < originalList.size(); i1++) {
+                            if (name.equals(originalList.get(i1).getOption())) {
+                                originalList.remove(i1);
                             }
-                        });
-            }
-        });
+                        }
+                    } else {
+                        Toast.makeText(MimiApplication.getInstance(), R.string.error_deleting_name, Toast.LENGTH_SHORT).show();
+                    }
+
+                }, throwable -> Log.e("PostOptionAdapter", "Caught exception while deleting post option", throwable)));
 
         return v;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
     }
 
     @Override
@@ -107,7 +88,7 @@ public class PostOptionAdapter extends BaseAdapter implements Filterable {
             protected FilterResults performFiltering(CharSequence charSequence) {
                 List<PostOption> postOptionResults = new ArrayList<>();
                 for (PostOption item : originalList) {
-                    if (charSequence == null || StringUtils.containsIgnoreCase(item.option, charSequence)) {
+                    if (charSequence == null || StringUtils.containsIgnoreCase(item.getOption(), charSequence)) {
                         postOptionResults.add(item);
                     }
                 }

@@ -1,12 +1,6 @@
 package com.emogoth.android.phone.mimi.view;
 
 import android.content.Context;
-
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.AppCompatButton;
-import androidx.appcompat.widget.AppCompatCheckBox;
-import androidx.appcompat.widget.AppCompatEditText;
-import androidx.appcompat.widget.AppCompatSpinner;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -15,21 +9,27 @@ import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.appcompat.widget.AppCompatButton;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.room.EmptyResultSetException;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.BoardDropDownAdapter;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.FilterTableConnection;
-import com.emogoth.android.phone.mimi.db.model.Board;
+import com.emogoth.android.phone.mimi.db.models.Filter;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 
 public class FilterView extends LinearLayout implements View.OnClickListener {
     private static final String LOG_TAG = FilterView.class.getSimpleName();
@@ -105,32 +105,24 @@ public class FilterView extends LinearLayout implements View.OnClickListener {
 
     private void loadBoards() {
         if (getContext() != null) {
-            final int orderId = MimiUtil.getBoardOrder(getContext());
+            final int orderId = MimiUtil.getBoardOrder();
             fetchBoardsSubscription = BoardTableConnection.fetchBoards(orderId)
-                    .onErrorReturn(new Function<Throwable, List<Board>>() {
-                        @Override
-                        public List<Board> apply(Throwable throwable) {
-                            Log.w(LOG_TAG, "Error fetching boards", throwable);
-                            return new ArrayList<>();
-                        }
+                    .onErrorReturn(throwable -> {
+                        Log.w(LOG_TAG, "Error fetching boards", throwable);
+                        return new ArrayList<>();
                     })
-                    .map(new Function<List<Board>, List<ChanBoard>>() {
-                        @Override
-                        public List<ChanBoard> apply(List<Board> boards) {
-                            return BoardTableConnection.convertBoardDbModelsToChanBoards(boards);
+                    .map(BoardTableConnection::convertBoardDbModelsToChanBoards)
+                    .compose(DatabaseUtils.applySingleSchedulers())
+                    .subscribe(boards -> {
+                        for (ChanBoard board : boards) {
+                            Log.d(LOG_TAG, "Board: name=" + board.getName());
                         }
-                    })
-                    .subscribe(new Consumer<List<ChanBoard>>() {
-                        @Override
-                        public void accept(List<ChanBoard> boards) {
-                            for (ChanBoard board : boards) {
-                                Log.d(LOG_TAG, "Board: name=" + board.getName());
-                            }
 
-                            FilterView.this.boards = boards;
+                        FilterView.this.boards = boards;
 
-                            BoardDropDownAdapter adapter = new BoardDropDownAdapter(getContext(), R.layout.board_filter_spinner_item, boards, -1);
-                            adapter.setPromptEnabled(true);
+                        BoardDropDownAdapter adapter = new BoardDropDownAdapter(getContext(), R.layout.board_filter_spinner_item, boards, -1);
+                        adapter.setPromptEnabled(true);
+                        try {
                             activeBoard.setAdapter(adapter);
 
                             if (!TextUtils.isEmpty(boardName)) {
@@ -146,6 +138,8 @@ public class FilterView extends LinearLayout implements View.OnClickListener {
                                     activeBoard.setSelection(pos + 1);
                                 }
                             }
+                        } catch (Exception e) {
+                            Log.e(LOG_TAG, "Error setting boards adapter", e);
                         }
                     });
         }
@@ -222,36 +216,49 @@ public class FilterView extends LinearLayout implements View.OnClickListener {
             final String regex = filterText;
 
             if (!TextUtils.isEmpty(filterName) && !TextUtils.isEmpty(filterText) && !TextUtils.isEmpty(boardName)) {
-                fetchFiltersSubscription = FilterTableConnection.fetchFilters(boardName, filterName)
-                        .subscribe(filters -> {
-                            if (filters != null && filters.size() > 0) {
-                                showOverwriteDialog(filterName, regex, boardName, isRegex);
-                            } else {
-                                saveFilter(filterName, regex, boardName, isRegex);
+                fetchFiltersSubscription = FilterTableConnection.fetchFilter(boardName, filterName)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe(filter -> {
+                            Filter newFilter = new Filter();
+                            newFilter.setId(filter.getId());
+                            newFilter.setBoardName(boardName);
+                            newFilter.setName(filterName);
+                            newFilter.setHighlight((byte) (isRegex ? 1 : 0));
+                            newFilter.setFilter(regex);
+                            showOverwriteDialog(newFilter);
+                        }, throwable -> {
+                            if (throwable instanceof EmptyResultSetException) {
+                                Filter filter = new Filter();
+                                filter.setBoardName(boardName);
+                                filter.setName(filterName);
+                                filter.setHighlight((byte) (isRegex ? 1 : 0));
+                                filter.setFilter(regex);
+                                saveFilter(filter);
                             }
                         });
             }
         }
     }
 
-    private void showOverwriteDialog(final String name, final String filter, final String board, final boolean isRegex) {
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(getContext());
+    private void showOverwriteDialog(Filter filter) {
+        MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(getContext());
         dialogBuilder.setCancelable(false)
                 .setTitle(R.string.filter_already_exists)
                 .setMessage(R.string.overwite_filter_question)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
-                    saveFilter(name, filter, board, isRegex);
+                    saveFilter(filter);
                     dialogInterface.dismiss();
                 })
                 .setNegativeButton(R.string.no, (dialogInterface, i) -> dialogInterface.dismiss()).show();
     }
 
-    private void saveFilter(String name, String filter, final String board, boolean isRegex) {
-        addFilterSubscription = FilterTableConnection.addFilter(name, filter, board, isRegex)
+    private void saveFilter(Filter filter) {
+        addFilterSubscription = FilterTableConnection.addFilter(filter)
                 .onErrorReturn(throwable -> {
-                    Log.e(LOG_TAG, "Error adding/updating filter for board: " + board, throwable);
+                    Log.e(LOG_TAG, "Error adding/updating filter for board: " + filter.getBoardName(), throwable);
                     return null;
                 })
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(success -> {
                     if (success == null || !success) {
                         Toast.makeText(getContext(), R.string.failed_to_save_filter, Toast.LENGTH_LONG).show();

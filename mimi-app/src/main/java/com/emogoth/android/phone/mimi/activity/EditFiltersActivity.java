@@ -3,36 +3,34 @@ package com.emogoth.android.phone.mimi.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.appcompat.widget.AppCompatSpinner;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.ItemTouchHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.adapter.BoardDropDownAdapter;
 import com.emogoth.android.phone.mimi.adapter.FilterListAdapter;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.FilterTableConnection;
-import com.emogoth.android.phone.mimi.db.model.Board;
-import com.emogoth.android.phone.mimi.db.model.Filter;
+import com.emogoth.android.phone.mimi.db.models.Filter;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.mimireader.chanlib.models.ChanBoard;
 
 import java.util.List;
 
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 
 public class EditFiltersActivity extends MimiActivity {
     public static final String LOG_TAG = EditFiltersActivity.class.getSimpleName();
@@ -46,6 +44,8 @@ public class EditFiltersActivity extends MimiActivity {
 
     private FilterListAdapter filterListAdapter;
     private BoardDropDownAdapter boardsAdapter;
+
+    private String boardName;
 
 
     @Override
@@ -64,7 +64,7 @@ public class EditFiltersActivity extends MimiActivity {
         toolbar.setTitle(R.string.edit_filters);
         setToolbar(toolbar);
 
-        String boardName = getIntent().getStringExtra(EXTRA_BOARD_NAME);
+        boardName = getIntent().getStringExtra(EXTRA_BOARD_NAME);
         loadBoards(boardName);
     }
 
@@ -81,14 +81,9 @@ public class EditFiltersActivity extends MimiActivity {
             public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
                 if (viewHolder instanceof FilterListAdapter.FilterViewHolder) {
                     final FilterListAdapter.FilterViewHolder vh = (FilterListAdapter.FilterViewHolder) viewHolder;
-                    FilterTableConnection.removeFilter(vh.name.getText().toString())
-                            .subscribe(
-                                    new Consumer<Boolean>() {
-                                        @Override
-                                        public void accept(Boolean aBoolean) {
-                                            filterListAdapter.removeFilter(vh.getAdapterPosition());
-                                        }
-                                    });
+                    final Disposable dis = FilterTableConnection.removeFilter(boardName, vh.name.getText().toString())
+                            .compose(DatabaseUtils.applySingleSchedulers())
+                            .subscribe(success -> filterListAdapter.removeFilter(vh.getAdapterPosition()));
                 }
             }
         };
@@ -98,66 +93,58 @@ public class EditFiltersActivity extends MimiActivity {
     }
 
     protected void loadBoards(final String boardName) {
-        boardListSubscription = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder(this))
-                .map(
-                        new Function<List<Board>, List<ChanBoard>>() {
-                            @Override
-                            public List<ChanBoard> apply(List<Board> boards) {
-                                return BoardTableConnection.convertBoardDbModelsToChanBoards(boards);
-                            }
-                        })
+        boardListSubscription = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder())
+                .map(BoardTableConnection::convertBoardDbModelsToChanBoards)
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(
-                        new Consumer<List<ChanBoard>>() {
-                            @Override
-                            public void accept(final List<ChanBoard> chanBoards) {
-                                if (boardsAdapter != null) {
-                                    boardsAdapter.setBoards(chanBoards);
-                                    return;
-                                }
+                        chanBoards -> {
+                            if (boardsAdapter != null) {
+                                boardsAdapter.setBoards(chanBoards);
+                                return;
+                            }
 
-                                boardsAdapter = new BoardDropDownAdapter(EditFiltersActivity.this, R.layout.board_filter_spinner_item, chanBoards, BoardDropDownAdapter.MODE_ACTIONBAR);
-                                boardsAdapter.setPromptEnabled(true);
-                                boardsAdapter.setPromptText(R.string.all);
-                                boardSpinner.setAdapter(boardsAdapter);
-                                boardSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                                    @Override
-                                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                        if (position == 0) {
-                                            loadFilters(null);
-                                            return;
-                                        }
-
-                                        String board = chanBoards.get(position - 1).getName();
-                                        loadFilters(board);
+                            boardsAdapter = new BoardDropDownAdapter(EditFiltersActivity.this, R.layout.board_filter_spinner_item, chanBoards, BoardDropDownAdapter.MODE_ACTIONBAR);
+                            boardsAdapter.setPromptEnabled(true);
+                            boardsAdapter.setPromptText(R.string.all);
+                            boardSpinner.setAdapter(boardsAdapter);
+                            boardSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                                    if (position == 0) {
+                                        loadFilters(null);
+                                        return;
                                     }
 
+                                    String board = chanBoards.get(position - 1).getName();
+                                    loadFilters(board);
+                                }
+
+                                @Override
+                                public void onNothingSelected(AdapterView<?> adapterView) {
+                                    loadFilters(null);
+                                }
+                            });
+
+                            int index = -1;
+                            if (!TextUtils.isEmpty(boardName)) {
+                                for (int i = 0; i < chanBoards.size(); i++) {
+                                    if (boardName.equals(chanBoards.get(i).getName())) {
+                                        index = i;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (index >= 0) {
+                                final int pos = index + 1;
+                                boardSpinner.post(new Runnable() {
                                     @Override
-                                    public void onNothingSelected(AdapterView<?> adapterView) {
-                                        loadFilters(null);
+                                    public void run() {
+                                        boardSpinner.setSelection(pos);
                                     }
                                 });
-
-                                int index = -1;
-                                if (!TextUtils.isEmpty(boardName)) {
-                                    for (int i = 0; i < chanBoards.size(); i++) {
-                                        if (boardName.equals(chanBoards.get(i).getName())) {
-                                            index = i;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (index >= 0) {
-                                    final int pos = index + 1;
-                                    boardSpinner.post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            boardSpinner.setSelection(pos);
-                                        }
-                                    });
-                                }
-
                             }
+
                         },
                         new Consumer<Throwable>() {
                             @Override
@@ -169,31 +156,25 @@ public class EditFiltersActivity extends MimiActivity {
     }
 
     protected void loadFilters(String boardName) {
-        final Flowable<List<Filter>> loadFiltersObservable;
+        final Single<List<Filter>> loadFiltersObservable;
         if (TextUtils.isEmpty(boardName)) {
-            loadFiltersObservable = FilterTableConnection.fetchFilters();
+            loadFiltersObservable = FilterTableConnection.fetchFilter();
         } else {
             loadFiltersObservable = FilterTableConnection.fetchFiltersByBoard(boardName);
         }
 
-        filtersSubscription = loadFiltersObservable.subscribe(
-                new Consumer<List<Filter>>() {
-                    @Override
-                    public void accept(List<Filter> filters) {
-                        if (filterListAdapter == null) {
-                            filterListAdapter = new FilterListAdapter(filters);
-                            filterList.setAdapter(filterListAdapter);
-                        } else {
-                            filterListAdapter.setFilters(filters);
-                        }
+        filtersSubscription = loadFiltersObservable
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(
+                filters -> {
+                    if (filterListAdapter == null) {
+                        filterListAdapter = new FilterListAdapter(filters);
+                        filterList.setAdapter(filterListAdapter);
+                    } else {
+                        filterListAdapter.setFilters(filters);
                     }
                 },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        Log.e(LOG_TAG, "Error fetching filters", throwable);
-                    }
-                });
+                throwable -> Log.e(LOG_TAG, "Error fetching filters", throwable));
 
     }
 

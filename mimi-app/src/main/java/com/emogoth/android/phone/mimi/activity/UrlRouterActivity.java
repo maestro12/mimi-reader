@@ -18,8 +18,9 @@ package com.emogoth.android.phone.mimi.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.util.Extras;
@@ -64,20 +65,6 @@ public class UrlRouterActivity extends AppCompatActivity {
                             intent.putExtra(Extras.EXTRAS_SINGLE_THREAD, true);
                             break;
                         case 3: // probably a link to a specific thread
-                            intent = new Intent(this, PostItemDetailActivity.class);
-                            intent.putExtra(Extras.EXTRAS_BOARD_NAME, args.get(0).toLowerCase());
-                            threadId = args.get(2);
-                            if (threadId != null) {
-                                if (threadId.contains("#")) {
-                                    final String highlightedPost = threadId.substring(threadId.indexOf("#") + 1);
-                                    intent.putExtra(Extras.EXTRAS_POST_ID, highlightedPost);
-                                    threadId = threadId.substring(1, threadId.indexOf("#") - 1);
-                                }
-
-                                intent.putExtra(Extras.EXTRAS_THREAD_ID, Long.valueOf(threadId));
-                            }
-
-                            break;
                         case 4:
                             intent = new Intent(this, PostItemDetailActivity.class);
                             intent.putExtra(Extras.EXTRAS_BOARD_NAME, args.get(0).toLowerCase());
@@ -91,6 +78,7 @@ public class UrlRouterActivity extends AppCompatActivity {
 
                                 intent.putExtra(Extras.EXTRAS_THREAD_ID, Long.valueOf(threadId));
                             }
+
                             break;
 
                         default:

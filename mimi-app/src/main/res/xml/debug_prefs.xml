@@ -14,12 +14,13 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        android:key="@string/debug_preference_category"
-        android:title="@string/debug_title">
+        app:iconSpaceReserved="false"
+        app:key="@string/debug_preference_category"
+        app:title="@string/debug_title">
 
     </PreferenceCategory>
 

@@ -138,7 +138,6 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:layout_gravity="center"
-                    android:layout_toLeftOf="@+id/menu_button"
                     android:gravity="center"
                     android:paddingLeft="8dp"
                     android:paddingTop="4dp"

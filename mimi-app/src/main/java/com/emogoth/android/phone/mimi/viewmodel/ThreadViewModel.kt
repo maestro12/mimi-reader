@@ -2,12 +2,13 @@ package com.emogoth.android.phone.mimi.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.emogoth.android.phone.mimi.db.HistoryTableConnection
+import com.emogoth.android.phone.mimi.db.models.History
 import com.emogoth.android.phone.mimi.util.MimiPrefs
 import com.mimireader.chanlib.models.ChanThread
 import io.reactivex.Flowable
 import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
+import io.reactivex.rxkotlin.zipWith
 import java.util.*
 
 class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
@@ -23,21 +24,17 @@ class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
     var userPosts = dataSource.userPosts
 
     fun watchThread(): Flowable<ChanThread> {
-        Log.d(TAG, "Getting thread")
         return dataSource.watchThread(boardName, threadId)
-                .flatMap {
-                    lastReadPosition = it.first.lastReadPosition
-                    unread = if (it.first.threadSize > 0) it.first.threadSize - lastReadPosition else 0
-                    bookmarked = it.first.watched == 1
-                    Flowable.just(it.second)
-                }
-                .flatMap {
+                .doOnNext {
                     if (this.thread.posts.size < it.posts.size) {
-                        unread = it.posts.size - this.thread.posts.size
+                        unread = it.posts.size - lastReadPosition
+                        this.thread.posts.clear()
+                        this.thread.posts.addAll(it.posts)
                     }
-                    this.thread.posts.clear()
-                    this.thread.posts.addAll(it.posts)
-                    Flowable.just(it)
+
+                    val history = HistoryTableConnection.fetchPost(boardName, threadId).blockingGet()
+                    lastReadPosition = history.lastReadPosition
+                    bookmarked = history.watched
                 }
     }
 
@@ -46,12 +43,12 @@ class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
         return dataSource.fetchThread(boardName, threadId, size)
     }
 
-    fun setLastReadPosition(pos: Int): Single<Boolean> {
+    fun setLastReadPosition(pos: Int, visibleItems: Int): Single<Boolean> {
         if (pos > this.lastReadPosition && pos > 0) {
             this.lastReadPosition = pos
-            return dataSource.updateHistoryLastRead(boardName, threadId, pos)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
+            this.unread = thread.posts.size - pos - visibleItems
+            Log.e(TAG, "Unread: ${this.unread}, Last Read Position: ${this.lastReadPosition}")
+            return dataSource.updateHistoryLastRead(boardName, threadId, pos, unread)
         }
 
         return Single.just(false)
@@ -59,12 +56,7 @@ class ThreadViewModel(val boardName: String, val threadId: Long) : ViewModel() {
 
     fun setBookmarked(bookmarked: Boolean): Single<Boolean> {
         this.bookmarked = bookmarked
-        if (!bookmarked) {
-            MimiPrefs.removeWatch(threadId)
-        }
         return dataSource.updateHistoryBookmark(boardName, threadId, bookmarked)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
     }
 
     fun unread(): Int {

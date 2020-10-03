@@ -68,7 +68,6 @@
             app:layout_anchorGravity="bottom|right|end"
             app:layout_behavior="com.emogoth.android.phone.mimi.util.ScrollAwareFABBehavior" />
 
-        <include layout="@layout/app_rating_container" />
     </FrameLayout>
 
     <FrameLayout

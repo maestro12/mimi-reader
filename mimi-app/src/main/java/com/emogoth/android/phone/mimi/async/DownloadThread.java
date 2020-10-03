@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
+;
 
 import java.io.File;
 import java.io.IOException;

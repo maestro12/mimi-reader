@@ -21,9 +21,9 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ActivityInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -34,7 +34,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
-import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
 import android.util.Log;
@@ -45,7 +44,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -53,6 +51,7 @@ import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -63,14 +62,16 @@ import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.StartupActivity;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.db.ArchivedPostTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.PostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.db.models.History;
 import com.emogoth.android.phone.mimi.viewmodel.GalleryItem;
 import com.franmontiel.persistentcookiejar.persistence.CookiePersistor;
 import com.google.android.exoplayer2.util.Util;
 import com.google.android.material.appbar.AppBarLayout;
+;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonWriter;
@@ -84,6 +85,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -94,6 +96,8 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Function;
 import okhttp3.Cookie;
 
@@ -140,7 +144,7 @@ public class MimiUtil {
     private Context context;
 
     private File cacheDir;
-    private String cacheDirPrefString;
+    //    private String boardOrderPrefString;
     private ThreadPoolExecutor executorPool;
     private boolean ready = false;
 
@@ -244,24 +248,7 @@ public class MimiUtil {
 //            boardOrderPrefString = context.getString(R.string.board_order_pref);
 //        }
 
-        cacheDirPrefString = context.getString(R.string.cache_external_pref);
-        if (sh.getBoolean(cacheDirPrefString, false)) {
-            Log.i(LOG_TAG, "Setting cache dir to sd card storage");
-            String state = Environment.getExternalStorageState();
-            if (Environment.MEDIA_MOUNTED.equals(state)) {
-                cacheDir = new File(context.getExternalFilesDir(state), "cache");
-                if (!cacheDir.exists()) {
-                    if (!cacheDir.mkdirs()) {
-                        cacheDir = context.getCacheDir();
-                    }
-                }
-            } else {
-                cacheDir = context.getCacheDir();
-            }
-        } else {
-            Log.i(LOG_TAG, "Setting cache dir to internal storage");
-            cacheDir = context.getCacheDir();
-        }
+        cacheDir = context.getCacheDir();
 
         nextLoaderId = 0;
         loaderIdMap = new HashMap<>();
@@ -357,6 +344,18 @@ public class MimiUtil {
         return loaderId;
     }
 
+    private static File getPicturesDirectoryAsFile() {
+        return new File(Environment.getExternalStorageDirectory(), Environment.DIRECTORY_PICTURES);
+    }
+
+    public static DocumentFile getPicturesDirectory() {
+        return DocumentFile.fromFile(getPicturesDirectoryAsFile());
+    }
+
+    public static boolean canWriteToPicturesFolder() {
+        return getPicturesDirectory().canWrite();
+    }
+
     @Nullable
     public static DocumentFile getSaveDir() {
         final Context context = MimiApplication.getInstance().getApplicationContext();
@@ -364,21 +363,25 @@ public class MimiUtil {
         return directoryToDocumentFile(context, dir);
     }
 
-    public static DocumentFile directoryToDocumentFile(final Context context, final String dir) {
+    private static DocumentFile directoryToDocumentFile(final Context context, final String dir) {
         if (!TextUtils.isEmpty(dir)) {
-            if (dir.startsWith(Utils.SCHEME_CONTENT)) {
-                return DocumentFile.fromTreeUri(context, Uri.parse(dir));
-            } else {
-                return DocumentFile.fromFile(new File(dir));
+            try {
+                if (dir.startsWith(Utils.SCHEME_CONTENT)) {
+                    return DocumentFile.fromTreeUri(context, Uri.parse(dir));
+                } else {
+                    return DocumentFile.fromFile(new File(dir));
+                }
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error creating DocumentFile from " + dir, e);
+                return null;
             }
         } else {
-            DocumentFile defaultDir = DocumentFile.fromFile(new File(Environment.getExternalStorageDirectory(), "/Mimi"));
+            DocumentFile defaultDir = DocumentFile.fromFile(new File(getPicturesDirectoryAsFile(), "/Mimi"));
             if (!defaultDir.exists()) {
-                DocumentFile externalStorageDir = DocumentFile.fromFile(Environment.getExternalStorageDirectory());
-                return externalStorageDir.createDirectory("Mimi");
-            } else {
-                return defaultDir;
+                DocumentFile externalStorageDir = getPicturesDirectory();
+                DocumentFile mimiFolder = externalStorageDir.createDirectory("Mimi");
             }
+            return defaultDir;
         }
     }
 
@@ -422,66 +425,63 @@ public class MimiUtil {
         themeResource = themeArray[theme][colorId];
     }
 
-    public static Flowable<Boolean> removeHistory(final boolean watched) {
+    public static Single<Boolean> removeHistory(final boolean watched) {
         return HistoryTableConnection.fetchHistory(watched)
-                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
-                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
-                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
-                .toList()
                 .toFlowable()
-                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.removeAllHistory(watched))
-                .compose(DatabaseUtils.applySchedulers());
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<History>>) history -> Flowable.just(history))
+                .doOnNext(history -> PostTableConnection.removeThread(history.getThreadId()))
+                .doOnNext(history -> ArchivedPostTableConnection.removeThread(history.getBoardName(), history.getThreadId()))
+                .toList()
+                .flatMap((Function<List<History>, Single<Boolean>>) booleans -> HistoryTableConnection.removeAllHistory(watched))
+                .compose(DatabaseUtils.applySingleSchedulers());
     }
 
-    public static Flowable<Boolean> pruneHistory(final int days) {
+    public static Single<Boolean> pruneHistory(final int days) {
         return HistoryTableConnection.getHistoryToPrune(days)
-                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
-                .flatMap((Function<History, Flowable<Long>>) history -> Flowable.just(history.threadId))
-                .flatMap((Function<Long, Flowable<Boolean>>) PostTableConnection::removeThread)
-                .toList()
                 .toFlowable()
-                .flatMap((Function<List<Boolean>, Flowable<Boolean>>) booleans -> HistoryTableConnection.pruneHistory(days))
-                .compose(DatabaseUtils.applySchedulers());
+                .flatMapIterable((Function<List<History>, Iterable<History>>) histories -> histories)
+                .flatMap((Function<History, Flowable<History>>) Flowable::just)
+                .doOnNext(history -> PostTableConnection.removeThread(history.getThreadId()))
+                .doOnNext(history -> ArchivedPostTableConnection.removeThread(history.getBoardName(), history.getThreadId()))
+                .toList()
+                .flatMap((Function<List<History>, Single<Boolean>>) booleans -> HistoryTableConnection.pruneHistory(days));
     }
 
-//    public static Observable<Boolean> pruneHistory(final int days) {
-//        return HistoryTableConnection.fetchHistory(false)
-//                .flatMapIterable(new Function<List<History>, Iterable<History>>() {
-//                    @Override
-//                    public Iterable<History> apply(List<History> histories) {
-//                        return histories;
-//                    }
-//                })
-//                .flatMap(new Function<History, Observable<Boolean>>() {
-//                    @Override
-//                    public Observable<Boolean> apply(History history) {
-//                        final Long oldestHistoryTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(days);
-//                        if (oldestHistoryTime > history.lastAccess) {
-//                            return PostTableConnection.removeThread(history.threadId);
-//                        } else {
-//                            return Observable.just(true);
-//                        }
-//                    }
-//                })
-//                .toList()
-//                .toObservable()
-//                .onErrorReturn(new Function<Throwable, List<Boolean>>() {
-//                    @Override
-//                    public List<Boolean> apply(Throwable throwable) {
-//                        Log.e(LOG_TAG, "Exception while removing post history", throwable);
-//                        return null;
-//                    }
-//                })
-//                .flatMap(new Function<List<Boolean>, Observable<Boolean>>() {
-//                    @Override
-//                    public Observable<Boolean> apply(List<Boolean> booleen) {
-//                        if (booleen == null) {
-//                            return Observable.just(false);
-//                        }
-//                        return HistoryTableConnection.pruneHistory(days);
-//                    }
-//                });
-//    }
+    public static Single<Boolean> removeStalePosts() {
+        return Single.zip(HistoryTableConnection.fetchHistory(), PostTableConnection.fetchThreadIds(), (BiFunction<List<History>, List<Long>, List<Long>>) (histories, longs) -> {
+            if (longs.size() == 0) {
+                return Collections.emptyList();
+            }
+
+            List<Long> staleIds = new ArrayList<>(longs.size());
+            for (Long id : longs) {
+                boolean found = false;
+                for (History history : histories) {
+                    if (history.getThreadId() == id) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    staleIds.add(id);
+                }
+            }
+            return staleIds;
+        })
+                .flatMap((Function<List<Long>, SingleSource<Boolean>>) ids -> {
+                    if (ids.size() == 0) {
+                        return Single.just(true);
+                    }
+
+                    return PostTableConnection.removeThreads(ids);
+                }).onErrorReturn(throwable -> {
+                    Log.e(LOG_TAG, "Error removing stale posts", throwable);
+                    return false;
+                });
+
+    }
 
     @Nullable
     public static Uri getFileProvider(File file) {
@@ -489,7 +489,7 @@ public class MimiUtil {
             final String authority = MimiApplication.getInstance().getPackageName() + ".fileprovider";
             return FileProvider.getUriForFile(MimiApplication.getInstance(), authority, file);
         } catch (Exception e) {
-            Log.w(LOG_TAG, "Could not get file provider Uri", e);
+            Log.e(LOG_TAG, "Error getting file provider for " + file, e);
         }
 
         return null;
@@ -501,12 +501,11 @@ public class MimiUtil {
 
     public static int getMaxCacheSize(final Context context) {
         final int memClass = ((ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
-        final int cacheSize = 1024 * 1024 * memClass / 8;
-
-        return cacheSize;
+        return 1024 * 1024 * memClass / 8;
     }
 
-    public static int getBoardOrder(final Context context) {
+    public static int getBoardOrder() {
+        final Context context = MimiApplication.getInstance().getApplicationContext();
         try {
             return PreferenceManager.getDefaultSharedPreferences(context).getInt(context.getString(R.string.board_order_pref), 0);
         } catch (final ClassCastException e) {
@@ -526,21 +525,6 @@ public class MimiUtil {
 
     public static int getDeviceOrientation(Context context) {
         return context.getResources().getConfiguration().orientation;
-    }
-
-    public static void setScreenOrientation(final Activity activity) {
-        final String orientationPref = activity.getString(R.string.prevent_screen_rotation_pref);
-
-        if (PreferenceManager.getDefaultSharedPreferences(activity).getBoolean(orientationPref, false)) {
-            try {
-                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            } catch (Exception e) {
-                Toast.makeText(activity, R.string.could_not_set_orientation, Toast.LENGTH_SHORT).show();
-            }
-
-        } else {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
-        }
     }
 
     public View createActionBarNotification(final LayoutInflater inflater, final ViewGroup container, final int count) {
@@ -626,7 +610,7 @@ public class MimiUtil {
 
     public static int arrayLocation(final long[] array, final long v) {
         for (int i = 0; i < array.length; i++) {
-            if(array[i] == v){
+            if (array[i] == v) {
                 return i;
             }
         }
@@ -764,7 +748,7 @@ public class MimiUtil {
         return false;
     }
 
-    public static void loadImageWithFallback(final Context context, @NonNull final ImageView into, String url, final String fallback, @DrawableRes final int placeholderRes, final RequestListener<Drawable> listener) {
+    public static void loadImageWithFallback(final Context context, @NonNull final ImageView into, String url, final String fallback, @DrawableRes final Integer placeholderRes, final RequestListener<Drawable> listener) {
         GlideRequest<Drawable> originalRequest = GlideApp.with(context)
                 .load(url)
                 .diskCacheStrategy(DiskCacheStrategy.ALL);
@@ -799,7 +783,7 @@ public class MimiUtil {
                 originalRequest.listener(listener);
             }
 
-            if (placeholderRes > 0) {
+            if (placeholderRes != null) {
                 originalRequest.placeholder(placeholderRes);
             }
         }
@@ -871,6 +855,7 @@ public class MimiUtil {
     public static Uri getDocumentFileRealPath(DocumentFile documentFile) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
         return getDocumentFileRealPath(documentFile.getUri());
     }
+
     public static Uri getDocumentFileRealPath(Uri documentUri) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, NoSuchFieldException {
         if ("file".equals(documentUri.getScheme())) {
             return documentUri;
@@ -951,6 +936,10 @@ public class MimiUtil {
     }
 
     public static void deleteRecursive(File fileOrDirectory, boolean keepDir) {
+        if (fileOrDirectory == null) {
+            return;
+        }
+
         if (fileOrDirectory.isDirectory()) {
             for (File child : fileOrDirectory.listFiles()) {
                 deleteRecursive(child, keepDir);
@@ -960,7 +949,7 @@ public class MimiUtil {
         if (!keepDir || !fileOrDirectory.isDirectory()) {
             fileOrDirectory.delete();
         } else if (BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "Skipping directory: " + fileOrDirectory.getAbsolutePath() + ", keep=" + keepDir);
+            Log.d(LOG_TAG, "Skipping directory: " + fileOrDirectory.getAbsolutePath() + ", keep=" + keepDir);
 
         }
     }
@@ -1011,6 +1000,18 @@ public class MimiUtil {
 
                 });
 
+    }
+
+    @Nullable
+    public static Activity scanForActivity(@Nullable Context cont) {
+        if (cont == null)
+            return null;
+        else if (cont instanceof Activity)
+            return (Activity)cont;
+        else if (cont instanceof ContextWrapper)
+            return scanForActivity(((ContextWrapper)cont).getBaseContext());
+
+        return null;
     }
 
     public interface ImageDisplayedListener {

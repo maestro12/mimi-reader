@@ -94,7 +94,7 @@ class GalleryGrid @JvmOverloads constructor(context: Context, attrs: AttributeSe
 
 class GalleryGridItemAdapter(val items: List<GalleryItem>) : RecyclerView.Adapter<GalleryGridItemViewHolder>() {
 
-    private val preloadEnabled: Boolean = MimiPrefs.preloadEnabled(MimiApplication.getInstance())
+    private val preloadEnabled: Boolean = MimiPrefs.preloadEnabled(MimiApplication.instance)
     var mode = GalleryGrid.MODE_OPEN
     private val selectedItemMap = LongSparseArray<Boolean>()
     var selectedChange: ((GalleryItem, Boolean) -> (Unit))? = null

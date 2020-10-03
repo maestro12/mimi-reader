@@ -2,14 +2,12 @@ package com.emogoth.android.phone.mimi.util;
 
 import android.content.Context;
 import android.net.Uri;
-import android.os.Handler;
 import android.view.Surface;
 import android.view.TextureView;
 
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.PlaybackParameters;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -17,54 +15,46 @@ import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.audio.AudioRendererEventListener;
 import com.google.android.exoplayer2.decoder.DecoderCounters;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.extractor.mp4.Mp4Extractor;
+import com.google.android.exoplayer2.extractor.ts.DefaultTsPayloadReaderFactory;
 import com.google.android.exoplayer2.source.LoopingMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
+import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.TransferListener;
+import com.google.android.exoplayer2.video.VideoListener;
 import com.google.android.exoplayer2.video.VideoRendererEventListener;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
-public class ExoPlayer2Helper implements ExoPlayer.EventListener, TransferListener, SimpleExoPlayer.VideoListener, AudioRendererEventListener, VideoRendererEventListener, ExtractorMediaSource.EventListener {
+public class ExoPlayer2Helper implements ExoPlayer.EventListener, TransferListener, VideoListener, AudioRendererEventListener, VideoRendererEventListener {
 
-    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
-    private static final int ALLOCATION_SIZE = 65_535;
-
-    private final FileDataSourceFactory dataSourceFactory;
+    private final DataSource.Factory dataSourceFactory;
     private final DefaultExtractorsFactory extractorsFactory;
 
     private final SimpleExoPlayer player;
 
-    private final Handler handler = new Handler();
     private final ArrayList<Listener> listeners = new ArrayList<>();
 
     public ExoPlayer2Helper(Context context) {
-        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-        dataSourceFactory = new FileDataSourceFactory(this);
+        dataSourceFactory = new FileDataSource.Factory();
         extractorsFactory = new DefaultExtractorsFactory();
+        extractorsFactory.setMp4ExtractorFlags(Mp4Extractor.FLAG_WORKAROUND_IGNORE_EDIT_LISTS);
+        extractorsFactory.setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES);
 
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(bandwidthMeter);
         DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(context);
-        EventLogger eventLogger = new EventLogger(trackSelector);
 
-        player = ExoPlayerFactory.newSimpleInstance(context, renderersFactory, trackSelector);
+        player = new SimpleExoPlayer.Builder(context, renderersFactory).build();
         player.addListener(this);
-        player.addListener(eventLogger);
-        player.setAudioDebugListener(eventLogger);
-        player.setVideoDebugListener(eventLogger);
-        player.setMetadataOutput(eventLogger);
-        player.setVideoListener(this);
+        player.addVideoListener(this);
     }
 
     public void initVideo(Uri videoUrl) {
-        ExtractorMediaSource mediaSource = new ExtractorMediaSource(videoUrl, dataSourceFactory, extractorsFactory, handler, this);
+        MediaSource mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory).createMediaSource(videoUrl);
         LoopingMediaSource loopingMediaSource = new LoopingMediaSource(mediaSource);
 
         player.prepare(loopingMediaSource);
@@ -256,10 +246,10 @@ public class ExoPlayer2Helper implements ExoPlayer.EventListener, TransferListen
 
     }
 
-    @Override
-    public void onLoadError(IOException error) {
-
-    }
+//    @Override
+//    public void onLoadError(IOException error) {
+//
+//    }
 
     @Override
     public void onTransferInitializing(DataSource source, DataSpec dataSpec, boolean isNetwork) {

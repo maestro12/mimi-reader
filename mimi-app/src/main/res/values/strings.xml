@@ -41,10 +41,12 @@
 <!--    <string name="raw_thread_list_path">/%1$s/%2$s</string>-->
 <!--    <string name="report_path">/%1$s/imgboard.php?mode=report&amp;no=%2$d</string>-->
 
-    <!-- /{board}/thumb/{tim}s{ext} -->
+<!--    &lt;!&ndash; /{board}/thumb/{tim}s{ext} &ndash;&gt;-->
 <!--    <string name="thumb_path">/%1$s/%2$ss.jpg</string>-->
+<!--    <string name="spoiler_path">/image/spoiler.png</string>-->
+<!--    <string name="custom_spoiler_path">/image/spoiler-%1$s%2$d.png</string>-->
 
-    <!-- /{board}/src/{tim}{ext} -->
+<!--    &lt;!&ndash; /{board}/src/{tim}{ext} &ndash;&gt;-->
 <!--    <string name="full_image_path">/%1$s/%2$s%3$s</string>-->
 
     <!-- Colors -->
@@ -137,7 +139,7 @@
     <string name="prevent_screen_from_rotating_summary_on">Screen locked to portrait</string>
     <string name="prevent_screen_from_rotating_summary_off">Screen rotation unlocked</string>
     <string name="clear_cache_title">Clear Cache</string>
-    <string name="clear_cache_summary">Clear the app cache now</string>
+    <string name="clear_cache_summary">Clear the app cache</string>
     <string name="save_history_title">Save History</string>
     <string name="save_history_summary_off">History is not saved</string>
     <string name="save_history_summary_on">History is saved</string>
@@ -373,6 +375,11 @@
         <item quantity="other">%d replies</item>
     </plurals>
 
+    <string name="one_reply">1 Reply</string>
+    <string name="one_image">1 Image</string>
+    <string name="number_replies">%d Replies</string>
+    <string name="number_images">%d Images</string>
+
     <plurals name="image_plural">
         <item quantity="zero">no images</item>
         <item quantity="one">1 image</item>
@@ -383,6 +390,12 @@
         <item quantity="zero">no unread posts</item>
         <item quantity="one">1 unread post</item>
         <item quantity="other">%d unread posts</item>
+    </plurals>
+
+    <plurals name="new_post_plural">
+        <item quantity="zero">no new posts</item>
+        <item quantity="one">1 new post</item>
+        <item quantity="other">%d new posts</item>
     </plurals>
 
     <plurals name="has_unread_plural">
@@ -461,6 +474,7 @@
     <string name="close_tab_on_back_title">Close tab on back pressed</string>
     <string name="close_tab_on_back_summary_on">Back button closes the current tab</string>
     <string name="close_tab_on_back_summary_off">Back button changes the current tab</string>
+    <string name="enable_image_spoilers_title">Enable image spoilers</string>
     <string name="sort">Sort</string>
     <string name="bump_time">Bump Time</string>
     <string name="thread_id">Thread ID</string>
@@ -481,7 +495,7 @@
     <string name="quick_scroll_to_top">Scroll To Top</string>
     <string name="quick_scroll_to_bottom">Scroll To Bottom</string>
     <string name="text_to_filter">Text To Filter</string>
-    <string name="empty_response_error">Empty response returned from post</string>
+    <string name="empty_response_error">Something went wrong while posting. Please try again later.</string>
     <string name="error_deleting_name">Error deleting name from database</string>
     <string name="regex">Regex</string>
     <string name="remove">Remove</string>
@@ -506,6 +520,7 @@
     <string name="captcha_answer_hint">captcha text</string>
     <string name="spoiler">Spoiler</string>
     <string name="view">View</string>
+    <string name="mark_as_read">Mark as Read</string>
 
     <string-array name="youtube_dialog_list">
         <item>Open in browser</item>
@@ -595,13 +610,37 @@
     <string name="save_permissions_message">The next screen will ask you to select a directory. Please select a default directory for files to be saved.</string>
     <string name="title_activity_gallery2">Gallery</string>
 
+    <string name="loading">Loading…</string>
+
     <string name="gallery_preload_title">Media Preloading</string>
     <string name="gallery_preload_wifi_only">On WiFi Only</string>
     <string name="gallery_preload_enabled">Enabled</string>
     <string name="gallery_preload_disabled">Disabled</string>
     <string name="could_not_load_gif">Could not load GIF</string>
     <string name="batch_dowmload_no_items_selected">No selected items found for batch download</string>
-    <string name="enable_emoji_text">Enable Emoji</string>
-    <string name="enable_emoji_summary">Enabling this option may significantly reduce performance</string>
     <string name="error_opening_gallery">Error opening gallery; Restart the app and try again</string>
+    <string name="mimi_logo">Mimi Logo</string>
+    <string name="archive_message">Thread archived at %s</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+
+    <!-- Preference Titles -->
+    <string name="messages_header">Messages</string>
+    <string name="sync_header">Sync</string>
+
+    <!-- Messages Preferences -->
+    <string name="signature_title">Your signature</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="gallery_title">Gallery</string>
+    <string name="clearing_cache">Clearing cache...</string>
+    <string name="error_while_clearing_cache">Error while clearing cache</string>
+    <string name="clearing_history">Clearing history...</string>
+    <string name="error_while_clearing_history">Error while clearing history</string>
+    <string name="tap_to_open_bookmarks">Tap to open bookmarks</string>
 </resources>

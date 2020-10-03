@@ -16,7 +16,6 @@
 
 package com.emogoth.android.phone.mimi.span;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -26,7 +25,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.appcompat.widget.Toolbar;
 import android.text.TextPaint;
 import android.view.View;
 import android.widget.Toast;
@@ -34,6 +32,7 @@ import android.widget.Toast;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
 import com.novoda.simplechromecustomtabs.navigation.IntentCustomizer;
 import com.novoda.simplechromecustomtabs.navigation.NavigationFallback;
@@ -74,7 +73,7 @@ public class LinkSpan extends LongClickableSpan {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                new AlertDialog.Builder(context)
+                new MaterialAlertDialogBuilder(context)
                         .setTitle(link)
                         .setItems(R.array.link_dialog_list, new DialogInterface.OnClickListener() {
                             @Override

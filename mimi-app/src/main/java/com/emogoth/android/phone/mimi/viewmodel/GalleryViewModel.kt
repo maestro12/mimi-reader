@@ -6,13 +6,14 @@ import android.util.Log
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
 import com.emogoth.android.phone.mimi.activity.GalleryActivity2
 import com.emogoth.android.phone.mimi.app.MimiApplication
 import com.emogoth.android.phone.mimi.util.*
+import com.mimireader.chanlib.models.ArchivedChanPost
 import com.mimireader.chanlib.models.ChanPost
 import com.mimireader.chanlib.models.ChanThread
 import io.reactivex.Single
+import io.reactivex.schedulers.Schedulers
 import java.io.File
 
 class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock: Boolean = false) : ViewModel() {
@@ -27,8 +28,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
                 }
             }
 
-            return ViewModelProviders
-                    .of(context, factory)
+            return ViewModelProvider(context, factory)
                     .get(GalleryViewModel::class.java)
         }
 
@@ -46,14 +46,14 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
     var galleryType: Int = GalleryActivity2.GALLERY_TYPE_PAGER
     var postIds: LongArray = LongArray(0)
     var selectedItems: ArrayList<GalleryItem> = ArrayList()
-    set(value) {
-        field = value
-        selectedItemIds = LongArray(value.size)
+        set(value) {
+            field = value
+            selectedItemIds = LongArray(value.size)
 
-        for (i in 0 until value.size) {
-            selectedItemIds[i] = value[i].id
+            for (i in 0 until value.size) {
+                selectedItemIds[i] = value[i].id
+            }
         }
-    }
     var saveLocation: String = ""
 
     var selectedItemIds: LongArray = LongArray(0)
@@ -102,7 +102,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
         }
 
         Log.d(TAG, "Starting gallery image download manager")
-        downloadManager = DownloadManager(HttpClientFactory.getInstance().client, downloadItems, 2, MimiApplication.getInstance().applicationContext)
+        downloadManager = DownloadManager(HttpClientFactory.getInstance().client, downloadItems, 2, MimiApplication.instance.applicationContext)
         downloadManager?.start()
     }
 
@@ -127,10 +127,6 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
     fun initState(state: Bundle) {
         boardName = state.getString(Extras.EXTRAS_BOARD_NAME, "") ?: ""
         threadId = state.getLong(Extras.EXTRAS_THREAD_ID, -1)
-
-        if (TextUtils.isEmpty(boardName) || threadId <= -1) {
-            throw IllegalStateException("Invalid thread parameters: board: $boardName, thread: $threadId")
-        }
 
         selectedItemIds = state.getLongArray(GalleryActivity2.EXTRA_SELECTED_ITEMS)
                 ?: LongArray(0)
@@ -158,7 +154,6 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
 
     override fun onCleared() {
         super.onCleared()
-        Log.w(TAG, "onCleared() called", Exception())
         downloadManager?.destroy()
 
         if (galleryItems is ArrayList) {
@@ -183,13 +178,17 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
     }
 
     fun convertPostToGalleryItem(post: ChanPost): GalleryItem {
-        return if (post.fsize > 0) {
-            val thumb = "$imageBaseUrl/$boardName/${post.tim}s.jpg"
-            val remoteFileName = "${post.tim}${post.ext}"
-            val localFileName = "${post.tim}${post.ext}"
-            val originalFileName = "${post.filename}${post.ext}"
-            val img = "$imageBaseUrl/$boardName/$remoteFileName"
-            GalleryItem(post.no, thumb, img, post.fsize, post.width, post.height, boardName, post.ext, localFileName, originalFileName)
+        return if (post.fsize > 0 && post.tim != null && post.ext != null) {
+            val tim: String = post.tim ?: ""
+            val ext: String = post.ext ?: ""
+            val thumb = if (post is ArchivedChanPost) (post.thumbLink
+                    ?: "$imageBaseUrl/$boardName/${tim}s.jpg") else "$imageBaseUrl/$boardName/${tim}s.jpg"
+            val remoteFileName = "${tim}${ext}"
+            val localFileName = "${tim}${ext}"
+            val originalFileName = "${post.filename}${ext}"
+            val img = if (post is ArchivedChanPost) (post.mediaLink
+                    ?: "$imageBaseUrl/$boardName/$remoteFileName") else "$imageBaseUrl/$boardName/$remoteFileName"
+            GalleryItem(post.no, thumb, img, post.fsize, post.width, post.height, boardName, ext, localFileName, originalFileName)
         } else {
             GalleryItem.empty()
         }
@@ -200,7 +199,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
             0 -> dataSource.fetchThread(boardName, threadId, 0)
                     .doOnSuccess { update(it) }
                     .map { galleryItems }
-            else -> Single.just(galleryItems)
+            else -> Single.just(galleryItems).observeOn(Schedulers.io())
         }
                 .doAfterSuccess {
                     for (selectedItemId in selectedItemIds) {
@@ -215,6 +214,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
 
     fun fetchPosts(): Single<List<ChanPost>> {
         return dataSource.fetchThread(boardName, threadId)
+                .observeOn(Schedulers.io())
                 .map {
                     it.posts
                 }
@@ -222,6 +222,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
 
     fun getGalleryItemsFromList(postIds: LongArray): Single<List<GalleryItem>> {
         return dataSource.postsWithImages(boardName, threadId, postIds)
+                .observeOn(Schedulers.io())
                 .flatMap {
                     val items = ArrayList<GalleryItem>(postIds.size)
                     for (chanPost in it) {
@@ -230,7 +231,7 @@ class GalleryViewModel(private val imageBaseUrl: String = "empty", var audioLock
 
                     Single.just(items as List<GalleryItem>)
                 }
-                .doOnSuccess {
+                .doAfterSuccess {
                     update(it)
                 }
     }

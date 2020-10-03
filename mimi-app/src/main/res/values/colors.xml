@@ -198,4 +198,7 @@
         <item>@color/md_grey_900</item>
     </array>
 
+    <color name="tab_text_color">@color/md_grey_500</color>
+    <color name="tab_selected_text_color">#F1F1F1</color>
+
 </resources>
