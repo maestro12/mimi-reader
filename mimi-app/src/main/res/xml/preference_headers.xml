@@ -13,61 +13,59 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
-<preference-headers
-        xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.GeneralPrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/general_summary"
+        app:title="@string/general_title" />
 
-    <header
-        android:id="@+id/general_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.GeneralPrefsFragment"
-        android:title="@string/general_title"
-        android:summary="@string/general_summary" />
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.GalleryPrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/gallery_summary"
+        app:title="@string/gallery" />
 
-    <header
-        android:id="@+id/gallery_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.GalleryPrefsFragment"
-        android:title="@string/gallery"
-        android:summary="@string/gallery_summary" />
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.AppearancePrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/appearance_summary"
+        app:title="@string/appearance_title" />
 
-    <header
-        android:id="@+id/appearance_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.AppearancePrefsFragment"
-        android:title="@string/appearance_title"
-        android:summary="@string/appearance_summary" />
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.HistoryPrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/history_summary"
+        app:title="@string/history_title" />
 
-    <header
-        android:id="@+id/history_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.HistoryPrefsFragment"
-        android:title="@string/history_title"
-        android:summary="@string/history_summary" />
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.AdvancedPrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/advanced_summary"
+        app:title="@string/advanced_title" />
 
-    <header
-        android:id="@+id/advanced_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.AdvancedPrefsFragment"
-        android:title="@string/advanced_title"
-        android:summary="@string/advanced_summary" />
+    <Preference
+        app:fragment="com.emogoth.android.phone.mimi.prefs.MoreInfoPrefsFragment"
+        app:iconSpaceReserved="false"
+        app:summary="@string/more_info_summary"
+        app:title="@string/more_info_title" />
 
-    <header
-        android:id="@+id/more_prefs_fragment"
-        android:fragment="com.emogoth.android.phone.mimi.prefs.MoreInfoPrefsFragment"
-        android:title="@string/more_info_title"
-        android:summary="@string/more_info_summary" />
-
-    <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$PostingPrefsHCFragment"-->
-    <!--android:title="Posting"-->
-    <!--android:summary="Preferences for posting">-->
+    <!--<header app:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$PostingPrefsHCFragment"-->
+    <!--app:title="Posting"-->
+    <!--app:summary="Preferences for posting">-->
     <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
     <!--arguments to its fragment. &ndash;&gt;-->
-    <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--<extra app:name="someKey" app:value="someHeaderValue" />-->
     <!--</header>-->
     <!---->
-    <!--<header android:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$ThreadPrefsHCFragment"-->
-    <!--android:title="Thread"-->
-    <!--android:summary="Preferences for threads">-->
+    <!--<header app:fragment="com.emogoth.android.phone.mimi.prefs.PreferencesHC$ThreadPrefsHCFragment"-->
+    <!--app:title="Thread"-->
+    <!--app:summary="Preferences for threads">-->
     <!--&lt;!&ndash; Arbitrary key/value pairs can be included with a header as-->
     <!--arguments to its fragment. &ndash;&gt;-->
-    <!--<extra android:name="someKey" android:value="someHeaderValue" />-->
+    <!--<extra app:name="someKey" app:value="someHeaderValue" />-->
     <!--</header>-->
 
 
-</preference-headers>
+</PreferenceScreen>

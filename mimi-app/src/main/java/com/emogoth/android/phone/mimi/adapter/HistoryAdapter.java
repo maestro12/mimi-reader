@@ -32,14 +32,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.PostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.db.models.History;
 import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +47,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
@@ -77,7 +76,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         final int position = viewHolder.getAdapterPosition();
         final History historyItem = historyList.get(position);
         Context context = viewHolder.text.getContext();
-        viewHolder.text.setText(historyItem.comment);
+        viewHolder.text.setText(historyItem.getComment());
 
         if (clickListener != null) {
             viewHolder.root.setOnLongClickListener(view -> {
@@ -88,8 +87,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             viewHolder.root.setOnClickListener(view -> clickListener.onItemClick(view, position));
         }
 
-        if (historyItem.watched == 1) {
-            final int count = historyItem.threadSize - 1 - historyItem.lastReadPosition;
+        if (historyItem.getWatched()) {
+            final int count = historyItem.getUnreadCount();
             unreadCountList[position] = count;
             if (count > 0) {
                 viewHolder.unreadcount.setText(String.valueOf(count));
@@ -102,8 +101,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         }
 
         viewHolder.image.setVisibility(View.INVISIBLE);
-        if (!TextUtils.isEmpty(historyItem.tim)) {
-            final String url = MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, historyItem.boardName, historyItem.tim);
+        if (!TextUtils.isEmpty(historyItem.getTim())) {
+            final String url = MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, historyItem.getBoardName(), historyItem.getTim());
 
             viewHolder.image.setVisibility(View.VISIBLE);
 
@@ -117,8 +116,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
             GlideApp.with(context).clear(viewHolder.image);
         }
 
-        viewHolder.threadinfo.setText("/" + historyItem.boardName + "/" + historyItem.threadId);
-        viewHolder.opname.setText(historyItem.userName);
+        viewHolder.threadinfo.setText("/" + historyItem.getBoardName() + "/" + historyItem.getThreadId());
+        viewHolder.opname.setText(historyItem.getUserName());
         viewHolder.lastviewed.setText(timeList.get(position));
 
         if (isEditMode) {
@@ -130,16 +129,15 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         viewHolder.deletehistory.setOnClickListener(v -> {
 
             RxUtil.safeUnsubscribe(removeHistorySubscription);
-            removeHistorySubscription = Flowable.zip(HistoryTableConnection.removeHistory(historyItem.boardName, historyItem.threadId),
-                    PostTableConnection.removeThread(historyItem.threadId),
-                    (aBoolean, aBoolean2) -> aBoolean && aBoolean2)
-                    .compose(DatabaseUtils.applySchedulers())
+            removeHistorySubscription = HistoryTableConnection.removeHistory(historyItem.getBoardName(), historyItem.getThreadId())
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe(success -> {
                         int currentPosition = viewHolder.getAdapterPosition();
                         if (success && currentPosition >= 0 && currentPosition < historyList.size()) {
-                            Log.d(LOG_TAG, "Removed history: " + "board name=" + historyItem.boardName + ", thread id=" + historyItem.threadId);
+                            Log.d(LOG_TAG, "Removed history: " + "board name=" + historyItem.getBoardName() + ", thread id=" + historyItem.getThreadId());
 
-                            RefreshScheduler.getInstance().removeThread(historyItem.boardName, historyItem.threadId);
+                            RefreshScheduler2.removeThread(historyItem.getBoardName(), historyItem.getThreadId());
+//                            RefreshScheduler.getInstance().removeThread(historyItem.getBoardName(), historyItem.getThreadId());
 //                            ThreadRegistry.getInstance().remove(historyItem.threadId);
                             historyList.remove(currentPosition);
                             timeList.remove(currentPosition);
@@ -150,7 +148,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
 
                             notifyItemRemoved(currentPosition);
                         } else {
-                            String errorMsg = "Error removing history: " + "board name=" + historyItem.boardName + ", thread id=" + historyItem.threadId + " ,history list size=" + historyList.size() + ", history item position=" + currentPosition;
+                            String errorMsg = "Error removing history: " + "board name=" + historyItem.getBoardName() + ", thread id=" + historyItem.getThreadId() + " ,history list size=" + historyList.size() + ", history item position=" + currentPosition;
                             Exception e = new IllegalStateException(errorMsg);
                             Log.e(LOG_TAG, "Something went wrong while removing history", e);
                         }
@@ -173,8 +171,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         unreadCountList = new int[historyList.size()];
         for (int i = 0; i < historyList.size(); i++) {
             History history = historyList.get(i);
-            final int count = history.threadSize - 1 - history.lastReadPosition;
-            unreadCountList[i] = count;
+            unreadCountList[i] = history.getUnreadCount();
         }
 
         buildTimeMap();
@@ -184,7 +181,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         this.timeList = new LinkedList<>();
         for (int i = 0; i < historyList.size(); i++) {
             timeList.add(DateUtils.getRelativeTimeSpanString(
-                    historyList.get(i).lastAccess,
+                    historyList.get(i).getLastAccess(),
                     System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS,
                     DateUtils.FORMAT_ABBREV_RELATIVE
@@ -236,18 +233,18 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         if (historyList.size() > 0) {
 
             RxUtil.safeUnsubscribe(fetchPostSubscription);
-            fetchPostSubscription = HistoryTableConnection.fetchPost(historyList.get(0).boardName, historyList.get(0).threadId)
-                    .compose(DatabaseUtils.<History>applySchedulers())
+            fetchPostSubscription = HistoryTableConnection.fetchPost(historyList.get(0).getBoardName(), historyList.get(0).getThreadId())
+                    .compose(DatabaseUtils.<History>applySingleSchedulers())
                     .subscribe(history -> {
-                        if (history.threadId == -1) {
+                        if (history.getThreadId() == -1) {
                             return;
                         }
 
-                        final boolean watched = history.watched == 1;
+                        final boolean watched = history.getWatched();
                         for (int position = 0; position < historyList.size(); position++) {
                             final History historyItem = historyList.get(position);
 
-                            RefreshScheduler.getInstance().removeThread(historyItem.boardName, historyItem.threadId);
+//                            RefreshScheduler.getInstance().removeThread(historyItem.getBoardName(), historyItem.getThreadId());
 
                             historyList.remove(position);
                             timeList.remove(position);
@@ -266,14 +263,14 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
     private void startUpdateTimer(List<History> histories) {
         RxUtil.safeUnsubscribe(updateHistoryOrderSubscription);
         updateHistoryOrderSubscription = HistoryTableConnection.updateHistoryOrder(histories)
-                .compose(DatabaseUtils.<Boolean>applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .delay(500, TimeUnit.MILLISECONDS)
                 .subscribe();
     }
 
     @Override
     public long getItemId(int position) {
-        return historyList.get(position).threadId;
+        return historyList.get(position).getThreadId();
     }
 
     @Override

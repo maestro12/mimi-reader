@@ -5,6 +5,7 @@ import android.content.Context
 import com.emogoth.android.phone.mimi.R
 import com.emogoth.android.phone.mimi.viewmodel.GalleryViewModel
 import com.google.android.material.snackbar.Snackbar
+
 import pl.droidsonroids.gif.GifDrawable
 import pl.droidsonroids.gif.GifImageView
 

@@ -17,8 +17,8 @@
 package com.emogoth.android.phone.mimi.model;
 
 
-import com.emogoth.android.phone.mimi.db.model.History;
-import com.emogoth.android.phone.mimi.db.model.UserPost;
+import com.emogoth.android.phone.mimi.db.models.History;
+import com.emogoth.android.phone.mimi.db.models.UserPost;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,22 +28,24 @@ public class ThreadRegistryModel {
     private final String boardName;
     private final int threadSize;
     private final int lastReadPosition;
+    private final int unreadCount;
     private final boolean bookmarked;
     private final boolean active;
     private final List<Long> userPosts = new ArrayList<>();
 
     public ThreadRegistryModel(History history, List<UserPost> userPosts) {
-        threadId = history.threadId;
-        boardName = history.boardName;
-        threadSize = history.threadSize;
-        lastReadPosition = history.lastReadPosition;
-        bookmarked = history.watched == 1;
+        threadId = history.getThreadId();
+        boardName = history.getBoardName();
+        threadSize = history.getThreadSize();
+        lastReadPosition = history.getLastReadPosition();
+        unreadCount = history.getUnreadCount();
+        bookmarked = history.getWatched();
         active = true;
 
         if (userPosts != null) {
             for (UserPost userPost : userPosts) {
-                if (userPost.boardName.equals(history.boardName) && userPost.threadId == history.threadId) {
-                    this.userPosts.add(userPost.postId);
+                if (userPost.getBoardName().equals(history.getBoardName()) && userPost.getThreadId() == history.getThreadId()) {
+                    this.userPosts.add(userPost.getPostId());
                 }
             }
         }

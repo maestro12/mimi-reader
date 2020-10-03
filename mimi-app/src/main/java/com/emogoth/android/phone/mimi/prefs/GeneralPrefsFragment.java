@@ -17,21 +17,20 @@
 package com.emogoth.android.phone.mimi.prefs;
 
 import android.os.Bundle;
-import android.preference.ListPreference;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
+import android.util.Log;
+
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
 
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.util.MimiPrefs;
 
-public class GeneralPrefsFragment extends PreferenceFragment {
-    public GeneralPrefsFragment() {
-    }
+public class GeneralPrefsFragment extends PreferenceFragmentCompat {
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.general_prefs);
 
@@ -41,6 +40,7 @@ public class GeneralPrefsFragment extends PreferenceFragment {
 
         setupPrefs();
 
+        Log.d("GeneralPrefsFragment", "name=" + this.getClass().getName());
     }
 
     private void setupPrefs() {

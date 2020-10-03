@@ -45,7 +45,7 @@
         android:layout_alignParentTop="true"
         android:gravity="center"
         android:textSize="12sp"
-        android:textColor="#CCCCCC"
+        android:textColor="@drawable/tab_selector_custom"
         tools:text="/b/" />
 
     <TextView
@@ -54,7 +54,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:textSize="11sp"
-        android:textColor="#CCCCCC"
+        android:textColor="@drawable/tab_selector_custom"
         tools:text="323843"
         android:layout_below="@+id/title"
         android:layout_centerHorizontal="true" />

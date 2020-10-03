@@ -18,7 +18,7 @@
 
 <resources>
 
-    <style name="Theme.Mimi.Black" parent="@style/Theme.AppCompat.NoActionBar">
+    <style name="Theme.Mimi.Black" parent="@style/Theme.MaterialComponents.NoActionBar">
         <item name="actionBarItemBackground">@drawable/selectable_background_thememimiblack</item>
         <item name="dropDownListViewStyle">@style/DropDownListView.Mimi.Black</item>
         <item name="actionBarTabStyle">@style/ActionBarTabStyle.Mimi.Black</item>
@@ -28,11 +28,11 @@
         <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimidark</item>
         <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Black</item>
         <item name="titleTextStyle">@style/Mimi.ActionBar.Title</item>
-        <item name="logo">@drawable/leaf_logo</item>
+        <item name="logo">@null</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="windowActionBarOverlay">true</item>
 
-        <item name="elevation">0dp</item>
+        <item name="elevation">4dp</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
@@ -77,6 +77,8 @@
         <item name="colorAccent">?attr/mimiAccentColor</item>
 
         <item name="scrollerHandleColor">@color/nav_drawer_background</item>
+
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <style name="ActionBar.Solid.Mimi.Black" parent="@style/Widget.AppCompat.ActionBar.Solid">
@@ -87,7 +89,7 @@
         <item name="actionButtonStyle">@style/Theme.Mimi.ActionButtonStyle</item>
         <item name="titleTextStyle">@style/ActionBar.Mimi.TitleTextStyle</item>
         <item name="subtitleTextStyle">@style/ActionBar.Mimi.SubTitleTextStyle</item>
-        <item name="logo">@drawable/leaf_logo</item>
+        <item name="logo">@null</item>
     </style>
 
     <style name="ActionBar.Transparent.Mimi.Black" parent="@style/Widget.AppCompat.ActionBar">

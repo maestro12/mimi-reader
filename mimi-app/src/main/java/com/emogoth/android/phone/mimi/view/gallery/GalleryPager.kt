@@ -23,6 +23,7 @@ import com.emogoth.android.phone.mimi.R
 import com.emogoth.android.phone.mimi.util.*
 import com.emogoth.android.phone.mimi.viewmodel.GalleryItem
 import com.emogoth.android.phone.mimi.viewmodel.GalleryViewModel
+
 import com.mimireader.chanlib.models.ChanPost
 import com.mimireader.chanlib.models.ChanThread
 import kotlinx.android.synthetic.main.view_gallery_pager.view.*
@@ -398,7 +399,7 @@ abstract class GalleryPagerItemViewHolder(itemView: View) : RecyclerView.ViewHol
         }
 }
 
-// These need to be different classes to prevent the RecyclerView from using a
+// These need to be different classes to prevent the RecyclerView from reusing the wrong viewholder
 class GalleryImageViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)
 class GalleryWebmViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)
 class GalleryGifViewHolder(itemView: View) : GalleryPagerItemViewHolder(itemView)

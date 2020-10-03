@@ -31,15 +31,15 @@ import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
-import com.emogoth.android.phone.mimi.autorefresh.RefreshJobService;
 import com.emogoth.android.phone.mimi.service.DownloadService;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -454,18 +454,18 @@ public class IOUtils {
             DocumentFile potentialFile = DocumentFile.fromFile(new File(path.getPath() + "/" + fileName + "." + fileExt));
 
             if (potentialFile.exists()) {
-                final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(activity);
+                final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(activity);
                 dialogBuilder.setTitle(R.string.copy_file)
                         .setMessage(R.string.file_name_is_taken)
                         .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss())
-                        .setNeutralButton(R.string.overwrite, (dialog, which) -> saveFile(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE))
-                        .setPositiveButton(R.string.rename, (dialog, which) -> saveFile(saveDir, localFile, saveFileName, showNotification, ACTION_RENAME))
+                        .setNeutralButton(R.string.overwrite, (dialog, which) -> saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE, 2))
+                        .setPositiveButton(R.string.rename, (dialog, which) -> saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_RENAME, 2))
                         .show();
             } else {
-                saveFile(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE);
+                saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE, 2);
             }
         } else {
-            final AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(activity);
+            final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(activity);
             dialogBuilder.setTitle(R.string.requesting_permissions)
                     .setMessage(R.string.save_permissions_message)
                     .setNegativeButton(R.string.cancel, (dialogInterface, i) -> dialogInterface.cancel())
@@ -480,6 +480,18 @@ public class IOUtils {
                     .setCancelable(true)
                     .show();
         }
+    }
+
+    public static boolean saveFileWithRetry(final DocumentFile dir, final File filePath, final String saveFileName, final boolean showNotification, final int action, final int retries) {
+        boolean success = false;
+        int count = 0;
+
+        while (!success && count < retries) {
+            count++;
+            success = saveFile(dir, filePath, saveFileName, showNotification, action);
+        }
+
+        return success;
     }
 
     public static boolean saveFile(final DocumentFile dir, final File filePath, final String saveFileName, final boolean showNotification, final int action) {
@@ -498,7 +510,7 @@ public class IOUtils {
                     return false;
                 }
 
-                final String fileName = saveFileName.substring(0, fileExtBeginIndex);
+                String fileName = saveFileName.substring(0, fileExtBeginIndex);
                 final String fileExt = saveFileName.substring(fileExtBeginIndex + 1);
 
                 String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExt);
@@ -521,17 +533,23 @@ public class IOUtils {
                     return false;
                 }
 
-                if (searchFile.exists() && action == ACTION_RENAME) {
+                DocumentFile writeFile = null;
+                if (action == ACTION_RENAME) {
+                    StringBuilder renamedFile = new StringBuilder(fileName);
                     int i = 1;
                     while (searchFile.exists()) {
-                        fileLocation = new File(path.getPath() + "/" + fileName + "(" + i + ")" + fileExt);
+                        renamedFile = new StringBuilder(fileName).append("(").append(i).append(")");
+                        fileLocation = new File(path.getPath() + "/" + renamedFile + "." + fileExt);
                         searchFile = DocumentFile.fromFile(fileLocation);
                         i++;
                     }
+
+                    fileName = renamedFile.toString();
                 }
 
-                DocumentFile writeFile = saveDir.createFile(mimeType, fileName);
+                writeFile = saveDir.createFile(mimeType, fileName);
                 if (writeFile == null) {
+                    Log.e(LOG_TAG, "Could not write file " + fileName);
                     return false;
                 }
 
@@ -541,7 +559,19 @@ public class IOUtils {
                         if (!TextUtils.isEmpty(writeFile.getName()) && !writeFile.getName().equals(fileName + "." + fileExt)) {
                             writeFile.renameTo(fileName + "." + fileExt);
                         }
-                        Toast.makeText(context, R.string.file_saved, Toast.LENGTH_LONG).show();
+
+                        if (writeFile.length() > 0) {
+                            Toast.makeText(context, R.string.file_saved, Toast.LENGTH_LONG).show();
+                        } else {
+                            try {
+                                filePath.delete();
+                            } catch (Exception e) {
+                                // no op
+                            }
+
+                            return false;
+                        }
+
                         if (showNotification) {
                             final DocumentFile documentOfImage = writeFile;
                             MimiUtil.scaleBitmap(filePath)
@@ -556,20 +586,30 @@ public class IOUtils {
                                         @Override
                                         public void onSuccess(Bitmap bitmap) {
                                             showSaveNotification(context, bitmap, documentOfImage, fileExt);
+
+                                            try {
+                                                filePath.delete();
+                                            } catch (Exception e) {
+                                                // no op
+                                            }
                                         }
 
                                         @Override
                                         public void onError(Throwable e) {
                                             Log.e(LOG_TAG, "Error scaling bitmap", e);
+
+                                            try {
+                                                filePath.delete();
+                                            } catch (Exception ex) {
+                                                // no op
+                                            }
                                         }
                                     });
                         }
-                        new SingleMediaScanner(context, fileLocation, (s, uri) -> {
-                            if (BuildConfig.DEBUG) {
-                            }
-                        });
+                        new SingleMediaScanner(context, fileLocation, (s, uri) -> { });
                     } catch (Exception e) {
                         Log.e(LOG_TAG, "Error writing file", e);
+                        return false;
                     }
                 }
             } else {
@@ -652,7 +692,7 @@ public class IOUtils {
 
             final Notification saveFileNotification = builder.build();
 
-            notificationManager.notify(RefreshJobService.NOTIFICATION_ID, saveFileNotification);
+            notificationManager.notify(NOTIFICATION_ID, saveFileNotification);
         } catch (Exception e) {
             Log.e(LOG_TAG, "Error creating notification", e);
         }
@@ -681,41 +721,15 @@ public class IOUtils {
             return false;
         } finally {
             try {
+                Log.d(LOG_TAG, "Flushing and closing after writing file");
+                source.close();
+
                 sink.flush();
                 sink.close();
-                source.close();
             } catch (Exception e) {
                 Log.e(LOG_TAG, "Error finalizing file copy", e);
             }
         }
-
-//        InputStream fis = null;
-//        BufferedOutputStream fos = null;
-//
-//        try {
-//
-//            if (copyFrom.exists()) {
-//
-//                fis = new FileInputStream(copyFrom);
-//                fos = new BufferedOutputStream(context.getContentResolver().openOutputStream(copyTo));
-//
-//                IOUtils.copy(fis, fos);
-//                fos.flush();
-//
-//                return true;
-//            }
-//
-//        } catch (OutOfMemoryError e) {
-//            Log.e(LOG_TAG, "Out of memory: " + e.getMessage());
-//            Toast.makeText(context, "Out of memory", Toast.LENGTH_SHORT).show();
-//
-//        } catch (Exception e) {
-//            Log.e(LOG_TAG, "Error copying file", e);
-//            Toast.makeText(context, R.string.error_copying_file, Toast.LENGTH_SHORT).show();
-//        } finally {
-//            IOUtils.closeQuietly(fos);
-//            IOUtils.closeQuietly(fis);
-//        }
 
         return true;
     }

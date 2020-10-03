@@ -5,7 +5,9 @@
     android:installLocation="auto">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:remove="android:maxSdkVersion"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        tools:remove="android:maxSdkVersion" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -26,34 +28,24 @@
     <application
         android:name=".app.MimiApplication"
         android:allowBackup="false"
+        android:extractNativeLibs="false"
         android:fullBackupContent="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_title"
         android:largeHeap="true"
         android:networkSecurityConfig="@xml/security_config"
+        android:testOnly="false"
         android:theme="@style/Theme.Mimi.Light.Toolbar.Default"
-        android:extractNativeLibs="false"
         tools:replace="android:theme, icon, label, allowBackup">
         <activity
+            android:name=".prefs.SettingsActivity"
+            android:label="@string/title_activity_settings"/>
+        <activity
             android:name=".activity.GalleryActivity2"
-            android:label="@string/gallery"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:theme="@style/Theme.Mimi.Gallery"/>
-
-        <meta-data
-            android:name="AA_DB_NAME"
-            android:value="mimi.db" />
-        <meta-data
-            android:name="AA_DB_VERSION"
-            android:value="17" />
-        <meta-data
-            android:name="AA_MODELS"
-            android:value="com.emogoth.android.phone.mimi.db.model.Board" />
-
-        <uses-library
-            android:name="org.apache.http.legacy"
-            android:required="false" />
+            android:label="@string/gallery"
+            android:theme="@style/Theme.Mimi.Gallery" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -66,10 +58,6 @@
         </provider>
 
         <service android:name=".service.DownloadService" />
-        <service
-            android:name=".autorefresh.RefreshJobService"
-            android:label="Auto Refesh Service"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <activity android:name=".activity.FilterActivity" />
         <activity
@@ -79,7 +67,8 @@
         <activity
             android:name=".activity.StartupActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:label="@string/app_title">
+            android:label="@string/app_title"
+            android:theme="@style/Theme.Mimi.Launch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -122,9 +111,6 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".prefs.MimiSettings"
-            android:label="@string/settings" />
         <activity
             android:name=".activity.ThemeSettingsActivity"
             android:label="@string/appearance_title">

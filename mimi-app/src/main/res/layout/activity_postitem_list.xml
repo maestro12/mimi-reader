@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:visibility="gone" />
 
-        <include layout="@layout/app_rating_container" />
+
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appbar"

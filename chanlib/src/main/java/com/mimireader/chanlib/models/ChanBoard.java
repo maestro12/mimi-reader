@@ -202,6 +202,10 @@ public class ChanBoard implements Parcelable {
         return favorite;
     }
 
+    public boolean isEmpty() {
+        return name == null || name.isEmpty();
+    }
+
     @Override
     public int describeContents() {
         return 0;

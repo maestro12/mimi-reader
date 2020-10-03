@@ -44,6 +44,12 @@
         mimi:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/mark_as_read_menu"
+        android:icon="@drawable/ic_clear"
+        android:title="@string/mark_as_read"
+        mimi:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/quick_top"
         android:title="@string/quick_scroll_to_top"
         mimi:showAsAction="never"/>

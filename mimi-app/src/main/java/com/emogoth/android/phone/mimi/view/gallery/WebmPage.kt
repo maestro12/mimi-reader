@@ -1,12 +1,10 @@
 package com.emogoth.android.phone.mimi.view.gallery
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.util.Log
 import android.view.*
-import android.widget.FrameLayout
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.net.toUri
 import com.emogoth.android.phone.mimi.R
@@ -18,7 +16,6 @@ import io.reactivex.Flowable
 import io.reactivex.disposables.Disposable
 import java.util.concurrent.TimeUnit
 
-@SuppressLint("ViewConstructor")
 class WebmPage(context: Context, private val viewModel: GalleryViewModel, private val player: ExoPlayer2Helper?) : GalleryPage(context, viewModel), ExoPlayer2Helper.Listener {
     private val videoView = TextureView(context)
     private var controlView: WebmControls
@@ -28,20 +25,20 @@ class WebmPage(context: Context, private val viewModel: GalleryViewModel, privat
         addMainChildView(videoView)
 
         videoView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
+            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
                 Log.d(LOG_TAG, "Surface texture changed (width: $width, height: $height)")
             }
 
-            override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
+            override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
                 Log.d(LOG_TAG, "Surface texture updated")
             }
 
-            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                 Log.d(LOG_TAG, "Surface texture destroyed")
                 return true
             }
 
-            override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
+            override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
                 Log.d(LOG_TAG, "Surface texture available")
             }
         }
@@ -120,7 +117,7 @@ class WebmPage(context: Context, private val viewModel: GalleryViewModel, privat
         val params = view.layoutParams
         params.width = (videoWidth * ratio).toInt()
         params.height = (videoHeight * ratio).toInt()
-        if (params is FrameLayout.LayoutParams) {
+        if (params is LayoutParams) {
             params.gravity = Gravity.CENTER
         }
         view.layoutParams = params

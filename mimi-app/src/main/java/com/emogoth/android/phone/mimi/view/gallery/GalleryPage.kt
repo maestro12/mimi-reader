@@ -10,8 +10,9 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ProgressBar
 import com.emogoth.android.phone.mimi.BuildConfig
-import com.emogoth.android.phone.mimi.event.ReplyClickEvent
-import com.emogoth.android.phone.mimi.util.*
+import com.emogoth.android.phone.mimi.util.DownloadItem
+import com.emogoth.android.phone.mimi.util.DownloadListener
+import com.emogoth.android.phone.mimi.util.MimiPrefs
 import com.emogoth.android.phone.mimi.viewmodel.GalleryItem
 import com.emogoth.android.phone.mimi.viewmodel.GalleryViewModel
 import java.io.File

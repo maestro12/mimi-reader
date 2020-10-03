@@ -17,7 +17,6 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.content.Context;
-import androidx.annotation.StringRes;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +24,8 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
+
+import androidx.annotation.StringRes;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
@@ -93,8 +94,10 @@ public class BoardDropDownAdapter extends BaseAdapter implements SpinnerAdapter 
         notifyDataSetChanged();
 
         RxUtil.safeUnsubscribe(removeBoardSubscription);
-        removeBoardSubscription = BoardTableConnection.setBoardVisibility(boardName, false)
-                .compose(DatabaseUtils.applySchedulers())
+        ChanBoard board = new ChanBoard();
+        board.setName(boardName);
+        removeBoardSubscription = BoardTableConnection.setBoardVisibility(board, false)
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe();
     }
 

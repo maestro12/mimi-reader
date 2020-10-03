@@ -10,6 +10,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.emogoth.android.phone.mimi.BuildConfig
 import com.emogoth.android.phone.mimi.viewmodel.GalleryViewModel
 
+
 @SuppressLint("ViewConstructor")
 class ImagePage(context: Context, viewModel: GalleryViewModel) : GalleryPage(context, viewModel) {
     override fun onViewBind() {

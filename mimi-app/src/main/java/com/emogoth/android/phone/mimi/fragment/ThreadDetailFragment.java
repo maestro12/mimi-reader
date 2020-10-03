@@ -17,10 +17,9 @@
 package com.emogoth.android.phone.mimi.fragment;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -43,11 +42,11 @@ import androidx.appcompat.widget.AppCompatEditText;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -60,43 +59,36 @@ import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.activity.TabsActivity;
 import com.emogoth.android.phone.mimi.activity.WebActivity;
 import com.emogoth.android.phone.mimi.adapter.ThreadListAdapter;
-import com.emogoth.android.phone.mimi.app.MimiApplication;
-import com.emogoth.android.phone.mimi.autorefresh.RefreshJobService;
-import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.dialog.RepliesDialog;
-import com.emogoth.android.phone.mimi.event.CloseTabEvent;
-import com.emogoth.android.phone.mimi.event.GalleryPagerScrolledEvent;
-import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
-import com.emogoth.android.phone.mimi.event.ShowRepliesEvent;
-import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.exceptions.ChanPostException;
-import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
+import com.emogoth.android.phone.mimi.interfaces.GoToPostListener;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
+import com.emogoth.android.phone.mimi.interfaces.ReplyClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ReplyMenuClickListener;
+import com.emogoth.android.phone.mimi.interfaces.TabEventListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
+import com.emogoth.android.phone.mimi.interfaces.ThumbnailClickListener;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
-import com.emogoth.android.phone.mimi.util.HttpClientFactory;
+import com.emogoth.android.phone.mimi.util.GalleryScrollReceiver;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.viewmodel.ThreadViewModel;
 import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
 import com.google.android.material.snackbar.Snackbar;
-import com.mimireader.chanlib.ChanConnector;
-import com.mimireader.chanlib.models.ChanBoard;
+;
+import com.mimireader.chanlib.models.ArchivedChanThread;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
 import com.mimireader.chanlib.models.ErrorChanThread;
-import com.squareup.otto.Subscribe;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,22 +97,25 @@ import java.util.List;
 
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
-import retrofit2.adapter.rxjava2.HttpException;
-
-//import com.emogoth.android.phone.mimi.view.DividerItemDecoration;
+import kotlin.Unit;
+import retrofit2.HttpException;
 
 
 public class ThreadDetailFragment extends MimiFragmentBase implements
         TabInterface,
-        ContentInterface {
+        ContentInterface,
+        ReplyClickListener,
+        GoToPostListener {
     private static final String LOG_TAG = ThreadDetailFragment.class.getSimpleName();
     private static final boolean LOG_DEBUG = true;
     private static final String REPLY_FRAGMENT_TAG = "reply_fragment";
     private static final int LOADER_ID = 2;
+
+    public static final int REPLIES_DIALOG_CODE = 100;
 
     private String threadReplyFragmentTag;
 
@@ -152,12 +147,12 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private MenuItem bookmarkMenuItem;
     private Toolbar toolbar;
 
-    private Handler lastReadHandler = new Handler();
+    private final Handler lastReadHandler = new Handler();
     private LastReadRunnable lastReadRunnable;
 
     private Snackbar postingSnackbar;
     private boolean stickyAutoRefresh;
-    private ChanConnector chanConnector;
+    //    private ChanConnector chanConnector;
     private RecyclerView.OnScrollListener recyclerViewScrollListener;
     private ViewStub findViewStub;
     private View findView;
@@ -172,12 +167,13 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private Disposable historyRemovedSubscription;
     private Disposable putHistorySubscription;
     private Disposable fetchHistorySubscription;
-    private Disposable removeHistorySubscription;
+    private Disposable fetchThreadSubscription;
 
     private Handler textFindHandler;
     private Runnable updateAdapterRunnable;
 
     private Bundle postState;
+    private GalleryScrollReceiver scrollReceiver;
 
     public static ThreadDetailFragment newInstance(long threadId, String boardName, String boardTitle, ChanPost firstPost, boolean stickyAutoRefresh, boolean hasOptionsMenu) {
         final Bundle args = new Bundle();
@@ -204,7 +200,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRetainInstance(false);
 
         if (LOG_DEBUG) {
             Log.d(LOG_TAG, "Entered onCreate()");
@@ -224,8 +219,8 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         }
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        prefs.edit().remove(RefreshJobService.NOTIFICATIONS_KEY_THREAD_SIZE + "." + threadId).apply();
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+//        prefs.edit().remove(RefreshJobService.NOTIFICATIONS_KEY_THREAD_SIZE + "." + threadId).apply();
 
         lastReadRunnable = new LastReadRunnable(threadId, boardName);
         threadReplyFragmentTag = REPLY_FRAGMENT_TAG + "_" + threadId;
@@ -237,8 +232,8 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                 return (T) new ThreadViewModel(boardName, threadId);
             }
         };
-        viewModel = ViewModelProviders
-                .of(this, factory)
+
+        viewModel = new ViewModelProvider(this, factory)
                 .get(ThreadViewModel.class);
     }
 
@@ -273,60 +268,18 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             Log.d(LOG_TAG, "Entered onViewCreated() for thread " + threadId);
         }
 
-        chanConnector = new FourChanConnector.Builder()
-                .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
-                .setEndpoint(FourChanConnector.getDefaultEndpoint())
-                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
-                .setClient(HttpClientFactory.getInstance().getClient())
-                .build();
-
         layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), LinearLayoutManager.VERTICAL));
 
-        threadListAdapter = new ThreadListAdapter(currentThread);
+        threadListAdapter = new ThreadListAdapter(currentThread, getChildFragmentManager());
 
         setupRepliesDialog();
-        if (getActivity() instanceof OnThumbnailClickListener) {
-            threadListAdapter.setOnThumbnailClickListener((OnThumbnailClickListener) getActivity());
+        if (getActivity() instanceof ThumbnailClickListener) {
+            threadListAdapter.setOnThumbnailClickListener((ThumbnailClickListener) getActivity());
         }
 
         recyclerView.setAdapter(threadListAdapter);
-
-//        UserPostTableConnection.fetchPosts(boardName, threadId)
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .single(Collections.emptyList())
-//                .flatMap((Function<List<UserPost>, SingleSource<List<Long>>>) userPosts -> {
-//                    List<Long> posts = new ArrayList<>();
-//                    for (UserPost userPost : userPosts) {
-//                        posts.add(userPost.postId);
-//                    }
-//
-//                    return Single.just(posts);
-//                })
-//                .subscribe(new SingleObserver<List<Long>>() {
-//                    @Override
-//                    public void onSubscribe(Disposable d) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onSuccess(List<Long> userPosts) {
-//                        if (getActivity() == null) {
-//                            return;
-//                        }
-//
-//
-//                    }
-//
-//                    @Override
-//                    public void onError(Throwable e) {
-//                        Log.e(LOG_TAG, "Error getting user posts from database", e);
-//                        Crashlytics.logException(e);
-//                        Snackbar.make(recyclerView, R.string.error_occurred, Snackbar.LENGTH_SHORT).show();
-//                    }
-//                });
 
         TypedValue typedValue = new TypedValue();
         getActivity().getTheme().resolveAttribute(R.attr.actionBarSize, typedValue, true);
@@ -351,15 +304,24 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     private void initPosts() {
+        if (getActivity() == null || !isAdded()) {
+            return;
+        }
+
+//        RxUtil.safeUnsubscribe(threadSubscription);
         threadWatcherSubscription = viewModel.watchThread()
-                .observeOn(AndroidSchedulers.mainThread())
+                .compose(DatabaseUtils.applySchedulers())
                 .doOnNext(chanThread -> {
-                    Log.d(LOG_TAG, "Flowable onNext() called; thread size= " + chanThread.getPosts().size());
-                    if (chanThread.getPosts().size() > 0 && threadId == chanThread.getThreadId()) {
+                    if (chanThread.getPosts().size() == 0) {
+                        return;
+                    }
+
+                    if (threadId == chanThread.getThreadId()
+                            && (chanThread.getPosts().size() > currentThread.getPosts().size() || !chanThread.getClass().equals(currentThread.getClass()))) {
                         final int pos;
                         if (!viewModel.getFirstFetchComplete()) {
                             pos = viewModel.lastReadPos();
-                            RefreshScheduler.getInstance().addThread(boardName, threadId, viewModel.bookmarked());
+//                            RefreshScheduler.getInstance().addThread(boardName, threadId, viewModel.bookmarked());
                         } else {
                             pos = 0;
                         }
@@ -373,23 +335,31 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                         currentThread = chanThread;
                         showThread(chanThread, pos > 0 && rememberThreadScrollPosition);
 
+                    } else {
+                        Log.w(LOG_TAG, "Database updated but the thread has no posts");
                     }
                 })
                 .onErrorResumeNext(throwable -> {
                     Log.e(LOG_TAG, "Error occurred while watching thread", throwable);
                     return Flowable.just(new ErrorChanThread(new ChanThread(boardName, threadId, Collections.emptyList()), throwable));
                 })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe();
 
-        viewModel.fetchThread(false)
+//        RxUtil.safeUnsubscribe(fetchThreadSubscription);
+        fetchThreadSubscription = viewModel.fetchThread(false)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSuccess(t -> {
                     if (t instanceof ErrorChanThread) {
                         Log.e(LOG_TAG, "Error while fetching thread", ((ErrorChanThread) t).getError());
                         onErrorResponse(((ErrorChanThread) t).getError());
+                    } else if (t instanceof ArchivedChanThread) {
+                        if (getActivity() != null && isAdded()) {
+                            final String archiveMessage = getString(R.string.archive_message, ((ArchivedChanThread) t).getName());
+                            onErrorResponse(new Exception(archiveMessage));
+                        }
+                    } else {
+                        Log.e(LOG_TAG, "Returned with " + t.getPosts().size() + " posts in thread /" + t.getBoardName() + "/" + t.getThreadId());
                     }
                 })
                 .doOnError(this::onErrorResponse)
@@ -409,7 +379,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             if (TextUtils.isEmpty(boardTitle)) {
                 RxUtil.safeUnsubscribe(boardInfoSubscription);
                 boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                        .compose(DatabaseUtils.<ChanBoard>applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(chanBoard -> {
                             if (!TextUtils.isEmpty(chanBoard.getName())) {
                                 boardTitle = chanBoard.getTitle();
@@ -437,7 +407,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
 
         if (getActivity() != null) {
-            getActivity().supportInvalidateOptionsMenu();
+            getActivity().invalidateOptionsMenu();
         }
 
     }
@@ -477,50 +447,55 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NotNull MenuItem item) {
         if (getActivity() != null) {
 
-            switch (item.getItemId()) {
-                case R.id.refresh_menu:
-                    refresh(true);
+            int itemId = item.getItemId();
+            if (itemId == R.id.refresh_menu) {
+                refresh(true);
+                return true;
+            } else if (itemId == R.id.bookmark_menu) {
+                toggleWatch();
+                return true;
+            } else if (itemId == R.id.share_menu) {
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_SEND);
+                sendIntent.putExtra(Intent.EXTRA_TEXT,
+                        MimiUtil.https() + getResources().getString(R.string.board_link) + getResources().getString(R.string.raw_thread_path, getBoardName(), getThreadId()));
+                sendIntent.setType("text/plain");
+                startActivity(sendIntent);
+                return true;
+            } else if (itemId == R.id.find_menu) {
+                showFindView();
+                return true;
+            } else if (itemId == R.id.mark_as_read_menu) {
+                if (currentThread == null || currentThread.getPosts() == null) {
                     return true;
+                }
 
-                case R.id.bookmark_menu:
-                    toggleWatch();
-                    return true;
-
-                case R.id.share_menu:
-                    Intent sendIntent = new Intent();
-                    sendIntent.setAction(Intent.ACTION_SEND);
-                    sendIntent.putExtra(Intent.EXTRA_TEXT,
-                            MimiUtil.https() + getResources().getString(R.string.board_link) + getResources().getString(R.string.raw_thread_path, getBoardName(), getThreadId()));
-                    sendIntent.setType("text/plain");
-                    startActivity(sendIntent);
-                    return true;
-
-                case R.id.find_menu:
-                    showFindView();
-                    return true;
-
-                case R.id.close_tab:
-                    BusProvider.getInstance().post(new CloseTabEvent(threadId, boardName, boardTitle, false));
-                    return true;
-
-                case R.id.close_other_tabs:
-                    BusProvider.getInstance().post(new CloseTabEvent(threadId, boardName, boardTitle, true));
-                    return true;
-
-                case R.id.quick_top:
-                    if (recyclerView != null) {
-                        recyclerView.scrollToPosition(0);
-                    }
-                    return true;
-
-                case R.id.quick_bottom:
-                    if (recyclerView != null && currentThread != null && currentThread.getPosts() != null) {
-                        recyclerView.scrollToPosition(currentThread.getPosts().size() - 1);
-                    }
-                    return true;
+                lastReadRunnable.setPosition(currentThread.getPosts().size());
+                lastReadRunnable.run();
+                return true;
+            } else if (itemId == R.id.close_tab) {
+                if (getActivity() instanceof TabEventListener) {
+                    ((TabEventListener) getActivity()).onTabClosed(threadId, boardName, boardTitle, false);
+                }
+                return true;
+            } else if (itemId == R.id.close_other_tabs) {
+                if (getActivity() instanceof TabEventListener) {
+                    ((TabEventListener) getActivity()).onTabClosed(threadId, boardName, boardTitle, true);
+                }
+                return true;
+            } else if (itemId == R.id.quick_top) {
+                if (recyclerView != null) {
+                    recyclerView.scrollToPosition(0);
+                }
+                return true;
+            } else if (itemId == R.id.quick_bottom) {
+                if (recyclerView != null && currentThread != null && currentThread.getPosts() != null) {
+                    recyclerView.scrollToPosition(currentThread.getPosts().size() - 1);
+                }
+                return true;
             }
 
             return false;
@@ -638,17 +613,21 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
     }
 
-    private void createRecyclerViewScrollListeners(final boolean useFastScroll) {
+    private void createRecyclerViewScrollListeners() {
         if (recyclerViewScrollListener == null) {
             recyclerViewScrollListener = new RecyclerView.OnScrollListener() {
                 @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                     super.onScrolled(recyclerView, dx, dy);
                     final int lastPos = viewModel.lastReadPos();
                     final int currentPos = layoutManager.findFirstVisibleItemPosition() - 1;
-                    if (dy > 0 && currentPos > lastPos) {
+                    if (currentPos > lastPos) {
                         lastReadHandler.removeCallbacks(lastReadRunnable);
-                        lastReadRunnable.setSize(currentThread.getPosts().size()).setWatched(viewModel.bookmarked());
+                        lastReadRunnable
+                                .setSize(currentThread.getPosts().size())
+                                .setWatched(viewModel.bookmarked())
+                                .setPosition(currentPos);
+
                         lastReadHandler.postDelayed(lastReadRunnable, 500);
                     }
                 }
@@ -715,84 +694,23 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                 if (bookmarkMenuItem != null) {
                     bookmarkMenuItem.setIcon(R.drawable.ic_bookmark_outline);
                 }
-                RxUtil.safeUnsubscribe(removeHistorySubscription);
-                removeHistorySubscription = HistoryTableConnection.removeHistory(boardName, threadId)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe();
-//                ThreadRegistry.getInstance().remove(threadId);
 
             } else if (bookmarkMenuItem != null) {
                 bookmarkMenuItem.setIcon(R.drawable.ic_bookmark);
             }
-//                ThreadRegistry.getInstance().update(threadId, threadListAdapter.getLastPosition(), true, true);
-
 
             if (currentThread.getPosts().size() > 0) {
-                if (!bookmarked) {
-                    post = currentThread.getPosts().get(0);
-                    RxUtil.safeUnsubscribe(putHistorySubscription);
-                    putHistorySubscription = HistoryTableConnection.putHistory(boardName, post, currentThread.getPosts().size(), viewModel.lastReadPos(), !bookmarked)
-                            .compose(DatabaseUtils.<Boolean>applySchedulers())
-                            .subscribe(success -> {
-                                if (success) {
-                                    BusProvider.getInstance().post(new UpdateHistoryEvent(currentThread.getThreadId(), boardName, currentThread.getPosts().size(), viewModel.lastReadPos(), currentThread.getPosts().get(0).isClosed(), bookmarked));
-                                    post.setWatched(bookmarked);
-                                }
-                            });
-                } else {
-                    BusProvider.getInstance().post(new UpdateHistoryEvent(currentThread.getThreadId(), boardName, currentThread.getPosts().size(), viewModel.lastReadPos(), currentThread.getPosts().get(0).isClosed(), bookmarked));
-                }
-
-
+                post = currentThread.getPosts().get(0);
+                RxUtil.safeUnsubscribe(putHistorySubscription);
+                putHistorySubscription = viewModel.setBookmarked(!bookmarked)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(success -> {
+                            if (success && currentThread.getPosts().size() > 0) {
+                                post.setWatched(bookmarked);
+                            }
+                        });
             }
-
-            viewModel.setBookmarked(!bookmarked)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe();
-        }
-    }
-
-    private void saveHistory() {
-        if (currentThread != null && currentThread.getPosts() != null) {
-            final ChanPost firstPost = getFirstPost(currentThread);
-            final int postCount = currentThread.getPosts().size();
-
-//            ThreadRegistryModel threadInfo = ThreadRegistry.getInstance().getThread(threadId);
-//            if (threadInfo != null) {
-//                isWatched = threadInfo.isBookmarked();
-//            }
-
-            RxUtil.safeUnsubscribe(fetchHistorySubscription);
-            fetchHistorySubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                    .flatMap((Function<History, Flowable<Boolean>>) history -> {
-                        final boolean watched;
-                        if (history.threadId > -1) {
-                            watched = viewModel.bookmarked();
-                        } else {
-                            watched = history.watched == 1;
-                        }
-
-                        if (firstPost.getNo() > -1 && history.threadSize != postCount) {
-                            if (LOG_DEBUG) {
-                                Log.d(LOG_TAG, "Updating thread in the database");
-                            }
-                            return HistoryTableConnection.putHistory(boardName, firstPost, postCount, viewModel.lastReadPos(), watched);
-                        } else {
-                            if (LOG_DEBUG) {
-                                Log.d(LOG_TAG, "Not updating thread in database: first post id=" + firstPost.getNo() + ", history size=" + history.threadSize + ", current thread size=" + postCount);
-                            }
-                            return Flowable.just(false);
-                        }
-                    })
-                    .compose(DatabaseUtils.<Boolean>applySchedulers())
-                    .subscribe(success -> {
-                        if (success) {
-                            Log.d(LOG_TAG, "Successfully updated history");
-                        } else {
-                            Log.e(LOG_TAG, "Error while updating history");
-                        }
-                    });
         }
     }
 
@@ -806,13 +724,19 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             showLoadingLayout();
         }
 
-//        final int oldThreadSize = ThreadRegistry.getInstance().getLastReadPosition(threadId);
-
         RxUtil.safeUnsubscribe(threadSubscription);
         threadSubscription = refreshObservable()
-                .subscribe(success -> Log.d(LOG_TAG, "Refreshed thread: /" + boardName + "/" + threadId), this::onErrorResponse);
+                .subscribe(chanThread -> {
+                    if (chanThread.getPosts().size() > 0 && showLoading) {
+                        showContent();
+                    } else if (showLoading) {
+                        onErrorResponse(new Exception("Empty response from server"));
+                    }
 
-        swipeRefreshLayout.setEnabled(false);
+                    Log.d(LOG_TAG, "Refreshed thread: /" + boardName + "/" + threadId);
+                }, this::onErrorResponse);
+
+        swipeRefreshLayout.setRefreshing(false);
     }
 
     private Single<ChanThread> refreshObservable() {
@@ -878,13 +802,13 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             public void onStartPost() {
                 RxUtil.safeUnsubscribe(fetchHistorySubscription);
                 fetchHistorySubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                        .compose(DatabaseUtils.<History>applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe(history -> {
-                            if (history.threadId == -1) {
+                            if (history.getThreadId() == -1) {
                                 return;
                             }
 
-                            final boolean watched = history.watched == 1;
+                            final boolean watched = history.getWatched();
                             if (!watched) {
                                 toggleWatch();
                             }
@@ -959,38 +883,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                 }
             }
         };
-    }
-
-//    @Subscribe
-//    public void autoRefreshThread(final UpdateHistoryEvent event) {
-//        if (event != null && getActivity() != null) {
-//
-//            if (event.getThreadSize() == 0) {
-//                refresh(false);
-//                return;
-//            }
-//
-//            if (event.getThreadId() == threadId
-//                    && event.getBoardName().equals(boardName)
-//                    && (currentThread == null || event.getThreadSize() != currentThread.getPosts().size())
-//                    && threadListAdapter != null) {
-//
-//                refresh(false);
-//            }
-//        }
-//    }
-
-    @Subscribe
-    public void onGalleryPagerScrolled(final GalleryPagerScrolledEvent event) {
-
-        if (getUserVisibleHint()) {
-            if (currentThread != null) {
-                final int index = MimiUtil.findPostPositionById(event.getPostNumber(), currentThread.getPosts());
-                if (index >= 0 && recyclerView != null) {
-                    scrollListToPosition(recyclerView, index);
-                }
-            }
-        }
     }
 
     private void showPostProgress() {
@@ -1107,8 +999,15 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
     private void showThread(final ChanThread thread, final boolean scrollToPosition) {
         if (thread == null || thread.getPosts() == null || !isAdded()) {
+            if (isAdded()) {
+                Log.d(LOG_TAG, "Thread object does not have posts; not showing thread");
+            } else {
+                Log.d(LOG_TAG, "Thread fragment has not been added yet; not showing thread");
+            }
             return;
         }
+
+        Log.d(LOG_TAG, "Showing thread...");
 
         listViewItemHeight = new int[thread.getPosts().size()];
         Arrays.fill(listViewItemHeight, -1);
@@ -1145,53 +1044,50 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         if (fragment != null && fragment.getUserVisibleHint()) {
             postFragment = fragment;
             postFragment.setPostListener(createPostCompleteListener());
-        } else if (MimiUtil.historyEnabled(MimiApplication.getInstance().getApplicationContext())) {
-            saveHistory();
         }
-
     }
 
-    public void onErrorResponse(final Throwable error) {
+    private void onErrorResponse(final Throwable error) {
         Log.e(LOG_TAG, "Error: " + error.getLocalizedMessage(), error);
 
         showContent();
 
-        if (error instanceof HttpException) {
-            HttpException exception = (HttpException) error;
+        if (error instanceof HttpException && ((HttpException) error).code() == 404 && messageText != null) {
+            messageText.setText(R.string.error_404);
+        } else if (messageText != null) {
+            messageText.setText(error.getLocalizedMessage());
+        } else if (getActivity() != null) {
+            Toast.makeText(getActivity(), R.string.unknown_error, Toast.LENGTH_SHORT).show();
+//            return;
+        }
 
-            if (exception.code() == 404) {
-                if (currentThread == null) {
-                    if (closeMessageButton != null) {
-                        closeMessageButton.setVisibility(View.INVISIBLE);
-                    }
-                } else {
-                    if (closeMessageButton != null) {
-                        closeMessageButton.setVisibility(View.VISIBLE);
-                        closeMessageButton.setOnClickListener(v -> {
-                            if (messageContainer != null) {
-                                final AlphaAnimation animation = new AlphaAnimation(1.0F, 0.0F);
-                                animation.setDuration(100);
-                                messageContainer.setAnimation(animation);
-                                messageContainer.setVisibility(View.GONE);
-                            }
-                        });
-                    }
-                }
-                if (messageText != null) {
-                    messageText.setText(R.string.error_404);
-                }
-
-                if (messageContainer != null) {
-                    messageContainer.setVisibility(View.VISIBLE);
-                }
-
-                if (viewModel.bookmarked()) {
-                    RxUtil.safeUnsubscribe(historyRemovedSubscription);
-                    historyRemovedSubscription = HistoryTableConnection.setHistoryRemovedStatus(boardName, threadId, true)
-                            .compose(DatabaseUtils.<Boolean>applySchedulers())
-                            .subscribe();
-                }
+        if (currentThread == null) {
+            if (closeMessageButton != null) {
+                closeMessageButton.setVisibility(View.INVISIBLE);
             }
+        } else {
+            if (closeMessageButton != null) {
+                closeMessageButton.setVisibility(View.VISIBLE);
+                closeMessageButton.setOnClickListener(v -> {
+                    if (messageContainer != null) {
+                        final AlphaAnimation animation = new AlphaAnimation(1.0F, 0.0F);
+                        animation.setDuration(100);
+                        messageContainer.setAnimation(animation);
+                        messageContainer.setVisibility(View.GONE);
+                    }
+                });
+            }
+        }
+
+        if (messageContainer != null) {
+            messageContainer.setVisibility(View.VISIBLE);
+        }
+
+        if (viewModel.bookmarked()) {
+            RxUtil.safeUnsubscribe(historyRemovedSubscription);
+            historyRemovedSubscription = HistoryTableConnection.setHistoryRemovedStatus(boardName, threadId, true)
+                    .compose(DatabaseUtils.applySingleSchedulers())
+                    .subscribe();
         }
 
         Log.d(LOG_TAG, "Exception while accessing network", error);
@@ -1206,35 +1102,51 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        RefreshScheduler2.addThread(boardName, threadId);
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
 
-        BusProvider.getInstance().unregister(this);
+        viewModel.setFirstFetchComplete(false);
+
+        if (scrollReceiver != null) {
+            scrollReceiver.destroy();
+        }
+
+        getActivity().unregisterReceiver(scrollReceiver);
 
         RxUtil.safeUnsubscribe(threadSubscription);
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         RxUtil.safeUnsubscribe(putHistorySubscription);
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
         RxUtil.safeUnsubscribe(historyRemovedSubscription);
-        RxUtil.safeUnsubscribe(removeHistorySubscription);
+        RxUtil.safeUnsubscribe(fetchThreadSubscription);
         RxUtil.safeUnsubscribe(threadWatcherSubscription);
 
         threadWatcherSubscription = null;
 
         viewModel.setFirstFetchComplete(false);
 
-        if (!viewModel.bookmarked()) {
-            if (!stickyAutoRefresh) {
-                RefreshScheduler.getInstance().removeThread(boardName, threadId);
-            }
-        } else if (recyclerView != null) {
-//            ThreadRegistry.getInstance().setLastReadPosition(threadId, layoutManager.findFirstVisibleItemPosition() - 1);
-            viewModel.setLastReadPosition(layoutManager.findFirstVisibleItemPosition() - 1)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe();
-
+        if (!stickyAutoRefresh) {
+            RefreshScheduler2.removeThread(boardName, threadId);
+//            RefreshScheduler.getInstance().removeThread(boardName, threadId);
         }
+//        else if (recyclerView != null) {
+////            ThreadRegistry.getInstance().setLastReadPosition(threadId, layoutManager.findFirstVisibleItemPosition() - 1);
+//            final StringBuilder sb = new StringBuilder("Setting last read thread position: pos=");
+//            sb.append(layoutManager.findFirstVisibleItemPosition() - 1).append(", thread size=").append(currentThread.getPosts().size());
+//            Log.d(LOG_TAG, sb.toString());
+//            viewModel.setLastReadPosition(layoutManager.findFirstVisibleItemPosition() - 1)
+//                    .subscribeOn(Schedulers.io())
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe();
+//
+//        }
 
         recyclerView.clearOnScrollListeners();
     }
@@ -1243,10 +1155,22 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     public void onStart() {
         super.onStart();
 
-        BusProvider.getInstance().register(this);
+        scrollReceiver = new GalleryScrollReceiver(boardName, threadId, id -> {
+            if (getUserVisibleHint()) {
+                if (currentThread != null) {
+                    final int index = MimiUtil.findPostPositionById(id, currentThread.getPosts());
+                    if (index >= 0 && recyclerView != null) {
+                        scrollListToPosition(recyclerView, index);
+                    }
+                }
+            }
+
+            return Unit.INSTANCE;
+        });
+        getActivity().registerReceiver(scrollReceiver, new IntentFilter(scrollReceiver.getIntentFilter()));
 
         if (recyclerView != null) {
-            createRecyclerViewScrollListeners(false);
+            createRecyclerViewScrollListeners();
         }
 
         if (threadWatcherSubscription == null && !TextUtils.isEmpty(boardName)) {
@@ -1254,11 +1178,13 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
     }
 
+
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (!viewModel.bookmarked() && MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
-            RefreshScheduler.getInstance().removeThread(boardName, threadId);
+        if (MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
+            RefreshScheduler2.removeThread(boardName, threadId);
+//            RefreshScheduler.getInstance().removeThread(boardName, threadId);
         }
 
         if (threadListAdapter != null) {
@@ -1298,8 +1224,9 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                 activity.setExpandedToolbar(true, true);
             }
 
-            if (!isVisibleToUser && !viewModel.bookmarked() && !stickyAutoRefresh) {
-                RefreshScheduler.getInstance().removeThread(boardName, threadId);
+            if (!isVisibleToUser && !stickyAutoRefresh) {
+                RefreshScheduler2.removeThread(boardName, threadId);
+//                RefreshScheduler.getInstance().removeThread(boardName, threadId);
             }
         }
     }
@@ -1311,7 +1238,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         try {
             RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-//            final int headerCount = threadListAdapter.headerCount();
             final int pos = position >= threadListAdapter.getItemCount() && threadListAdapter.getItemCount() > 0 ? threadListAdapter.getItemCount() - 1 : position;
             if (layoutManager instanceof LinearLayoutManager) {
                 ((LinearLayoutManager) layoutManager).scrollToPositionWithOffset(pos, 0);
@@ -1323,9 +1249,12 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
     }
 
-    @Subscribe
-    public void showRepliesDialog(final ShowRepliesEvent event) {
-        if (event.getThreadId() == threadId) {
+    @Override
+    public void onReplyClicked(@NotNull String boardName, long threadId, final long postId, @NotNull List<String> replies) {
+        if (threadId == -1) {
+            scrollToPost(postId);
+            closeRepliesDialogs();
+        } else if (threadId == this.getThreadId()) {
             Log.i(LOG_TAG, "Showing replies");
             if (getActivity() != null) {
 
@@ -1335,18 +1264,28 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                         return;
                     }
 
-                    final FragmentManager fm = getActivity().getSupportFragmentManager();
-                    final RepliesDialog repliesDialog = new RepliesDialog();
+                    final RepliesDialog repliesDialog;
+                    final FragmentManager fm = getChildFragmentManager();
+                    final Fragment frag = fm.findFragmentByTag(RepliesDialog.DIALOG_TAG);
+                    final boolean found;
+                    if (frag != null) {
+                        found = true;
+                        repliesDialog = (RepliesDialog) frag;
+                    } else {
+                        found = false;
+                        repliesDialog = new RepliesDialog();
+                    }
+
                     final Bundle args = new Bundle();
 
                     final ArrayList<OutsideLink> outsideLinks = new ArrayList<>();
                     final ArrayList<String> postNumbers = new ArrayList<>();
-                    for (final String id : event.getReplies()) {
+                    for (final String id : replies) {
 
                         if (TextUtils.isDigitsOnly(id)) {
                             int index = -1;
                             try {
-                                index = MimiUtil.findPostPositionById(Integer.valueOf(id), currentThread.getPosts());
+                                index = MimiUtil.findPostPositionById(Integer.parseInt(id), currentThread.getPosts());
                                 ChanPost post = currentThread.getPosts().get(index);
 
                                 if (post != null) {
@@ -1393,26 +1332,32 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
                         args.putParcelableArrayList(Extras.EXTRAS_OUTSIDE_LINK_LIST, outsideLinks);
                         args.putLong(Extras.EXTRAS_THREAD_ID, currentThread.getThreadId());
 
-                        ThreadRegistry.getInstance().setPosts(currentThread.getThreadId(), currentThread.getPosts());
-
-                        repliesDialog.setArguments(args);
-                        repliesDialog.show(fm, RepliesDialog.DIALOG_TAG);
+                        if (found) {
+                            ((RepliesDialog) frag).updateReplies(args);
+                        } else {
+                            repliesDialog.setArguments(args);
+                            repliesDialog.show(fm, RepliesDialog.DIALOG_TAG);
+                        }
                     }
+
                 });
 
             }
         }
     }
 
-    @Subscribe
-    public void onReplyClicked(final ReplyClickEvent event) {
-        if (event.getPost() == null) {
-            return;
+    private void closeRepliesDialogs() {
+        for (Fragment fragment : getChildFragmentManager().getFragments()) {
+            if (fragment instanceof RepliesDialog) {
+                ((RepliesDialog) fragment).close();
+            }
         }
+    }
 
+    private void scrollToPost(long postId) {
         try {
             if (getUserVisibleHint() && currentThread != null) {
-                final long index = MimiUtil.findPostPositionById(event.getPost().getNo(), currentThread.getPosts());
+                final long index = MimiUtil.findPostPositionById(postId, currentThread.getPosts());
 
                 if (index >= 0) {
                     scrollListToPosition(recyclerView, (int) index);
@@ -1433,8 +1378,39 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
             Log.e(LOG_TAG, "Caught exception when scrolling to post from reply dialog", e);
         }
-
     }
+
+//    @Subscribe
+//    public void onReplyClicked(final ReplyClickEvent event) {
+//        if (event.getPost() == null) {
+//            return;
+//        }
+//
+//        try {
+//            if (getUserVisibleHint() && currentThread != null) {
+//                final long index = MimiUtil.findPostPositionById(event.getPost().getNo(), currentThread.getPosts());
+//
+//                if (index >= 0) {
+//                    scrollListToPosition(recyclerView, (int) index);
+//                }
+//            }
+//        } catch (Exception e) {
+//            if (getActivity() != null) {
+//                Toast.makeText(getActivity(), R.string.unknown_error, Toast.LENGTH_SHORT).show();
+//            }
+//
+//            if (currentThread == null) {
+//                Log.e(LOG_TAG, "Current thread is null");
+//            } else {
+//                if (currentThread.getPosts() == null) {
+//                    Log.e(LOG_TAG, "Thread posts are null");
+//                }
+//            }
+//
+//            Log.e(LOG_TAG, "Caught exception", e);
+//        }
+//
+//    }
 
     public String getBoardName() {
         return boardName;
@@ -1472,6 +1448,11 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         showPostFragment();
     }
 
+    @Override
+    public void goToPost(long postId) {
+        scrollToPost(postId);
+    }
+
     private class LastReadRunnable implements Runnable {
 
         public final long threadId;
@@ -1480,6 +1461,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         private boolean closed;
         private boolean watched;
         private int size;
+        private int pos;
 
         private LastReadRunnable(long threadId, String boardName) {
             this.threadId = threadId;
@@ -1503,6 +1485,11 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             return this;
         }
 
+        public LastReadRunnable setPosition(int pos) {
+            this.pos = pos;
+            return this;
+        }
+
         public boolean isClosed() {
             return closed;
         }
@@ -1520,17 +1507,32 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         @Override
         public void run() {
             if (getActivity() != null) {
-                final int lastRead = layoutManager.findLastVisibleItemPosition();
                 if (layoutManager != null) {
-                    viewModel.setLastReadPosition(lastRead)
+                    int visibleItems = layoutManager.findLastVisibleItemPosition() - layoutManager.findFirstVisibleItemPosition() + 2;
+                    Log.d(LOG_TAG, "Visible items: " + visibleItems);
+                    viewModel.setLastReadPosition(this.pos, visibleItems)
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe();
+                            .subscribe(new SingleObserver<Boolean>() {
+                                @Override
+                                public void onSubscribe(Disposable d) {
+                                    // no op
+                                }
 
-                    Log.d(LOG_TAG, "set last read position: set=" + lastRead + ", get=" + viewModel.unread());
+                                @Override
+                                public void onSuccess(@NonNull Boolean success) {
+                                    Log.d(LOG_TAG, "set last read position: position=" + pos + ", unread posts=" + viewModel.unread());
+//                                    BusProvider.getInstance().post(new UpdateHistoryEvent(threadId, boardName, viewModel.unread(), closed, watched));
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    Log.e(LOG_TAG, "Unable to set last read position: position=" + pos + ", unread posts=" + viewModel.unread());
+                                }
+                            });
+
+
                 }
-
-                BusProvider.getInstance().post(new UpdateHistoryEvent(threadId, boardName, size, lastRead, closed, watched));
             }
         }
     }

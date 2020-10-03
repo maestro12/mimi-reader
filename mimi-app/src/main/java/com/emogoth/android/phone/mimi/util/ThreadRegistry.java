@@ -17,15 +17,12 @@
 package com.emogoth.android.phone.mimi.util;
 
 import android.util.Log;
-import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
 
-import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
-import com.emogoth.android.phone.mimi.db.model.UserPost;
+import com.emogoth.android.phone.mimi.db.models.History;
 import com.emogoth.android.phone.mimi.model.ThreadRegistryModel;
 import com.mimireader.chanlib.models.ChanPost;
 
@@ -34,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 
 
 public class ThreadRegistry {
@@ -52,51 +48,51 @@ public class ThreadRegistry {
         return instance;
     }
 
-    public void init() {
-        if (threadArray != null) {
-            threadArray.clear();
-        } else {
-            threadArray = new LongSparseArray<>();
-        }
+//    public void init() {
+//        if (threadArray != null) {
+//            threadArray.clear();
+//        } else {
+//            threadArray = new LongSparseArray<>();
+//        }
+//
+//        Disposable sub = HistoryTableConnection.fetchActiveBookmarks(0)
+//                .compose(DatabaseUtils.applySingleSchedulers())
+//                .subscribe(historyList -> {
+//                    for (History historyDbModel : historyList) {
+//                        final ThreadRegistryModel t = new ThreadRegistryModel(historyDbModel, Collections.emptyList());
+//                        final long i = historyDbModel.getThreadId();
+//
+//                        Log.d(LOG_TAG, "[refresh] Adding bookmark to registry: size=" + historyDbModel.getThreadSize());
+//
+//                        threadArray.append(i, t);
+//                    }
+//                });
+//    }
 
-        Disposable sub = HistoryTableConnection.fetchHistory(true, 0, false)
-                .compose(DatabaseUtils.<List<History>>applySchedulers())
-                .subscribe(historyList -> {
-                    for (History historyDbModel : historyList) {
-                        final ThreadRegistryModel t = new ThreadRegistryModel(historyDbModel, Collections.emptyList());
-                        final long i = historyDbModel.threadId;
-
-                        Log.d(LOG_TAG, "[refresh] Adding bookmark to registry: size=" + historyDbModel.threadSize);
-
-                        threadArray.append(i, t);
-                    }
-                });
-    }
-
-    public void setPosts(long id, List<ChanPost> posts) {
-        if (this.threadId == 0) {
-            Log.d(LOG_TAG, "[refresh] Setting a post list: id=" + id + ", size=" + posts.size());
-            this.threadId = id;
-            this.chanPosts = posts;
-        }
-    }
-
-    public List<ChanPost> getPosts(long id) {
-        if (this.threadId == id) {
-            Log.d(LOG_TAG, "[refresh] Getting post list: id=" + id);
-            return this.chanPosts;
-        }
-
-        return new ArrayList<>();
-    }
-
-    public void clearPosts(long id) {
-        if (threadId > 0 && threadId == id) {
-            Log.d(LOG_TAG, "[refresh] clearing post list: id=" + id);
-            this.threadId = 0;
-            this.chanPosts = null;
-        }
-    }
+//    public void setPosts(long id, List<ChanPost> posts) {
+//        if (this.threadId == 0) {
+//            Log.d(LOG_TAG, "[refresh] Setting a post list: id=" + id + ", size=" + posts.size());
+//            this.threadId = id;
+//            this.chanPosts = posts;
+//        }
+//    }
+//
+//    public List<ChanPost> getPosts(long id) {
+//        if (this.threadId == id) {
+//            Log.d(LOG_TAG, "[refresh] Getting post list: id=" + id);
+//            return this.chanPosts;
+//        }
+//
+//        return new ArrayList<>();
+//    }
+//
+//    public void clearPosts(long id) {
+//        if (threadId > 0 && threadId == id) {
+//            Log.d(LOG_TAG, "[refresh] clearing post list: id=" + id);
+//            this.threadId = 0;
+//            this.chanPosts = null;
+//        }
+//    }
 
 //    public void add(final String boardName, final long threadId, final long postId, final int postCount, final boolean bookmarked) {
 //        Log.d(LOG_TAG, "[refresh] Adding thread information: thread id=" + threadId + ", size=" + postCount);
@@ -325,11 +321,11 @@ public class ThreadRegistry {
 //        update(boardName, threadId, size, false, bookmarked);
 //    }
 
-    public void clear() {
-        if (threadArray != null) {
-            threadArray.clear();
-        }
-    }
+//    public void clear() {
+//        if (threadArray != null) {
+//            threadArray.clear();
+//        }
+//    }
 
 //    public int getUnreadCount(final long threadId, final int postCount) {
 //        threadArray.get(threadId).setUnreadCount(postCount - threadArray.get(threadId).getThreadSize());
@@ -344,23 +340,23 @@ public class ThreadRegistry {
 //        return threadRegistryModel.getUnreadCount();
 //    }
 //
-    public int getUnreadCount() {
-        int count = 0;
-        if (threadArray != null) {
-            for (int i = 0; i < threadArray.size(); i++) {
-                final long index = threadArray.keyAt(i);
-                if (threadArray.get(index).isBookmarked()) {
-                    final int unreadCount = threadArray.get(index).getUnreadCount();
-                    Log.d(LOG_TAG, "[refresh] Thread " + threadArray.get(index).getThreadId() + ": unread count=" + threadArray.get(index).getUnreadCount());
-                    if (unreadCount > 0)
-                        count += unreadCount;
-                }
-            }
-        }
-        return count;
-    }
-
-    public ThreadRegistryModel getThread(Long threadId) {
-        return threadArray.get(threadId);
-    }
+//    public int getUnreadCount() {
+//        int count = 0;
+//        if (threadArray != null) {
+//            for (int i = 0; i < threadArray.size(); i++) {
+//                final long index = threadArray.keyAt(i);
+//                if (threadArray.get(index).isBookmarked()) {
+//                    final int unreadCount = threadArray.get(index).getUnreadCount();
+//                    Log.d(LOG_TAG, "[refresh] Thread " + threadArray.get(index).getThreadId() + ": unread count=" + threadArray.get(index).getUnreadCount());
+//                    if (unreadCount > 0)
+//                        count += unreadCount;
+//                }
+//            }
+//        }
+//        return count;
+//    }
+//
+//    public ThreadRegistryModel getThread(Long threadId) {
+//        return threadArray.get(threadId);
+//    }
 }

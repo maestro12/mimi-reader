@@ -57,9 +57,9 @@ public class ThreadPagerAdapter extends FragmentStatePagerAdapter {
         final Bundle args = new Bundle();
         if (position < threadList.size()) {
 
-                args.putString(Extras.EXTRAS_BOARD_NAME, threadList.get(position).boardName);
-                args.putString(Extras.EXTRAS_BOARD_TITLE, threadList.get(position).boardTitle);
-                args.putLong(Extras.EXTRAS_THREAD_ID, threadList.get(position).threadId);
+                args.putString(Extras.EXTRAS_BOARD_NAME, threadList.get(position).getBoardName());
+                args.putString(Extras.EXTRAS_BOARD_TITLE, threadList.get(position).getBoardTitle());
+                args.putLong(Extras.EXTRAS_THREAD_ID, threadList.get(position).getThreadId());
                 args.putInt(Extras.LOADER_ID, position % 3);
 
                 if (unreadCountList != null) {

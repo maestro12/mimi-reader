@@ -22,8 +22,6 @@ import androidx.fragment.app.Fragment;
 
 import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.util.Extras;
-import com.squareup.leakcanary.RefWatcher;
-
 
 public abstract class MimiFragmentBase extends Fragment {
     private static final String LOG_TAG = MimiFragmentBase.class.getSimpleName();
@@ -40,11 +38,6 @@ public abstract class MimiFragmentBase extends Fragment {
             setHasOptionsMenu(hasOptionsMenu);
         } else {
             setHasOptionsMenu(true);
-        }
-
-        RefWatcher refWatcher = MimiApplication.getInstance().getRefWatcher();
-        if (refWatcher != null) {
-            refWatcher.watch(this);
         }
 
     }

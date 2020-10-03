@@ -19,10 +19,11 @@ package com.emogoth.android.phone.mimi.adapter;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
+
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-import android.util.Log;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
@@ -31,6 +32,7 @@ import com.emogoth.android.phone.mimi.fragment.HistoryFragment;
 import com.emogoth.android.phone.mimi.fragment.PostItemsListFragment;
 import com.emogoth.android.phone.mimi.fragment.ThreadDetailFragment;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
+;
 
 import java.util.ArrayList;
 import java.util.List;

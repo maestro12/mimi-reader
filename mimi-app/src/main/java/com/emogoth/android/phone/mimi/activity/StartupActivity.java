@@ -17,19 +17,45 @@
 package com.emogoth.android.phone.mimi.activity;
 
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshNotification;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
+import com.emogoth.android.phone.mimi.db.ArchiveTableConnection;
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.RefreshQueueTableConnection;
+import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
+import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.LayoutType;
+import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.mimireader.chanlib.ChanConnector;
+import com.mimireader.chanlib.models.ChanArchive;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import io.reactivex.ObservableSource;
+import io.reactivex.SingleObserver;
+import io.reactivex.SingleSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class StartupActivity extends Activity {
+    public static final String LOG_TAG = StartupActivity.class.getSimpleName();
 
     public static final LayoutType DEFAULT_LAYOUT_TYPE = LayoutType.TABBED;
 
@@ -47,6 +73,12 @@ public class StartupActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        NotificationManager notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(RefreshNotification.NOTIFICATION_ID);
+
+//        cleanAutoRefreshQueue();
+        fetchArchivesFromNetwork();
 
         final String startActivityPref = getString(R.string.start_activity_pref);
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -67,5 +99,60 @@ public class StartupActivity extends Activity {
 
     public static String getDefaultStartupActivity() {
         return TABBED_ACTIVITY;
+    }
+
+    private void fetchArchivesFromNetwork() {
+        ChanConnector chanConnector = new FourChanConnector
+                .Builder()
+                .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
+                .setEndpoint(FourChanConnector.getDefaultEndpoint())
+                .setClient(HttpClientFactory.getInstance().getClient())
+                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
+                .build();
+
+        chanConnector.fetchArchives()
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io()) // We can observe on the background because we're not updating UI
+                .doOnSuccess(chanArchives -> ArchiveTableConnection.clear()
+                        .flatMap((Function<Boolean, SingleSource<Boolean>>) success ->
+                                ArchiveTableConnection.putChanArchives(chanArchives))
+                        .subscribe())
+                .subscribe(new SingleObserver<List<ChanArchive>>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        // no op
+                    }
+
+                    @Override
+                    public void onSuccess(List<ChanArchive> chanArchives) {
+                        Log.d(LOG_TAG, "Chan archives saved to database");
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+                        Log.e(LOG_TAG, "Error while processing archives", throwable);
+                    }
+                });
+    }
+
+    private void cleanAutoRefreshQueue() {
+        RefreshQueueTableConnection.removeCompleted()
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(new SingleObserver<Integer>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull Integer integers) {
+
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+
+                    }
+                });
     }
 }

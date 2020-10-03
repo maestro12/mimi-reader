@@ -32,7 +32,6 @@ import com.emogoth.android.phone.mimi.span.ReplySpan;
 import com.emogoth.android.phone.mimi.span.SpoilerSpan;
 import com.emogoth.android.phone.mimi.span.YoutubeLinkSpan;
 import com.mimireader.chanlib.util.CommentParser;
-import com.vdurmont.emoji.EmojiParser;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -48,7 +47,7 @@ import java.util.regex.Matcher;
 public final class FourChanCommentParser extends CommentParser {
     private static final String LOG_TAG = FourChanCommentParser.class.getSimpleName();
 
-    private FourChanCommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightedReplyColor, int quoteColor, int linkColor, boolean demoMode, boolean enableEmoji) {
+    private FourChanCommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightedReplyColor, int quoteColor, int linkColor, boolean demoMode) {
         super(replies,
                 userPostIds,
                 highlightedPosts,
@@ -62,8 +61,7 @@ public final class FourChanCommentParser extends CommentParser {
                 highlightedReplyColor,
                 quoteColor,
                 linkColor,
-                demoMode,
-                enableEmoji);
+                demoMode);
     }
 
     public static class Builder extends CommentParser.Builder {
@@ -99,24 +97,12 @@ public final class FourChanCommentParser extends CommentParser {
                     highlightColor,
                     quoteColor,
                     linkColor,
-                    demoMode,
-                    enableEmoji);
+                    demoMode);
         }
     }
 
     public CharSequence parse() {
         String rawPost = comment == null ? "" : comment.toString().replaceAll("<br>", "br2nl");
-
-        if (enableEmoji) {
-            try {
-                String emojiPost = EmojiParser.parseToUnicode(rawPost);
-                rawPost = emojiPost;
-
-            } catch (Exception e) {
-                // ignore
-            }
-        }
-
         Document document = Jsoup.parse(rawPost);
         document.outputSettings(new Document.OutputSettings().prettyPrint(true));
         String postWithoutHtml = document.text().replaceAll("br2nl", "\n");

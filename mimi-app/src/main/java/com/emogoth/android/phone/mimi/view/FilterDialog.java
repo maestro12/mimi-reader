@@ -1,14 +1,16 @@
 package com.emogoth.android.phone.mimi.view;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.StyleRes;
-import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StyleRes;
+import androidx.appcompat.app.AlertDialog;
+
+import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.FilterTableConnection;
 
 import io.reactivex.disposables.Disposable;
@@ -45,12 +47,13 @@ public class FilterDialog extends AlertDialog implements FilterView.ButtonClickL
 
         if (!TextUtils.isEmpty(filterName)) {
             Disposable sub = FilterTableConnection.fetchFiltersByName(filterName)
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe(
                             filters -> {
                                 if (filters != null && filters.size() > 0) {
-                                    filterView.setFilterName(filters.get(0).name);
-                                    filterView.setFilterRegex(filters.get(0).filter);
-                                    filterView.setHighlight(filters.get(0).highlight == 1);
+                                    filterView.setFilterName(filters.get(0).getName());
+                                    filterView.setFilterRegex(filters.get(0).getFilter());
+                                    filterView.setHighlight(filters.get(0).getHighlight() == 1);
                                 }
                             },
                             throwable -> Log.e(LOG_TAG, "Error fetching filter when creating a new FilterView", throwable));

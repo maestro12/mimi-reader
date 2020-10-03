@@ -31,6 +31,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -45,7 +46,7 @@ import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.util.Pair;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
@@ -58,23 +59,20 @@ import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.db.PostOptionTableConnection;
 import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.dialog.CaptchaDialog;
-import com.emogoth.android.phone.mimi.exceptions.ChanPostException;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
-import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.PostUtil;
 import com.emogoth.android.phone.mimi.util.ResourceUtils;
 import com.emogoth.android.phone.mimi.util.RxUtil;
 import com.emogoth.android.phone.mimi.view.IconTextView;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.snackbar.Snackbar;
+;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
-import com.vdurmont.emoji.EmojiParser;
 
 import org.jsoup.Jsoup;
 
@@ -91,8 +89,11 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Source;
 import retrofit2.Response;
-import retrofit2.adapter.rxjava2.HttpException;
 
 
 public class PostFragment extends BottomSheetDialogFragment {
@@ -135,7 +136,6 @@ public class PostFragment extends BottomSheetDialogFragment {
     public String captchaChallenge = null;
     public String captchaVerification;
     private ImageView attachedImage;
-    private String imagePath;
     private PostListener postListener;
     private boolean isNewPost = false;
     private boolean captchaRequired = true;
@@ -150,7 +150,6 @@ public class PostFragment extends BottomSheetDialogFragment {
     private AppCompatCheckBox spoilerSelection;
 
     private PostOptionAdapter adapter;
-    private Boolean deleteImage;
 
     private Disposable fetchPostOptionsSubscription;
     private Disposable fetchPostSubscription;
@@ -159,6 +158,9 @@ public class PostFragment extends BottomSheetDialogFragment {
 
     private String selectedFlag = null;
     private String spoilerValue = null;
+
+    private String imagePath;
+    private Uri imageUri;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -239,8 +241,7 @@ public class PostFragment extends BottomSheetDialogFragment {
         if (!TextUtils.isEmpty(name)) {
             nameInput.setText(name);
         }
-        adapter = new PostOptionAdapter(getActivity());
-        nameInput.setAdapter(adapter);
+        nameInput.setThreshold(1);
 
         optionsInput = view.findViewById(R.id.options_input);
 
@@ -308,7 +309,6 @@ public class PostFragment extends BottomSheetDialogFragment {
 
         attachImageButton = view.findViewById(R.id.attach_image_button);
         attachImageButton.setOnClickListener(v -> {
-
             if (ContextCompat.checkSelfPermission(getActivity(),
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -340,8 +340,6 @@ public class PostFragment extends BottomSheetDialogFragment {
         }
 
         if (getActivity() != null && getActivity() instanceof MimiActivity) {
-//                    getParentFragment().startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
-//            ((MimiActivity) getActivity()).setResultFragment(getParentFragment());
             startActivityForResult(Intent.createChooser(intent, getString(R.string.select_picture)), PICK_IMAGE);
         }
     }
@@ -367,10 +365,14 @@ public class PostFragment extends BottomSheetDialogFragment {
 
     private void processResponse(Response<ResponseBody> response) {
         String html = null;
+
         try {
             if (response == null) {
                 html = MimiApplication.getInstance().getString(R.string.empty_response_error);
-                throw new Exception(html);
+                if (postListener != null) {
+                    postListener.onError(new Exception(html));
+                }
+                return;
             } else if (response.isSuccessful()) {
                 html = response.body().string();
             } else {
@@ -397,8 +399,7 @@ public class PostFragment extends BottomSheetDialogFragment {
             Log.i(LOG_TAG, errorMsg);
 
             if (postListener != null) {
-                final HttpException exception = new HttpException(response);
-                postListener.onError(new ChanPostException(errorMsg, exception, html));
+                postListener.onError(new Exception(errorMsg));
             }
         } else {
             String postId = null;
@@ -424,8 +425,7 @@ public class PostFragment extends BottomSheetDialogFragment {
                         .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                         .setReplyColor(MimiUtil.getInstance().getReplyColor())
                         .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                        .setLinkColor(MimiUtil.getInstance().getLinkColor())
-                        .setEnableEmoji(MimiPrefs.isEmojiEnabled());
+                        .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
                 firstPost.setName(name);
                 firstPost.setTim(Calendar.getInstance(Locale.getDefault()).getTime().toString());
@@ -434,26 +434,26 @@ public class PostFragment extends BottomSheetDialogFragment {
                 firstPost.setEmail(getEmail());
                 firstPost.setSub(getSubject());
                 firstPost.setSubject(getSubject());
-                firstPost.setNo(Integer.valueOf(postId));
+                firstPost.setNo(Integer.parseInt(postId));
                 firstPost.setFilename(fileName);
                 firstPost.setExt(fileExt);
 
-                HistoryTableConnection.putHistory(boardName, firstPost, 1, 0, true)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .doOnNext(aBoolean -> Log.e(LOG_TAG, "Post returned with success=" + aBoolean))
+                HistoryTableConnection.putHistory(boardName, threadId, firstPost, 1)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .doOnSuccess(aBoolean -> Log.e(LOG_TAG, "Post returned with success=" + aBoolean))
                         .doOnError(throwable -> {
                             Log.e(LOG_TAG, "Error posting", throwable);
                         })
                         .subscribe();
             }
 
-//            BusProvider.getInstance().post(new UpdateHistoryEvent(threadId, boardName, 0, false));
-
             BoardTableConnection.incrementPostCount(boardName).subscribe();
 
             String option = getName();
             if (!TextUtils.isEmpty(option)) {
-                PostOptionTableConnection.putPostOption(option).subscribe();
+                PostOptionTableConnection.putPostOption(option)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe();
             }
 
             savePost(postId, true);
@@ -468,7 +468,7 @@ public class PostFragment extends BottomSheetDialogFragment {
 
     public void cleanUpTempImage() {
         try {
-            if (!TextUtils.isEmpty(imagePath) && deleteImage) {
+            if (!TextUtils.isEmpty(imagePath)) {
                 File imageFile = new File(imagePath);
                 if (imageFile.exists()) {
                     Log.d(LOG_TAG, "Deleting temporary image file [" + imagePath + "]");
@@ -486,7 +486,7 @@ public class PostFragment extends BottomSheetDialogFragment {
             Log.e(LOG_TAG, "Cannot convert null post ID to an integer", e);
             return;
         }
-        final int id = Integer.valueOf(postId);
+        final int id = Integer.parseInt(postId);
 //        RxUtil.safeUnsubscribe(fetchPostSubscription);
 //        fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
 //                .compose(DatabaseUtils.applySchedulers())
@@ -498,7 +498,7 @@ public class PostFragment extends BottomSheetDialogFragment {
 
         RxUtil.safeUnsubscribe(addPostSubscription);
         addPostSubscription = UserPostTableConnection.addPost(boardName, threadId, id)
-                .compose(DatabaseUtils.applySchedulers())
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(success -> {
                     if (success) {
                         Log.d(LOG_TAG, "Added post to database: board=" + boardName + ", thread=" + threadId + ", post=" + postId);
@@ -536,17 +536,29 @@ public class PostFragment extends BottomSheetDialogFragment {
 
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
+                .observeOn(Schedulers.io())
                 .onErrorReturn(throwable -> {
                     Log.e(LOG_TAG, "Error fetching board info for " + boardName, throwable);
                     return new ChanBoard();
                 })
+//                .flatMap((Function<ChanBoard, SingleSource<File>>) chanBoard -> {
+//                    return Single.just(copyDocumentFileLocally(imageUri));
+//                })
                 .map(chanBoard -> {
                     final Map<String, Object> params = new HashMap<>();
-                    params.put("name", name);
-                    params.put("email", email);
-                    params.put("subject", subject);
+                    if (!TextUtils.isEmpty(name)) {
+                        params.put("name", name);
+                    }
+
+                    if (!TextUtils.isEmpty(email)) {
+                        params.put("email", email);
+                    }
+
+                    if (!TextUtils.isEmpty(subject)) {
+                        params.put("sub", subject);
+                    }
+
                     params.put("com", comment);
-                    params.put("MAX_FILE_SIZE", chanBoard.getMaxFilesize());
                     params.put("pwd", "password");
                     params.put("mode", "regist");
 
@@ -571,42 +583,17 @@ public class PostFragment extends BottomSheetDialogFragment {
                     }
                     return params;
                 })
-                .single(new HashMap<>())
                 .flatMap(params -> chanConnector.post(boardName, params))
-                .onErrorReturn(throwable -> {
-                    Log.e(LOG_TAG, "Error fetching board " + boardName, throwable);
-                    return null;
-                })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(onPostComplete(), onPostFail());
     }
 
     private void saveFormData() {
-        String c = commentField.getText().toString();
-        try {
-            c = EmojiParser.parseToAliases(c);
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Cannot parse emoji", e);
-        }
-        comment = c;
-
-        String s = subjectInput.getText().toString();
-        try {
-            s = EmojiParser.parseToAliases(s);
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Cannot parse emoji", e);
-        }
-        subject = s;
+        comment = commentField.getText().toString();
+        subject = subjectInput.getText().toString();
         email = optionsInput.getText().toString();
-
-        String n = nameInput.getText().toString();
-        try {
-            n = EmojiParser.parseToAliases(n);
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Cannot parse emoji", e);
-        }
-        name = n;
+        name = nameInput.getText().toString();
     }
 
     private void clearForm() {
@@ -638,11 +625,15 @@ public class PostFragment extends BottomSheetDialogFragment {
         }
 
         fetchPostOptionsSubscription = PostOptionTableConnection.fetchPostOptions()
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .subscribe(postOptions -> {
+                    if (getActivity() == null) {
+                        return;
+                    }
 
                     if (postOptions != null) {
-                        nameInput.setThreshold(1);
-                        adapter.setItems(postOptions);
+                        adapter = new PostOptionAdapter(getActivity(), R.layout.post_option_item, postOptions);
+                        nameInput.setAdapter(adapter);
                     }
                 }, throwable -> Log.e(LOG_TAG, "Error fetching post options", throwable));
 
@@ -732,18 +723,49 @@ public class PostFragment extends BottomSheetDialogFragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PICK_IMAGE && data != null) {
-            final Uri imageUri = data.getData();
-            final Pair<String, Boolean> pathAndCached = PostUtil.getPath(getActivity(), imageUri);
+            imageUri = data.getData();
 
-            imagePath = pathAndCached.first;
-            deleteImage = pathAndCached.second;
+            try {
+                copyDocumentFileLocally(imageUri);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-            if (attachedImage != null && imagePath != null) {
+            if (attachedImage != null) {
                 attachedImage.setImageURI(imageUri);
                 attachedImageContainer.setVisibility(View.VISIBLE);
                 attachImageButton.setVisibility(View.GONE);
             }
         }
+    }
+
+    private File copyDocumentFileLocally(Uri imageUri) throws Exception {
+        File localFile = null;
+        if (getActivity() != null && imageUri != null) {
+            final DocumentFile f = DocumentFile.fromSingleUri(getActivity(), imageUri);
+
+            long count = 0;
+            String fileName = f.getName();
+            if (fileName == null) {
+                MimeTypeMap mtm = MimeTypeMap.getSingleton();
+                fileName = "unknown." + mtm.getExtensionFromMimeType(f.getType());
+            }
+            File uploadDir = new File(getActivity().getCacheDir(), "/upload");
+            uploadDir.mkdirs();
+
+            localFile = new File(uploadDir, fileName);
+            BufferedSink sink = Okio.buffer(Okio.sink(localFile));
+            Buffer sinkBuffer = sink.buffer();
+            Source source = Okio.source(getActivity().getContentResolver().openInputStream(f.getUri()));
+            while (count != -1) {
+                count = source.read(sinkBuffer, 1024L);
+                sink.emit();
+            }
+
+            imagePath = localFile.getAbsolutePath();
+        }
+
+        return localFile;
     }
 
     private void enableEditMode(final boolean enabled) {

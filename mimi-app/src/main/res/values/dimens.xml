@@ -59,4 +59,6 @@ http://developer.android.com/guide/topics/appwidgets/index.html#CreatingLayout
     <dimen name="thread_find_text_view_height">50dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
 
+    <dimen name="fast_scroll_corner_radius">6dp</dimen>
+
 </resources>

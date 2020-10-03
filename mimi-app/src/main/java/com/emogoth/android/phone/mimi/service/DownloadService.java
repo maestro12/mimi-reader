@@ -31,6 +31,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -227,12 +228,12 @@ public class DownloadService extends IntentService {
                         .observeOn(Schedulers.io())
                         .subscribe(new SingleObserver<ChanThread>() {
                             @Override
-                            public void onSubscribe(Disposable d) {
+                            public void onSubscribe(@NonNull Disposable d) {
 
                             }
 
                             @Override
-                            public void onSuccess(ChanThread chanThread) {
+                            public void onSuccess(@NonNull ChanThread chanThread) {
                                 List<ChanPost> posts = chanThread.getPosts();
                                 for (int i = 0; i < posts.size(); i++) {
                                     final ChanPost post = posts.get(i);

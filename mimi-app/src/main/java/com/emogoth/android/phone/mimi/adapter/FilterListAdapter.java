@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.db.model.Filter;
+import com.emogoth.android.phone.mimi.db.models.Filter;
 import com.emogoth.android.phone.mimi.view.FilterDialog;
 
 import java.util.List;
@@ -32,12 +32,12 @@ public class FilterListAdapter extends RecyclerView.Adapter<FilterListAdapter.Fi
         final int pos = position;
         final Filter filter = filters.get(pos);
 
-        holder.name.setText(filter.name);
-        holder.regex.setText(filter.filter);
+        holder.name.setText(filter.getName());
+        holder.regex.setText(filter.getFilter());
         holder.root.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FilterDialog dialog = new FilterDialog(view.getContext(), filter.board, filter.name, null);
+                FilterDialog dialog = new FilterDialog(view.getContext(), filter.getBoardName(), filter.getName(), null);
                 dialog.show();
             }
         });

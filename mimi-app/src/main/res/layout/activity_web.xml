@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context="com.emogoth.android.phone.mimi.activity.WebActivity">
 
-    <WebView
+    <com.emogoth.android.phone.mimi.view.MimiWebView
         android:id="@+id/web_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
