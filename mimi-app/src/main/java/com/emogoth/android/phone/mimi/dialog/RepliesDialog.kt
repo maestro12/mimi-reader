@@ -142,7 +142,7 @@ class RepliesDialog : DialogFragment(), GoToPostListener {
     override fun onResume() {
         super.onResume()
         dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        dialog?.window?.setGravity(Gravity.CENTER_HORIZONTAL or Gravity.TOP)
+        dialog?.window?.setGravity(Gravity.CENTER)
     }
 
     fun close() {
