@@ -22,7 +22,7 @@
         android:id="@+id/search_menu"
         android:icon="@drawable/ic_search"
         android:title="@string/search"
-        app:actionViewClass="android.support.v7.widget.SearchView"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom" />
 
     <item
@@ -42,7 +42,7 @@
                 android:checkableBehavior="single">
                 <item
                     android:id="@+id/catalog_menu"
-                    android:title="@string/catalog" />
+                    android:title="@string/grid" />
                 <item
                     android:id="@+id/list_menu"
                     android:title="@string/list" />
@@ -85,4 +85,10 @@
         android:checkable="true"
         android:checked="false"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/filter_menu"
+        android:title="@string/filter"
+        android:icon="@drawable/ic_filter_list"
+        app:showAsAction="ifRoom" />
 </menu>

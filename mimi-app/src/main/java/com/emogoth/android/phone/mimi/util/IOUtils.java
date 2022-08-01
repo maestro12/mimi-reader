@@ -16,16 +16,53 @@
 
 package com.emogoth.android.phone.mimi.util;
 
+import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Build;
+import android.text.TextUtils;
+import android.util.Log;
+import android.webkit.MimeTypeMap;
+import android.widget.Toast;
+
+import androidx.core.app.NotificationCompat;
+import androidx.documentfile.provider.DocumentFile;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
+import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.service.DownloadService;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+;
+
 import java.io.Closeable;
 import java.io.EOFException;
+import java.io.File;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Source;
 
 public class IOUtils {
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
@@ -38,7 +75,7 @@ public class IOUtils {
      * Simple wrapper around {@link java.io.InputStream#read()} that throws EOFException
      * instead of returning -1.
      */
-	public static int read(InputStream is) throws IOException {
+    public static int read(InputStream is) throws IOException {
         int b = is.read();
         if (b == -1) {
             throw new EOFException();
@@ -63,14 +100,14 @@ public class IOUtils {
     }
 
     public static void writeLong(OutputStream os, long n) throws IOException {
-        os.write((byte)(n >>> 0));
-        os.write((byte)(n >>> 8));
-        os.write((byte)(n >>> 16));
-        os.write((byte)(n >>> 24));
-        os.write((byte)(n >>> 32));
-        os.write((byte)(n >>> 40));
-        os.write((byte)(n >>> 48));
-        os.write((byte)(n >>> 56));
+        os.write((byte) (n >>> 0));
+        os.write((byte) (n >>> 8));
+        os.write((byte) (n >>> 16));
+        os.write((byte) (n >>> 24));
+        os.write((byte) (n >>> 32));
+        os.write((byte) (n >>> 40));
+        os.write((byte) (n >>> 48));
+        os.write((byte) (n >>> 56));
     }
 
     public static long readLong(InputStream is) throws IOException {
@@ -122,11 +159,11 @@ public class IOUtils {
         }
         return result;
     }
-    
+
 
     /**
      * Reads the contents of an InputStream into a byte[].
-     * */
+     */
     public static byte[] streamToBytes(InputStream in, int length) throws IOException {
         byte[] bytes = new byte[length];
         int count;
@@ -139,7 +176,7 @@ public class IOUtils {
         }
         return bytes;
     }
-    
+
     public static class CountingInputStream extends FilterInputStream {
         private int bytesRead = 0;
 
@@ -164,39 +201,10 @@ public class IOUtils {
             }
             return result;
         }
-        
-        public long getBytesRead() {  
-            return bytesRead;  
-        }
-    }
 
-    // copy from InputStream
-    //-----------------------------------------------------------------------
-    /**
-     * Copy bytes from an <code>InputStream</code> to an
-     * <code>OutputStream</code>.
-     * <p>
-     * This method buffers the input internally, so there is no need to use a
-     * <code>BufferedInputStream</code>.
-     * <p>
-     * Large streams (over 2GB) will return a bytes copied value of
-     * <code>-1</code> after the copy has completed since the correct
-     * number of bytes cannot be returned as an int. For large streams
-     * use the <code>copyLarge(InputStream, OutputStream)</code> method.
-     *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
-     * @return the number of bytes copied, or -1 if &gt; Integer.MAX_VALUE
-     * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
-     * @since 1.1
-     */
-    public static int copy(InputStream input, OutputStream output) throws IOException {
-        long count = copyLarge(input, output);
-        if (count > Integer.MAX_VALUE) {
-            return -1;
+        public long getBytesRead() {
+            return bytesRead;
         }
-        return (int) count;
     }
 
     /**
@@ -209,10 +217,10 @@ public class IOUtils {
      * The buffer size is given by {@link #DEFAULT_BUFFER_SIZE}.
      *
      * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param output the <code>OutputStream</code> to write to
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 1.3
      */
     public static long copyLarge(InputStream input, OutputStream output)
@@ -229,11 +237,11 @@ public class IOUtils {
      * <p>
      *
      * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param output the <code>OutputStream</code> to write to
      * @param buffer the buffer to use for the copy
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output, byte[] buffer)
@@ -256,14 +264,14 @@ public class IOUtils {
      * <p>
      * The buffer size is given by {@link #DEFAULT_BUFFER_SIZE}.
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param input       the <code>InputStream</code> to read from
+     * @param output      the <code>OutputStream</code> to write to
      * @param inputOffset : number of bytes to skip from input before copying
-     *         -ve values are ignored
-     * @param length : number of bytes to copy. -ve means all
+     *                    -ve values are ignored
+     * @param length      : number of bytes to copy. -ve means all
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output, long inputOffset, long length)
@@ -279,20 +287,19 @@ public class IOUtils {
      * <code>BufferedInputStream</code>.
      * <p>
      *
-     * @param input  the <code>InputStream</code> to read from
-     * @param output  the <code>OutputStream</code> to write to
+     * @param input       the <code>InputStream</code> to read from
+     * @param output      the <code>OutputStream</code> to write to
      * @param inputOffset : number of bytes to skip from input before copying
-     *         -ve values are ignored
-     * @param length : number of bytes to copy. -ve means all
-     * @param buffer the buffer to use for the copy
-     *
+     *                    -ve values are ignored
+     * @param length      : number of bytes to copy. -ve means all
+     * @param buffer      the buffer to use for the copy
      * @return the number of bytes copied
      * @throws NullPointerException if the input or output is null
-     * @throws IOException if an I/O error occurs
+     * @throws IOException          if an I/O error occurs
      * @since 2.2
      */
     public static long copyLarge(InputStream input, OutputStream output,
-                                 final long inputOffset, final long length, byte[] buffer)  throws IOException {
+                                 final long inputOffset, final long length, byte[] buffer) throws IOException {
         if (inputOffset > 0) {
             skipFully(input, inputOffset);
         }
@@ -323,14 +330,12 @@ public class IOUtils {
      * as possible before giving up; this may not always be the case for
      * subclasses of {@link Reader}.
      *
-     * @param input byte stream to skip
+     * @param input  byte stream to skip
      * @param toSkip number of bytes to skip.
      * @return number of bytes actually skipped.
-     *
-     * @see InputStream#skip(long)
-     *
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException              if there is a problem reading the file
      * @throws IllegalArgumentException if toSkip is negative
+     * @see InputStream#skip(long)
      * @since 2.0
      */
     public static long skip(InputStream input, long toSkip) throws IOException {
@@ -362,13 +367,12 @@ public class IOUtils {
      * This allows for the possibility that {@link InputStream#skip(long)} may
      * not skip as many bytes as requested (most likely because of reaching EOF).
      *
-     * @param input stream to skip
+     * @param input  stream to skip
      * @param toSkip the number of bytes to skip
-     * @see InputStream#skip(long)
-     *
-     * @throws IOException if there is a problem reading the file
+     * @throws IOException              if there is a problem reading the file
      * @throws IllegalArgumentException if toSkip is negative
-     * @throws EOFException if the number of bytes skipped was incorrect
+     * @throws EOFException             if the number of bytes skipped was incorrect
+     * @see InputStream#skip(long)
      * @since 2.0
      */
     public static void skipFully(InputStream input, long toSkip) throws IOException {
@@ -412,5 +416,321 @@ public class IOUtils {
         } catch (IOException ioe) {
             // ignore
         }
+    }
+
+    private static final int NOTIFICATION_ID = 87;
+
+    private static final int ACTION_CANCEL = 1;
+    private static final int ACTION_OVERWITE = 2;
+    private static final int ACTION_RENAME = 3;
+
+    public static final int REQUEST_CODE_DIR_CHOOSER_PERSISTENT = 44;
+
+    private static final String LOG_TAG = "IOUtils";
+
+    public static void safeSaveFile(final Activity activity, final DocumentFile saveDir, final File localFile, final String saveFileName, final boolean showNotification) {
+        if (saveDir != null && saveDir.canWrite()) {
+
+            Uri path;
+            try {
+                path = MimiUtil.getDocumentFileRealPath(saveDir);
+            } catch (NoSuchMethodException | NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                Log.e(LOG_TAG, "Error getting real path from DocumentFile", e);
+                return;
+            }
+
+            if (path == null) {
+                return;
+            }
+
+            final int fileExtBeginIndex = saveFileName.indexOf(".");
+            if (fileExtBeginIndex < 0) {
+                return;
+            }
+
+            final String fileName = saveFileName.substring(0, fileExtBeginIndex);
+            final String fileExt = saveFileName.substring(fileExtBeginIndex + 1);
+
+            DocumentFile potentialFile = DocumentFile.fromFile(new File(path.getPath() + "/" + fileName + "." + fileExt));
+
+            if (potentialFile.exists()) {
+                final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(activity);
+                dialogBuilder.setTitle(R.string.copy_file)
+                        .setMessage(R.string.file_name_is_taken)
+                        .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss())
+                        .setNeutralButton(R.string.overwrite, (dialog, which) -> saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE, 2))
+                        .setPositiveButton(R.string.rename, (dialog, which) -> saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_RENAME, 2))
+                        .show();
+            } else {
+                saveFileWithRetry(saveDir, localFile, saveFileName, showNotification, ACTION_OVERWITE, 2);
+            }
+        } else {
+            final MaterialAlertDialogBuilder dialogBuilder = new MaterialAlertDialogBuilder(activity);
+            dialogBuilder.setTitle(R.string.requesting_permissions)
+                    .setMessage(R.string.save_permissions_message)
+                    .setNegativeButton(R.string.cancel, (dialogInterface, i) -> dialogInterface.cancel())
+                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                        intent.addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        activity.startActivityForResult(intent, REQUEST_CODE_DIR_CHOOSER_PERSISTENT);
+                    })
+                    .setCancelable(true)
+                    .show();
+        }
+    }
+
+    public static boolean saveFileWithRetry(final DocumentFile dir, final File filePath, final String saveFileName, final boolean showNotification, final int action, final int retries) {
+        boolean success = false;
+        int count = 0;
+
+        while (!success && count < retries) {
+            count++;
+            success = saveFile(dir, filePath, saveFileName, showNotification, action);
+        }
+
+        return success;
+    }
+
+    public static boolean saveFile(final DocumentFile dir, final File filePath, final String saveFileName, final boolean showNotification, final int action) {
+        try {
+            final DocumentFile saveDir;
+            if (dir == null) {
+                saveDir = MimiUtil.getSaveDir();
+            } else {
+                saveDir = dir;
+            }
+
+            if (filePath != null) {
+
+                final int fileExtBeginIndex = saveFileName.indexOf(".");
+                if (fileExtBeginIndex < 0) {
+                    return false;
+                }
+
+                String fileName = saveFileName.substring(0, fileExtBeginIndex);
+                final String fileExt = saveFileName.substring(fileExtBeginIndex + 1);
+
+                String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExt);
+
+                Uri path;
+                try {
+                    path = MimiUtil.getDocumentFileRealPath(dir);
+                } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                    return false;
+                }
+
+                if (path == null) {
+                    return false;
+                }
+
+                File fileLocation = new File(path.getPath() + "/" + fileName + "." + fileExt);
+                DocumentFile searchFile = DocumentFile.fromFile(fileLocation);
+
+                if (searchFile.exists() && action == ACTION_CANCEL) {
+                    return false;
+                }
+
+                DocumentFile writeFile = null;
+                if (action == ACTION_RENAME) {
+                    StringBuilder renamedFile = new StringBuilder(fileName);
+                    int i = 1;
+                    while (searchFile.exists()) {
+                        renamedFile = new StringBuilder(fileName).append("(").append(i).append(")");
+                        fileLocation = new File(path.getPath() + "/" + renamedFile + "." + fileExt);
+                        searchFile = DocumentFile.fromFile(fileLocation);
+                        i++;
+                    }
+
+                    fileName = renamedFile.toString();
+                }
+
+                writeFile = saveDir.createFile(mimeType, fileName);
+                if (writeFile == null) {
+                    Log.e(LOG_TAG, "Could not write file " + fileName);
+                    return false;
+                }
+
+                final Context context = MimiApplication.getInstance().getApplicationContext();
+                if (copyFile(filePath, writeFile.getUri())) {
+                    try {
+                        if (!TextUtils.isEmpty(writeFile.getName()) && !writeFile.getName().equals(fileName + "." + fileExt)) {
+                            writeFile.renameTo(fileName + "." + fileExt);
+                        }
+
+                        if (writeFile.length() > 0) {
+                            Toast.makeText(context, R.string.file_saved, Toast.LENGTH_LONG).show();
+                        } else {
+                            try {
+                                filePath.delete();
+                            } catch (Exception e) {
+                                // no op
+                            }
+
+                            return false;
+                        }
+
+                        if (showNotification) {
+                            final DocumentFile documentOfImage = writeFile;
+                            MimiUtil.scaleBitmap(filePath)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribe(new SingleObserver<Bitmap>() {
+                                        @Override
+                                        public void onSubscribe(Disposable d) {
+
+                                        }
+
+                                        @Override
+                                        public void onSuccess(Bitmap bitmap) {
+                                            showSaveNotification(context, bitmap, documentOfImage, fileExt);
+
+                                            try {
+                                                filePath.delete();
+                                            } catch (Exception e) {
+                                                // no op
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+                                            Log.e(LOG_TAG, "Error scaling bitmap", e);
+
+                                            try {
+                                                filePath.delete();
+                                            } catch (Exception ex) {
+                                                // no op
+                                            }
+                                        }
+                                    });
+                        }
+                        new SingleMediaScanner(context, fileLocation, (s, uri) -> { });
+                    } catch (Exception e) {
+                        Log.e(LOG_TAG, "Error writing file", e);
+                        return false;
+                    }
+                }
+            } else {
+                Toast.makeText(MimiApplication.getInstance().getApplicationContext(), R.string.failed_to_save_file, Toast.LENGTH_LONG).show();
+            }
+
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
+    private static void showSaveNotification(final Context context, final Bitmap bmp, final DocumentFile destPath, final String fileExt) {
+        if (context == null) {
+            return;
+        }
+
+        final String type;
+        if (fileExt != null && fileExt.equalsIgnoreCase(".webm")) {
+            type = "video/*";
+        } else {
+            type = "image/*";
+        }
+
+        Uri uriToImage = null;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            uriToImage = destPath.getUri();
+        } else {
+            try {
+                Uri realPath = MimiUtil.getDocumentFileRealPath(destPath);
+                URI fileUri = URI.create(realPath.toString());
+                uriToImage = MimiUtil.getFileProvider(new File(fileUri));
+            } catch (NoSuchMethodException | NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                Log.e(LOG_TAG, "Error getting real path from DocumentFile", e);
+            }
+        }
+
+        if (uriToImage == null) {
+            uriToImage = destPath.getUri();
+        }
+
+        try {
+            final Intent contentIntent = new Intent();
+            contentIntent.setAction(Intent.ACTION_VIEW);
+            contentIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            contentIntent.setDataAndType(uriToImage, type);
+
+            final PendingIntent pendingContentIntent = PendingIntent.getActivity(context, 0, contentIntent, 0);
+
+            final Intent shareIntent = new Intent();
+            shareIntent.setAction(Intent.ACTION_SEND);
+            shareIntent.setDataAndType(uriToImage, type);
+            shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uriToImage);
+
+            final PendingIntent pendingShareIntent = PendingIntent.getActivity(context, 0, shareIntent, 0);
+
+            NotificationManager notificationManager =
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            final NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+            builder.setContentTitle(context.getString(R.string.file_saved));
+            builder.setContentText(destPath.getName());
+            builder.setSubText(MimiUtil.humanReadableByteCount(destPath.length(), true));
+            builder.setSmallIcon(R.drawable.ic_notification_photo);
+            builder.setLargeIcon(bmp);
+            builder.setStyle(new NotificationCompat.BigPictureStyle()
+                    .bigPicture(bmp));
+            builder.setContentIntent(pendingContentIntent);
+            builder.addAction(R.drawable.ic_notification_share, context.getString(R.string.share), pendingShareIntent);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                String channelName = context.getString(R.string.mimi_file_downloader);
+
+                NotificationChannel saveFileChannel = new NotificationChannel(DownloadService.DOWNLOADER_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_LOW);
+
+                builder.setChannelId(DownloadService.DOWNLOADER_CHANNEL_ID);
+                notificationManager.createNotificationChannel(saveFileChannel);
+            }
+
+            final Notification saveFileNotification = builder.build();
+
+            notificationManager.notify(NOTIFICATION_ID, saveFileNotification);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error creating notification", e);
+        }
+    }
+
+    public static boolean copyFile(final File copyFrom, final Uri copyTo) {
+        final Context context = MimiApplication.getInstance().getApplicationContext();
+        if (context == null) {
+            return false;
+        }
+
+        BufferedSink sink = null;
+        Source source = null;
+        Buffer sinkBuffer = null;
+        try {
+            sink = Okio.buffer(Okio.sink(context.getContentResolver().openOutputStream(copyTo)));
+            source = Okio.source(copyFrom);
+            sinkBuffer = sink.buffer();
+            long count = 0;
+            while (count != -1) {
+                count = source.read(sinkBuffer, 1024L);
+                sink.emit();
+            }
+        } catch (IOException | NullPointerException e) {
+            Log.e(LOG_TAG, "Error copying file", e);
+            return false;
+        } finally {
+            try {
+                Log.d(LOG_TAG, "Flushing and closing after writing file");
+                source.close();
+
+                sink.flush();
+                sink.close();
+            } catch (Exception e) {
+                Log.e(LOG_TAG, "Error finalizing file copy", e);
+            }
+        }
+
+        return true;
     }
 }

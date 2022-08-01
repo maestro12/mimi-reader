@@ -16,15 +16,17 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <TextView
         android:id="@+id/watch_video"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:padding="4dp"
         android:gravity="center_vertical"
-        android:text="@string/watch_video"/>
+        android:text="@string/watch_video" />
 
     <TextView
         android:id="@+id/buy"
@@ -32,6 +34,6 @@
         android:layout_height="50dp"
         android:padding="4dp"
         android:gravity="center_vertical"
-        android:text="@string/buy_ad_free_version"/>
+        android:text="@string/buy_ad_free_version" />
 
 </LinearLayout>

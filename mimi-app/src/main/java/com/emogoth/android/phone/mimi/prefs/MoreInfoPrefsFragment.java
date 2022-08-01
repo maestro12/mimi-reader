@@ -16,203 +16,165 @@
 
 package com.emogoth.android.phone.mimi.prefs;
 
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+
 import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.db.BoardTableConnection;
-import com.emogoth.android.phone.mimi.db.DatabaseUtils;
-import com.emogoth.android.phone.mimi.db.model.Board;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
+;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import java.io.File;
+import java.io.IOException;
 
 
-public class MoreInfoPrefsFragment extends PreferenceFragment {
-    private static final String LOG_TAG = MoreInfoPrefsFragment.class.getSimpleName();
-    private int aboutCounter = 0;
+public class MoreInfoPrefsFragment extends PreferenceFragmentCompat {
+
+    public static final String LOG_TAG = MoreInfoPrefsFragment.class.getSimpleName();
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.more_info_prefs);
-
         setupPrefs();
     }
 
     private void setupPrefs() {
-        final Handler handler = new Handler();
-        final Runnable countRunnable = new Runnable() {
-            @Override
-            public void run() {
-                aboutCounter = 0;
-            }
-        };
-
         final Preference changelogPreference = findPreference(getString(R.string.changelog_pref));
         if (changelogPreference != null) {
-            changelogPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-                @Override
-                public boolean onPreferenceClick(final Preference preference) {
-                    // Create and show the dialog.
-                    LicensesFragment.displayLicensesFragment(getFragmentManager(), R.raw.changelog, "ChangeLog");
-                    return true;
-                }
+            changelogPreference.setOnPreferenceClickListener(preference -> {
+                // Create and show the dialog.
+                LicensesFragment.displayLicensesFragment(getParentFragmentManager(), R.raw.changelog, "ChangeLog");
+                return true;
             });
         }
 
         final Preference website = findPreference(getString(R.string.website_pref));
-        website.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
+        website.setOnPreferenceClickListener(preference -> {
 
-                try {
-                    final String url = "http://mimireader.com";
-                    Intent i = new Intent(Intent.ACTION_VIEW);
-                    i.setData(Uri.parse(url));
-                    startActivity(i);
-                } catch (final ActivityNotFoundException e) {
-                    Log.e(LOG_TAG, "Could not find browser to open mimireader.com", e);
+            try {
+                final String url = "http://mimireader.com";
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setData(Uri.parse(url));
+                startActivity(i);
+            } catch (final ActivityNotFoundException e) {
+                Log.e(LOG_TAG, "Could not find browser to open mimireader.com", e);
 
-                    if (getActivity() != null) {
-                        Toast.makeText(getActivity(), R.string.error_opening_url, Toast.LENGTH_SHORT).show();
-                    }
+                if (getActivity() != null) {
+                    Toast.makeText(getActivity(), R.string.error_opening_url, Toast.LENGTH_SHORT).show();
                 }
-
-                return true;
             }
+
+            return true;
         });
 
         final Preference rate = findPreference(getString(R.string.rate_pref));
-        rate.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                MimiUtil.getInstance().openMarketLink(getActivity());
-                return true;
-            }
+        rate.setOnPreferenceClickListener(preference -> {
+            MimiUtil.getInstance().openMarketLink(getActivity());
+            return true;
         });
 
         final Preference feedback = findPreference(getString(R.string.feedback_pref));
-        feedback.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-                        "mailto", "eli@mimireader.com", null));
-                intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
-                Intent mailer = Intent.createChooser(intent, null);
-                startActivity(mailer);
-                return true;
-            }
+        feedback.setOnPreferenceClickListener(preference -> {
+//            final Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
+//                    "mailto", "eli@mimireader.com", null));
+//            intent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
+//            Intent mailer = Intent.createChooser(intent, null);
+//            startActivity(mailer);
+            sendLogcatMail(false, true);
+            return true;
         });
 
 
         final Preference privacy = findPreference(getString(R.string.privacy_pref));
-        privacy.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                // Create & show a licenses fragment just as you would any other DialogFragment.
-                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                Fragment prev = getFragmentManager().findFragmentByTag("privacyDialogFragment");
-                if (prev != null) {
-                    ft.remove(prev);
-                }
-                ft.addToBackStack(null);
-
-                // Create and show the dialog.
-                DialogFragment newFragment = PrivacyPolicyFragment.newInstance();
-                newFragment.show(ft, "privacyDialogFragment");
-                return true;
+        privacy.setOnPreferenceClickListener(preference -> {
+            // Create & show a licenses fragment just as you would any other DialogFragment.
+            FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+            Fragment prev = getParentFragmentManager().findFragmentByTag("privacyDialogFragment");
+            if (prev != null) {
+                ft.remove(prev);
             }
+            ft.addToBackStack(null);
+
+            // Create and show the dialog.
+            DialogFragment newFragment = PrivacyPolicyFragment.newInstance();
+            newFragment.show(ft, "privacyDialogFragment");
+            return true;
         });
 
         final Preference license = findPreference(getString(R.string.licenses_pref));
-        license.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                // Create & show a licenses fragment just as you would any other DialogFragment.
-                FragmentTransaction ft = getFragmentManager().beginTransaction();
-                Fragment prev = getFragmentManager().findFragmentByTag("licensesDialogFragment");
-                if (prev != null) {
-                    ft.remove(prev);
-                }
-                ft.addToBackStack(null);
-
-                // Create and show the dialog.
-                DialogFragment newFragment = LicensesFragment.newInstance(R.raw.licenses);
-                newFragment.show(ft, "licensesDialogFragment");
-                return true;
+        license.setOnPreferenceClickListener(preference -> {
+            // Create & show a licenses fragment just as you would any other DialogFragment.
+            FragmentTransaction ft = getParentFragmentManager().beginTransaction();
+            Fragment prev = getParentFragmentManager().findFragmentByTag("licensesDialogFragment");
+            if (prev != null) {
+                ft.remove(prev);
             }
+            ft.addToBackStack(null);
+
+            // Create and show the dialog.
+            DialogFragment newFragment = LicensesFragment.newInstance(R.raw.licenses);
+            newFragment.show(ft, "licensesDialogFragment");
+            return true;
         });
 
         final Preference version = findPreference(getString(R.string.version_pref));
         version.setSummary(BuildConfig.VERSION_NAME);
-        version.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(Preference preference) {
-                aboutCounter++;
+    }
 
-                if (aboutCounter == 7) {
-                    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                    final boolean fullBoardEnabled = prefs.getBoolean(getString(R.string.full_board_list_enabled), false);
+    void sendLogcatMail(boolean attachLogcat, boolean attachDeviceInfo) {
 
-                    if (fullBoardEnabled) {
-                        Toast.makeText(getActivity(), "Full board list is already active", Toast.LENGTH_SHORT).show();
-                    } else {
-                        BoardTableConnection.fetchBoards(0)
-                                .compose(DatabaseUtils.<List<Board>>applySchedulers())
-                                .flatMap(new Func1<List<Board>, Observable<Boolean>>() {
-                                    @Override
-                                    public Observable<Boolean> call(List<Board> boards) {
-                                        return BoardTableConnection.setBoardVisibility(null, true);
-                                    }
-                                })
-                                .onErrorResumeNext(new Func1<Throwable, Observable<Boolean>>() {
-                                    @Override
-                                    public Observable<Boolean> call(Throwable throwable) {
-                                        Log.w("MoreInfoFragment", "Error setting board visibility", throwable);
-                                        return Observable.just(false);
-                                    }
-                                })
-                                .subscribe(new Action1<Boolean>() {
-                                    @Override
-                                    public void call(Boolean success) {
+        boolean log = attachLogcat;
+        File outputFile = null;
+        if (log) {
+            // save logcat in file
+            outputFile = getActivity().getFileStreamPath("logcat.txt");
 
-                                    }
-                                });
-
-                        prefs.edit()
-                                .putBoolean(getString(R.string.show_all_boards), true)
-                                .apply();
-
-                        Toast.makeText(getActivity(), "Full board list is available", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    handler.removeCallbacks(countRunnable);
-                }
-
-                handler.postDelayed(countRunnable, 1000);
-
-                return true;
+            try {
+                Runtime.getRuntime().exec(
+                        "logcat -f " + outputFile.getAbsolutePath());
+            } catch (IOException e) {
+                Log.e("Feedback", "Error getting logcat for feedback email", e);
+                log = false;
             }
-        });
+        }
+
+        StringBuilder sb = new StringBuilder("\n\n\n-----\n");
+        if (attachDeviceInfo) {
+            sb.append("Mimi ")
+                    .append(BuildConfig.VERSION_NAME).append(" (")
+                    .append(BuildConfig.VERSION_CODE).append('-')
+                    .append(BuildConfig.FLAVOR).append(")\n");
+            sb.append("Device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n');
+            sb.append("Android: ").append(Build.VERSION.CODENAME).append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");
+        }
+
+        //send file using email
+        Intent emailIntent = new Intent(Intent.ACTION_SEND);
+        // Set type to "email"
+        emailIntent.setType("vnd.android.cursor.dir/email");
+        String[] to = {"eli@mimireader.com"};
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, to);
+        if (log) {
+            // the attachment
+            emailIntent.putExtra(Intent.EXTRA_STREAM, outputFile.getAbsolutePath());
+        }
+
+        if (attachDeviceInfo) {
+            emailIntent.putExtra(Intent.EXTRA_TEXT, sb.toString());
+        }
+        // the mail subject
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Mimi Feedback");
+        startActivity(Intent.createChooser(emailIntent, "Send Feedback"));
     }
 }

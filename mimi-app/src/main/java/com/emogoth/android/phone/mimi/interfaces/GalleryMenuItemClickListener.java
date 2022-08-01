@@ -17,5 +17,5 @@
 package com.emogoth.android.phone.mimi.interfaces;
 
 public interface GalleryMenuItemClickListener {
-    public void onGalleryMenuItemClick(final String boardPath, final int threadId);
+    public void onGalleryMenuItemClick(final String boardPath, final long threadId);
 }

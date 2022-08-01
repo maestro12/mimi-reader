@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/mimi_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
+            android:gravity="center"
+            android:minHeight="?attr/actionBarSize"
+            android:theme="?toolbarBackground"
+            android:title="@string/edit_filters"
+            app:layout_scrollFlags="scroll|enterAlways">
+
+            <androidx.appcompat.widget.AppCompatSpinner
+                android:id="@+id/board_spinner"
+                android:gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </androidx.appcompat.widget.Toolbar>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <com.emogoth.android.phone.mimi.widget.MimiRecyclerView
+        android:id="@+id/filter_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

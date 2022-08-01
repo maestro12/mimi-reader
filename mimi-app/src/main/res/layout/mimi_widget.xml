@@ -18,7 +18,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/widget_margin"
-    android:background="#09C" >
+    android:background="#09C">
 
     <TextView
         android:id="@+id/appwidget_text"
@@ -32,6 +32,6 @@
         android:textStyle="bold|italic"
         android:layout_margin="8dp"
         android:contentDescription="@string/appwidget_text"
-        android:background="#09C"/>
+        android:background="#09C" />
 
 </RelativeLayout>

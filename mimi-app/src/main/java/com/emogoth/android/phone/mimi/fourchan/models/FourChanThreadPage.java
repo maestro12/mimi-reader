@@ -32,36 +32,28 @@ public class FourChanThreadPage {
     private List<FourChanPost> threads = new ArrayList<>();
 
     /**
-     *
-     * @return
-     * The page
+     * @return The page
      */
     public int getPage() {
         return page;
     }
 
     /**
-     *
-     * @param page
-     * The page
+     * @param page The page
      */
     public void setPage(int page) {
         this.page = page;
     }
 
     /**
-     *
-     * @return
-     * The threads
+     * @return The threads
      */
     public List<FourChanPost> getThreads() {
         return threads;
     }
 
     /**
-     *
-     * @param threads
-     * The threads
+     * @param threads The threads
      */
     public void setThreads(List<FourChanPost> threads) {
         this.threads = threads;

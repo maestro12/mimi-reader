@@ -24,7 +24,7 @@ import com.mimireader.chanlib.models.ChanBoard;
 /**
  * Generated from jsonschema2pojo.org
  */
-public class FourChanBoard implements BoardConverter{
+public class FourChanBoard implements BoardConverter {
     @SerializedName("board")
     @Expose
     private String name;
@@ -84,342 +84,266 @@ public class FourChanBoard implements BoardConverter{
     private int mathTags;
 
     /**
-     *
-     * @return
-     * The board
+     * @return The board
      */
     public String getName() {
         return name;
     }
 
     /**
-     *
-     * @param board
-     * The board
+     * @param board The board
      */
     public void setName(String board) {
         this.name = board;
     }
 
     /**
-     *
-     * @return
-     * The title
+     * @return The title
      */
     public String getTitle() {
         return title;
     }
 
     /**
-     *
-     * @param title
-     * The title
+     * @param title The title
      */
     public void setTitle(String title) {
         this.title = title;
     }
 
     /**
-     *
-     * @return
-     * The wsBoard
+     * @return The wsBoard
      */
     public int getWsBoard() {
         return wsBoard;
     }
 
     /**
-     *
-     * @param wsBoard
-     * The ws_board
+     * @param wsBoard The ws_board
      */
     public void setWsBoard(int wsBoard) {
         this.wsBoard = wsBoard;
     }
 
     /**
-     *
-     * @return
-     * The perPage
+     * @return The perPage
      */
     public int getPerPage() {
         return perPage;
     }
 
     /**
-     *
-     * @param perPage
-     * The per_page
+     * @param perPage The per_page
      */
     public void setPerPage(int perPage) {
         this.perPage = perPage;
     }
 
     /**
-     *
-     * @return
-     * The pages
+     * @return The pages
      */
     public int getPages() {
         return pages;
     }
 
     /**
-     *
-     * @param pages
-     * The pages
+     * @param pages The pages
      */
     public void setPages(int pages) {
         this.pages = pages;
     }
 
     /**
-     *
-     * @return
-     * The maxFilesize
+     * @return The maxFilesize
      */
     public int getMaxFilesize() {
         return maxFilesize;
     }
 
     /**
-     *
-     * @param maxFilesize
-     * The max_filesize
+     * @param maxFilesize The max_filesize
      */
     public void setMaxFilesize(int maxFilesize) {
         this.maxFilesize = maxFilesize;
     }
 
     /**
-     *
-     * @return
-     * The maxWebmFilesize
+     * @return The maxWebmFilesize
      */
     public int getMaxWebmFilesize() {
         return maxWebmFilesize;
     }
 
     /**
-     *
-     * @param maxWebmFilesize
-     * The max_webm_filesize
+     * @param maxWebmFilesize The max_webm_filesize
      */
     public void setMaxWebmFilesize(int maxWebmFilesize) {
         this.maxWebmFilesize = maxWebmFilesize;
     }
 
     /**
-     *
-     * @return
-     * The maxCommentChars
+     * @return The maxCommentChars
      */
     public int getMaxCommentChars() {
         return maxCommentChars;
     }
 
     /**
-     *
-     * @param maxCommentChars
-     * The max_comment_chars
+     * @param maxCommentChars The max_comment_chars
      */
     public void setMaxCommentChars(int maxCommentChars) {
         this.maxCommentChars = maxCommentChars;
     }
 
     /**
-     *
-     * @return
-     * The bumpLimit
+     * @return The bumpLimit
      */
     public int getBumpLimit() {
         return bumpLimit;
     }
 
     /**
-     *
-     * @param bumpLimit
-     * The bump_limit
+     * @param bumpLimit The bump_limit
      */
     public void setBumpLimit(int bumpLimit) {
         this.bumpLimit = bumpLimit;
     }
 
     /**
-     *
-     * @return
-     * The imageLimit
+     * @return The imageLimit
      */
     public int getImageLimit() {
         return imageLimit;
     }
 
     /**
-     *
-     * @param imageLimit
-     * The image_limit
+     * @param imageLimit The image_limit
      */
     public void setImageLimit(int imageLimit) {
         this.imageLimit = imageLimit;
     }
 
     /**
-     *
-     * @return
-     * The metaDescription
+     * @return The metaDescription
      */
     public String getMetaDescription() {
         return metaDescription;
     }
 
     /**
-     *
-     * @param metaDescription
-     * The meta_description
+     * @param metaDescription The meta_description
      */
     public void setMetaDescription(String metaDescription) {
         this.metaDescription = metaDescription;
     }
 
     /**
-     *
-     * @return
-     * The isArchived
+     * @return The isArchived
      */
     public int getIsArchived() {
         return isArchived;
     }
 
     /**
-     *
-     * @param isArchived
-     * The is_archived
+     * @param isArchived The is_archived
      */
     public void setIsArchived(int isArchived) {
         this.isArchived = isArchived;
     }
 
     /**
-     *
-     * @return
-     * The spoilers
+     * @return The spoilers
      */
     public int getSpoilers() {
         return spoilers;
     }
 
     /**
-     *
-     * @param spoilers
-     * The spoilers
+     * @param spoilers The spoilers
      */
     public void setSpoilers(int spoilers) {
         this.spoilers = spoilers;
     }
 
     /**
-     *
-     * @return
-     * The customSpoilers
+     * @return The customSpoilers
      */
     public int getCustomSpoilers() {
         return customSpoilers;
     }
 
     /**
-     *
-     * @param customSpoilers
-     * The custom_spoilers
+     * @param customSpoilers The custom_spoilers
      */
     public void setCustomSpoilers(int customSpoilers) {
         this.customSpoilers = customSpoilers;
     }
 
     /**
-     *
-     * @return
-     * The userIds
+     * @return The userIds
      */
     public int getUserIds() {
         return userIds;
     }
 
     /**
-     *
-     * @param userIds
-     * The user_ids
+     * @param userIds The user_ids
      */
     public void setUserIds(int userIds) {
         this.userIds = userIds;
     }
 
     /**
-     *
-     * @return
-     * The codeTags
+     * @return The codeTags
      */
     public int getCodeTags() {
         return codeTags;
     }
 
     /**
-     *
-     * @param codeTags
-     * The code_tags
+     * @param codeTags The code_tags
      */
     public void setCodeTags(int codeTags) {
         this.codeTags = codeTags;
     }
 
     /**
-     *
-     * @return
-     * The countryFlags
+     * @return The countryFlags
      */
     public int getCountryFlags() {
         return countryFlags;
     }
 
     /**
-     *
-     * @param countryFlags
-     * The country_flags
+     * @param countryFlags The country_flags
      */
     public void setCountryFlags(int countryFlags) {
         this.countryFlags = countryFlags;
     }
 
     /**
-     *
-     * @return
-     * The sjisTags
+     * @return The sjisTags
      */
     public int getSjisTags() {
         return sjisTags;
     }
 
     /**
-     *
-     * @param sjisTags
-     * The sjis_tags
+     * @param sjisTags The sjis_tags
      */
     public void setSjisTags(int sjisTags) {
         this.sjisTags = sjisTags;
     }
 
     /**
-     *
-     * @return
-     * The mathTags
+     * @return The mathTags
      */
     public int getMathTags() {
         return mathTags;
     }
 
     /**
-     *
-     * @param mathTags
-     * The math_tags
+     * @param mathTags The math_tags
      */
     public void setMathTags(int mathTags) {
         this.mathTags = mathTags;

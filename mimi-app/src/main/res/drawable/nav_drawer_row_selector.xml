@@ -16,7 +16,6 @@
   -->
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/nav_drawer_row_selector_pressed" android:state_pressed="true"/>
-    <item android:drawable="@drawable/nav_drawer_row_selector_normal"/>
-</selector>
-    <!--1E2B31-->
+    <item android:drawable="@drawable/nav_drawer_row_selector_pressed" android:state_pressed="true" />
+    <item android:drawable="@drawable/nav_drawer_row_selector_normal" />
+</selector><!--1E2B31-->

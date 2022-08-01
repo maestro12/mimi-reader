@@ -16,7 +16,8 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <TextView
@@ -27,12 +28,12 @@
         android:paddingTop="10dp"
         android:paddingBottom="20dp"
         android:textSize="?attr/font_medium"
-        android:text="@string/long_press_to_batch_download"/>
+        android:text="@string/long_press_to_batch_download" />
 
     <CheckBox
         android:id="@+id/batch_download_dont_show"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/dont_show_again"/>
+        android:text="@string/dont_show_again" />
 
 </LinearLayout>

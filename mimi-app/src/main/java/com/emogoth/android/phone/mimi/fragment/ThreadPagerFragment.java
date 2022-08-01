@@ -16,25 +16,29 @@
 
 package com.emogoth.android.phone.mimi.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.viewpager.widget.ViewPager;
+
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.adapter.ThreadPagerAdapter;
-import com.emogoth.android.phone.mimi.event.SelectThreadEvent;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
+import com.emogoth.android.phone.mimi.interfaces.ReplyClickListener;
+import com.emogoth.android.phone.mimi.interfaces.ThreadSelectedListener;
 import com.emogoth.android.phone.mimi.model.ThreadInfo;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.mimireader.chanlib.models.ChanPost;
-import com.squareup.otto.Subscribe;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -43,7 +47,7 @@ import java.util.ArrayList;
  * in two-pane mode (on tablets) or a {@link com.emogoth.android.phone.mimi.activity.PostItemDetailActivity}
  * on handsets.
  */
-public class ThreadPagerFragment extends MimiFragmentBase implements ContentInterface {
+public class ThreadPagerFragment extends MimiFragmentBase implements ContentInterface, ReplyClickListener, ThreadSelectedListener {
     public static final String LOG_TAG = ThreadPagerFragment.class.getSimpleName();
 
     private String boardName;
@@ -71,8 +75,6 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        setHasOptionsMenu(true);
         setRetainInstance(false);
     }
 
@@ -135,8 +137,8 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
                 currentFragment = (MimiFragmentBase) threadPagerAdapter.instantiateItem(threadPager, position);
                 if (getActivity() != null) {
                     final MimiActivity activity = (MimiActivity) getActivity();
-                    activity.getToolbar().setTitle(currentFragment.getTitle());
-                    activity.getToolbar().setSubtitle(currentFragment.getSubtitle());
+                    activity.getSupportActionBar().setTitle(currentFragment.getTitle());
+                    activity.getSupportActionBar().setSubtitle(currentFragment.getSubtitle());
 
                     currentFragment.initMenu();
                 }
@@ -181,14 +183,6 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-
-        BusProvider.getInstance().unregister(this);
-//        RequestQueueUtil.getInstance().getThreadDetailRequestQueue(getActivity().getApplicationContext()).stop();
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
 
@@ -196,12 +190,10 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
             final MimiFragmentBase fragment = (MimiFragmentBase) threadPagerAdapter.instantiateItem(threadPager, threadPager.getCurrentItem());
             if (getActivity() != null) {
                 final MimiActivity activity = (MimiActivity) getActivity();
-                activity.getToolbar().setTitle(fragment.getTitle());
-                activity.getToolbar().setSubtitle(fragment.getSubtitle());
+                activity.getSupportActionBar().setTitle(fragment.getTitle());
+                activity.getSupportActionBar().setSubtitle(fragment.getSubtitle());
             }
         }
-
-        BusProvider.getInstance().register(this);
     }
 
     @Override
@@ -209,6 +201,11 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
         super.onDestroy();
 
         threadPager.clearOnPageChangeListeners();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -242,28 +239,35 @@ public class ThreadPagerFragment extends MimiFragmentBase implements ContentInte
 
     public void setBookmarkCount(final int count) {
         newPostCount = count;
-        getActivity().supportInvalidateOptionsMenu();
+        if (getActivity() != null) {
+            getActivity().supportInvalidateOptionsMenu();
+        }
     }
 
-    @Subscribe
-    public void onThreadSelected(final SelectThreadEvent event) {
-        final ThreadInfo threadInfo = new ThreadInfo(event.threadId, event.boardName, null, false);
+    @Override
+    public void onThreadSelected(@NotNull String boardName, long threadId, int position) {
+        final ThreadInfo threadInfo = new ThreadInfo(threadId, boardName, "", false);
         final int i = threadList.indexOf(threadInfo);
 
         if (threadPager != null) {
             if (i >= 0) {
                 threadPager.setCurrentItem(i);
             }
-
-//            threadPager.setCurrentItem(event.getPosition());
         }
-
     }
 
     @Override
     public void addContent() {
         if (currentFragment instanceof ContentInterface) {
             ((ContentInterface) currentFragment).addContent();
+        }
+    }
+
+    @Override
+    public void onReplyClicked(@NotNull String boardName, long threadId, long id, @NotNull List<String> replies) {
+        if (currentFragment instanceof ReplyClickListener) {
+            ReplyClickListener frag = (ReplyClickListener) currentFragment;
+            frag.onReplyClicked(boardName, threadId, id, replies);
         }
     }
 }

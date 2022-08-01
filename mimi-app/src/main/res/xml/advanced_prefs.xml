@@ -14,40 +14,38 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        android:title="@string/advanced_title"
-        android:key="@string/advanced_preference_category">
+        app:key="@string/advanced_preference_category"
+        app:title="@string/advanced_title"
+        app:iconSpaceReserved="false" >
 
-        <SwitchPreference
-            android:title="@string/prevent_screen_from_rotating"
-            android:defaultValue="false"
-            android:summaryOn="@string/prevent_screen_from_rotating_summary_on"
-            android:summaryOff="@string/prevent_screen_from_rotating_summary_off"
-            android:key="@string/prevent_screen_rotation_pref" />
-
-        <SwitchPreference
-            android:title="@string/external_cache_title"
-            android:defaultValue="false"
-            android:summaryOn="@string/external_cache_summary_on"
-            android:summaryOff="@string/external_cache_summary_off"
-            android:key="@string/cache_external_pref" />
-
-        <SwitchPreference
-            android:title="@string/secure_connection_title"
-            android:defaultValue="false"
-            android:summary="@string/secure_connection_summary"
-            android:key="@string/use_ssl_pref" />
-
-        <SwitchPreference
-            android:title="@string/all_boards_visible"
-            android:key="@string/show_all_boards" />
+        <ListPreference
+            app:defaultValue="@string/http_buffer_size_default"
+            app:entries="@array/http_buffer_sizes"
+            app:entryValues="@array/http_buffer_sizes_pref"
+            app:key="@string/http_buffer_size_pref"
+            app:summary="@string/http_buffer_size_summary"
+            app:title="@string/http_buffer_size_title"
+            app:iconSpaceReserved="false" />
 
         <Preference
-            android:title="@string/chanpass_login"
-            android:key="@string/chanpass_login_pref" />
+            app:key="@string/clear_hidden_threads_pref"
+            app:title="@string/clear_hidden_threads"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/clear_cache_pref"
+            app:summary="@string/clear_cache_summary"
+            app:title="@string/clear_cache_title"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="@string/chanpass_login_pref"
+            app:title="@string/chanpass_login"
+            app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 

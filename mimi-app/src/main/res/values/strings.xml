@@ -21,6 +21,34 @@
     <string name="app_title">Mimi</string>
     <string name="title_postitem_detail">PostItem Detail</string>
 
+    <string name="custom_scroll_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
+
+    <!-- 4chan API links -->
+<!--    <string name="sys_link">sys.4chan.org</string>-->
+<!--    <string name="api_link">a.4cdn.org</string>-->
+<!--    <string name="thumb_link">i.4cdn.org</string>-->
+<!--    <string name="image_link">i.4cdn.org</string>-->
+<!--    <string name="board_link">boards.4chan.org</string>-->
+<!--    <string name="board_list_link">a.4cdn.org/boards.json</string>-->
+<!--    <string name="icon_link">s.4cdn.org</string>-->
+
+<!--    <string name="board_path">/%s/</string>-->
+<!--    <string name="first_post_path">/%s/</string>-->
+<!--    <string name="api_thread_path">/%1$s/thread/%2$d.json</string>-->
+<!--    <string name="raw_thread_path">/%1$s/thread/%2$d</string>-->
+<!--    <string name="catalog_path">/%s/catalog.json</string>-->
+<!--    <string name="api_thread_list_path">/%1$s/%2$s.json</string>-->
+<!--    <string name="raw_thread_list_path">/%1$s/%2$s</string>-->
+<!--    <string name="report_path">/%1$s/imgboard.php?mode=report&amp;no=%2$d</string>-->
+
+<!--    &lt;!&ndash; /{board}/thumb/{tim}s{ext} &ndash;&gt;-->
+<!--    <string name="thumb_path">/%1$s/%2$ss.jpg</string>-->
+<!--    <string name="spoiler_path">/image/spoiler.png</string>-->
+<!--    <string name="custom_spoiler_path">/image/spoiler-%1$s%2$d.png</string>-->
+
+<!--    &lt;!&ndash; /{board}/src/{tim}{ext} &ndash;&gt;-->
+<!--    <string name="full_image_path">/%1$s/%2$s%3$s</string>-->
+
     <!-- Colors -->
     <string name="red">Red</string>
     <string name="green">Green</string>
@@ -62,6 +90,8 @@
     <string name="report_menu_item">Report</string>
     <string name="reply_menu_item">Reply</string>
     <string name="quote_menu_item">Quote</string>
+    <string name="claim_menu_item">Claim Post</string>
+    <string name="unclaim_menu_item">Unclaim Post</string>
     <string name="watch_thread_menu_item">Watch Thread</string>
     <string name="search">Search</string>
     <string name="share">Share</string>
@@ -109,9 +139,7 @@
     <string name="prevent_screen_from_rotating_summary_on">Screen locked to portrait</string>
     <string name="prevent_screen_from_rotating_summary_off">Screen rotation unlocked</string>
     <string name="clear_cache_title">Clear Cache</string>
-    <string name="clear_cache_summary">Clear the app cache now</string>
-    <string name="secure_connection_title">Secure Connection</string>
-    <string name="secure_connection_summary">Use SSL for all communication</string>
+    <string name="clear_cache_summary">Clear the app cache</string>
     <string name="save_history_title">Save History</string>
     <string name="save_history_summary_off">History is not saved</string>
     <string name="save_history_summary_on">History is saved</string>
@@ -134,9 +162,6 @@
     <string name="image_file_location_summary">Image save location</string>
     <string name="remember_thread_position_title">Remember thread position</string>
     <string name="remember_thread_position_summary">Pick up a thread where you left off</string>
-    <string name="handle_youtube_links_title">Handle YouTube Links</string>
-    <string name="handle_youtube_links_summary_on">Open YouTube links in app</string>
-    <string name="handle_youtube_links_summary_off">Open YouTube links in browser</string>
     <string name="scroll_thread_with_gallery_title">Scroll thread with gallery</string>
     <string name="scroll_thread_with_gallery_summary">Swiping in the gallery scrolls the thread</string>
     <string name="close_gallery_on_click_title">Tap image to close gallery</string>
@@ -144,7 +169,7 @@
     <string name="disabled">Disabled</string>
 
     <string name="appearance_title">Appearance</string>
-    <string name="appearance_summary">Theme settings</string>
+    <string name="appearance_summary">App appearance</string>
     <string name="general_title">General</string>
     <string name="general_summary">General Preferences</string>
     <string name="gallery_summary">Preferences for the gallery</string>
@@ -182,6 +207,18 @@
     <string name="history_prune_time_1_day">1 Day</string>
     <string name="history_prune_time_2_days">2 Days</string>
     <string name="history_prune_time_3_days">3 Days</string>
+
+    <string name="http_buffer_size_title">Http Buffer Size</string>
+    <string name="http_buffer_size_summary">Adjust the buffer size of each HTTP request</string>
+
+    <string-array name="http_buffer_sizes">
+        <item name="http_buffer_size_off">Default</item>
+        <item name="http_buffer_size_512">512 Bytes</item>
+        <item name="http_buffer_size_1k">1 KB</item>
+        <item name="http_buffer_size_2k">2 KB</item>
+        <item name="http_buffer_size_4k">4 KB</item>
+    </string-array>
+
 
     <!-- Board Order Names -->
     <string name="board_order_none">None</string>
@@ -307,7 +344,8 @@
     <string name="ok">OK</string>
 
     <string name="percent_complete">%d%% complete</string>
-    <string name="download_complete">Download Complete</string>
+    <string name="download_complete_success">Download Complete</string>
+    <string name="download_complete_error">Error downloading</string>
     <string name="batch_download">Batch Download</string>
     <string name="long_press_to_batch_download">Long press a thumbnail to start batch download mode</string>
     <string name="long_press_to_manage_boards">Long press an item on the list to manage the boards</string>
@@ -328,6 +366,7 @@
     <string name="google_image_search_link">https://www.google.com/searchbyimage?hl=en&amp;site=imghp&amp;image_url=%1$s</string>
     <string name="iqdb_image_search_link">http://iqdb.org/?url=%1$s</string>
     <string name="saucenao_image_search_link">https://saucenao.com/search.php?db=999&amp;bgcolor=none&amp;url=%1$s</string>
+    <string name="yandex_image_search_link">https://yandex.com/images/search?rpt=imageview&amp;url=%1$s</string>
     <string name="youtube_generic_error">Error opening YouTube link</string>
 
     <plurals name="replies_plural">
@@ -336,16 +375,27 @@
         <item quantity="other">%d replies</item>
     </plurals>
 
+    <string name="one_reply">1 Reply</string>
+    <string name="one_image">1 Image</string>
+    <string name="number_replies">%d Replies</string>
+    <string name="number_images">%d Images</string>
+
     <plurals name="image_plural">
         <item quantity="zero">no images</item>
         <item quantity="one">1 image</item>
         <item quantity="other">%d images</item>
     </plurals>
 
-    <plurals name ="unread_plural">
+    <plurals name="unread_plural">
         <item quantity="zero">no unread posts</item>
         <item quantity="one">1 unread post</item>
         <item quantity="other">%d unread posts</item>
+    </plurals>
+
+    <plurals name="new_post_plural">
+        <item quantity="zero">no new posts</item>
+        <item quantity="one">1 new post</item>
+        <item quantity="other">%d new posts</item>
     </plurals>
 
     <plurals name="has_unread_plural">
@@ -359,7 +409,7 @@
         <item quantity="one">1 thread updated</item>
         <item quantity="other">%d threads updated</item>
     </plurals>
-    <plurals name="replies_to_you_plurals" >
+    <plurals name="replies_to_you_plurals">
         <item quantity="zero">no replies to you</item>
         <item quantity="one">1 reply to you</item>
         <item quantity="other">%d replies to you</item>
@@ -393,8 +443,8 @@
     <string name="loading_video_please_wait">Loading video, please wait</string>
     <string name="watch_video">Watch Video (30 mins ad free)</string>
     <string name="buy_ad_free_version">Buy Ad Free Version</string>
-    <string name="save_file_permission_denied">Good job! You denied the permission! WINRAR!!</string>
-    <string name="app_needs_your_permission_to_save">The app needs your permission to save pictures</string>
+    <string name="save_file_permission_denied">Permission to save file was denied</string>
+    <string name="app_needs_your_permission_to_save">Save permission required</string>
     <string name="app_needs_your_permission_to_attach">The app needs your permission to attach pictures</string>
 
     <string name="error_opening_bookmark">Error opening bookmark</string>
@@ -416,7 +466,7 @@
 
     <string name="nav_drawer_bookmark_count">Nav Drawer Bookmark Count</string>
     <string name="close_other_tabs">Close Other Tabs</string>
-    <string name="catalog">Catalog</string>
+    <string name="grid">Grid</string>
     <string name="list">List</string>
     <string name="close_all_tabs">Close All Tabs</string>
     <string name="ask_before_closing_tabs">Ask before closing all tabs</string>
@@ -424,6 +474,7 @@
     <string name="close_tab_on_back_title">Close tab on back pressed</string>
     <string name="close_tab_on_back_summary_on">Back button closes the current tab</string>
     <string name="close_tab_on_back_summary_off">Back button changes the current tab</string>
+    <string name="enable_image_spoilers_title">Enable image spoilers</string>
     <string name="sort">Sort</string>
     <string name="bump_time">Bump Time</string>
     <string name="thread_id">Thread ID</string>
@@ -433,9 +484,43 @@
     <string name="invert_sort">Invert Sort</string>
     <string name="fullscreen">Fullscreen</string>
     <string name="auto_play_audio">Auto play webm audio</string>
-    <string name="youtube_id_not_defined">Youtube ID not defined</string>
     <string name="error_copying_file">Error copying file</string>
     <string name="use_old_video_player_title">Use old video player</string>
+    <string name="hide">Hide</string>
+    <string name="thread_hidden">Thread hidden</string>
+    <string name="error_hiding_thread">Error hiding thread</string>
+    <string name="clear_hidden_threads">Clear hidden threads</string>
+    <string name="all_hidden_threads_cleared">Cleared all hidden threads</string>
+    <string name="failed_to_clear_hidden_threads">Failed to clear hidden threads</string>
+    <string name="quick_scroll_to_top">Scroll To Top</string>
+    <string name="quick_scroll_to_bottom">Scroll To Bottom</string>
+    <string name="text_to_filter">Text To Filter</string>
+    <string name="empty_response_error">Something went wrong while posting. Please try again later.</string>
+    <string name="error_deleting_name">Error deleting name from database</string>
+    <string name="regex">Regex</string>
+    <string name="remove">Remove</string>
+    <string name="save_to_folder">Save To Folder</string>
+    <string name="select_a_board">Select A Board</string>
+    <string name="directory_name">Directory Name</string>
+    <string name="new_filter">New</string>
+    <string name="filter">Filter</string>
+    <string name="filter_name">Filter Name</string>
+    <string name="edit">Edit</string>
+    <string name="filter_already_exists">Filter already exists</string>
+    <string name="overwite_filter_question">Overwrite filter?</string>
+    <string name="failed_to_save_filter">Failed to save filter</string>
+    <string name="edit_filters">Edit Filters</string>
+    <string name="error_loading_boards">Error loading boards</string>
+    <string name="retry">Retry</string>
+    <string name="error_while_sharing_file">Error while sharing file</string>
+    <string name="error_opening_video_file">Error opening video file</string>
+    <string name="find">Find</string>
+    <string name="found_number">found %d</string>
+    <string name="error_opening_search_link">Error opening search link</string>
+    <string name="captcha_answer_hint">captcha text</string>
+    <string name="spoiler">Spoiler</string>
+    <string name="view">View</string>
+    <string name="mark_as_read">Mark as Read</string>
 
     <string-array name="youtube_dialog_list">
         <item>Open in browser</item>
@@ -461,4 +546,101 @@
         <item>@string/highlight_color_pref</item>
         <item>@string/link_color_pref</item>
     </string-array>
+
+    <string-array name="flag_names">
+        <item>Anarcho-Capitalist</item>
+        <item>Anarchist</item>
+        <item>Black Nationalist</item>
+        <item>Confederate</item>
+        <item>Communist</item>
+        <item>Democrat</item>
+        <item>European</item>
+        <item>Fascist</item>
+        <item>Gadsden</item>
+        <item>Gay</item>
+        <item>Jihadi</item>
+        <item>Kekistani</item>
+        <item>Muslim</item>
+        <item>National Bolshevik</item>
+        <item>Nazi</item>
+        <item>Hippie</item>
+        <item>Pirate</item>
+        <item>Republican</item>
+        <item>Templar</item>
+        <item>Tree Hugger</item>
+        <item>United Nations</item>
+        <item>White Supremacist</item>
+    </string-array>
+
+    <string-array name="flag_values">
+        <item>AC</item>
+        <item>AN</item>
+        <item>BL</item>
+        <item>CF</item>
+        <item>CM</item>
+        <item>DM</item>
+        <item>EU</item>
+        <item>FC</item>
+        <item>GN</item>
+        <item>GY</item>
+        <item>JH</item>
+        <item>KN</item>
+        <item>MF</item>
+        <item>NB</item>
+        <item>NZ</item>
+        <item>PC</item>
+        <item>PR</item>
+        <item>RE</item>
+        <item>TM</item>
+        <item>TR</item>
+        <item>UN</item>
+        <item>WP</item>
+    </string-array>
+    <string name="title_activity_web">WebActivity</string>
+    <string name="open_links_externally">Open Links Externally</string>
+    <string name="open_links_default_browser">Open Links in Default Browser</string>
+    <string name="open_links_internally">Open Links Internally</string>
+    <string name="mimi_file_downloader">Mimi File Downloader</string>
+    <string name="mimi_thread_watcher">Mimi Thread Watcher</string>
+    <string name="could_not_set_orientation">Could not set orientation</string>
+
+    <string name="this_video_has_no_audio">This video has no audio</string>
+    <string name="requesting_permissions">Requesting Permissions</string>
+    <string name="request">Request</string>
+    <string name="save_permissions_message">The next screen will ask you to select a directory. Please select a default directory for files to be saved.</string>
+    <string name="title_activity_gallery2">Gallery</string>
+
+    <string name="loading">Loading…</string>
+
+    <string name="gallery_preload_title">Media Preloading</string>
+    <string name="gallery_preload_wifi_only">On WiFi Only</string>
+    <string name="gallery_preload_enabled">Enabled</string>
+    <string name="gallery_preload_disabled">Disabled</string>
+    <string name="could_not_load_gif">Could not load GIF</string>
+    <string name="batch_dowmload_no_items_selected">No selected items found for batch download</string>
+    <string name="error_opening_gallery">Error opening gallery; Restart the app and try again</string>
+    <string name="mimi_logo">Mimi Logo</string>
+    <string name="archive_message">Thread archived at %s</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+
+    <!-- Preference Titles -->
+    <string name="messages_header">Messages</string>
+    <string name="sync_header">Sync</string>
+
+    <!-- Messages Preferences -->
+    <string name="signature_title">Your signature</string>
+    <string name="reply_title">Default reply action</string>
+
+    <!-- Sync Preferences -->
+    <string name="sync_title">Sync email periodically</string>
+    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_summary_on">Automatically download attachments for incoming emails
+    </string>
+    <string name="attachment_summary_off">Only download attachments when manually requested</string>
+    <string name="gallery_title">Gallery</string>
+    <string name="clearing_cache">Clearing cache...</string>
+    <string name="error_while_clearing_cache">Error while clearing cache</string>
+    <string name="clearing_history">Clearing history...</string>
+    <string name="error_while_clearing_history">Error while clearing history</string>
+    <string name="tap_to_open_bookmarks">Tap to open bookmarks</string>
 </resources>

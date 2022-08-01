@@ -20,7 +20,7 @@ package com.emogoth.android.phone.mimi.dialog;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.support.v4.app.DialogFragment;
+import androidx.fragment.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,7 +58,7 @@ public class CaptchaDialog extends DialogFragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        if(webView != null) {
+        if (webView != null) {
             webView.loadCaptchaPage();
             webView.setBackgroundColor(0x00000000);
             webView.setOnRecaptchaResponseCallback(new OnRecaptchaResponseCallback() {
@@ -73,7 +73,7 @@ public class CaptchaDialog extends DialogFragment {
             webView.setOnCaptchaViewReadyCallback(new OnCaptchaViewReadyCallback() {
                 @Override
                 public void onCaptchaViewReady() {
-                    if(captchaLoading.getVisibility() == View.VISIBLE) {
+                    if (captchaLoading.getVisibility() == View.VISIBLE) {
                         captchaLoading.setVisibility(View.GONE);
                     }
                 }

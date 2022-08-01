@@ -22,26 +22,26 @@
     android:layout_height="@dimen/toolbar_visible_spacing">
 
     <!--<View-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="@dimen/toolbar_visible_spacing" />-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="@dimen/toolbar_visible_spacing" />-->
 
     <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
-        <!--style="?toolbarIcon"-->
-        <!--android:id="@+id/footer_refresh_icon"-->
-        <!--android:layout_width="@dimen/toolbar_button_size"-->
-        <!--android:layout_height="@dimen/toolbar_button_size"-->
-        <!--android:layout_gravity="center_vertical|left"-->
-        <!--android:gravity="center"-->
-        <!--android:textSize="@dimen/toolbar_icon_size"-->
-        <!--android:text="@string/ic_refresh"-->
-        <!--android:textColor="#FFFFFF"-->
-        <!--android:visibility="gone"/>-->
+    <!--style="?toolbarIcon"-->
+    <!--android:id="@+id/footer_refresh_icon"-->
+    <!--android:layout_width="@dimen/toolbar_button_size"-->
+    <!--android:layout_height="@dimen/toolbar_button_size"-->
+    <!--android:layout_gravity="center_vertical|left"-->
+    <!--android:gravity="center"-->
+    <!--android:textSize="@dimen/toolbar_icon_size"-->
+    <!--android:text="@string/ic_refresh"-->
+    <!--android:textColor="#FFFFFF"-->
+    <!--android:visibility="gone"/>-->
 
     <ProgressBar
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/progressBar"
         android:layout_gravity="center"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
 </FrameLayout>

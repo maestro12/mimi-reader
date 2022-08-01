@@ -19,10 +19,12 @@
     <string-array name="listThemes">
         <item>Light</item>
         <item>Dark</item>
+        <item>Black</item>
     </string-array>
     <string-array name="listThemeValues">
         <item>0</item>
         <item>1</item>
+        <item>2</item>
     </string-array>
 
     <string-array name="list_theme_color_names">
@@ -129,13 +131,13 @@
 
     <string-array name="notificationOptions">
         <item>@string/disabled</item>
-        <!--<item>@string/only_replies</item>-->
+        <item>@string/only_replies</item>
         <item>@string/all_new_posts</item>
     </string-array>
 
     <string-array name="notificationValues">
         <item>1</item>
-        <!--<item>2</item>-->
+        <item>2</item>
         <item>3</item>
     </string-array>
 
@@ -162,15 +164,24 @@
         <item>15</item>
     </string-array>
 
+    <string name="gallery_preload_default_value">2</string>
+    <string-array name="gallery_preload_values">
+        <item>2</item>
+        <item>1</item>
+        <item>0</item>
+    </string-array>
+
+    <string-array name="gallery_preload_options">
+        <item>@string/gallery_preload_wifi_only</item>
+        <item>@string/gallery_preload_enabled</item>
+        <item>@string/gallery_preload_disabled</item>
+    </string-array>
+
     <!-- Preference Keys -->
     <string name="theme_pref">theme_pref</string>
     <string name="theme_color_pref">theme_color_pref</string>
     <string name="board_order_pref">board_order_pref</string>
-    <string name="cache_external_pref">cache_external_pref</string>
-    <string name="prevent_screen_rotation_pref">prevent_screen_rotation_pref</string>
     <string name="use_catalog_pref">use_catalog_pref</string>
-    <string name="use_fast_scroll_pref">use_fast_scroll_pref</string>
-    <string name="use_ssl_pref">use_ssl_pref</string>
     <string name="app_auto_refresh_time">app_auto_refresh_time</string>
     <string name="background_auto_refresh_time">background_auto_refresh_time</string>
     <string name="background_notification_pref">background_notification_pref</string>
@@ -214,7 +225,6 @@
     <string name="show_manage_boards_tutorial">pref_show_manage_boards_tutorial</string>
 
     <string name="last_version_code_pref">last_version_code_pref</string>
-    <string name="handle_youtube_links_pref">handle_youtube_links_pref</string>
 
     <string name="scroll_thread_with_gallery_pref">scroll_thread_with_gallery_pref</string>
     <string name="close_gallery_on_click_pref">close_gallery_on_click_pref</string>
@@ -228,7 +238,21 @@
     <string name="close_all_tabs_prompt_pref">close_all_tabs_prompt_pref</string>
     <string name="close_tab_on_back_pref">close_tab_on_back_pref</string>
 
+    <string name="clear_hidden_threads_pref">clear_hidden_threads_pref</string>
+    <string name="clear_cache_pref">clear_cache_pref</string>
+
     <string name="use_crappy_video_player">use_crappy_video_player</string>
     <string name="crappy_samsung_default_set">crappy_samsung_default_set</string>
+    <string name="open_links_externally_pref">open_links_externally_pref</string>
+
+    <string name="http_buffer_size_pref">http_buffer_size_pref</string>
+
+    <string name="ad_personalization_pref">ad_personalization_pref</string>
+    <string name="gallery_prefs_screen">gallery_prefs_screen</string>
+    <string name="gallery_preload_pref">gallery_preload_pref</string>
+
+    <string name="text_colors_pref">text_colors_pref</string>
+
+    <string name="enable_image_spoilers_pref">enable_image_spoilers_pref</string>
 
 </resources>

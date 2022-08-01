@@ -23,7 +23,7 @@ public class JsonAndPojo<T> {
 
     public JsonAndPojo(T value, String json) {
         this.value = value;
-         this.json = json;
+        this.json = json;
     }
 
     public T getValue() {

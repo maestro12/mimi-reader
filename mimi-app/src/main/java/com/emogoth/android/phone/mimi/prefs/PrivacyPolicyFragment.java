@@ -16,24 +16,33 @@
 
 package com.emogoth.android.phone.mimi.prefs;
 
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.ProgressBar;
 
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.util.RxUtil;
+;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.Callable;
+
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 
 // TODO If you don't support Android 2.x, you should use the non-support version!
 
@@ -44,7 +53,7 @@ import java.io.InputStreamReader;
  */
 public class PrivacyPolicyFragment extends DialogFragment {
 
-    private AsyncTask<Void, Void, String> mLicenseLoader;
+    Disposable privacyPolicyDisposable;
 
     private static final String FRAGMENT_TAG = "nz.net.speakman.androidlicensespage.LicensesFragment";
 
@@ -93,17 +102,14 @@ public class PrivacyPolicyFragment extends DialogFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mLicenseLoader != null) {
-            mLicenseLoader.cancel(true);
-        }
+        RxUtil.safeUnsubscribe(privacyPolicyDisposable);
     }
 
     private void loadLicenses() {
         // Load asynchronously in case of a very large file.
-        mLicenseLoader = new AsyncTask<Void, Void, String>() {
-
+        privacyPolicyDisposable = Single.defer(new Callable<SingleSource<String>>() {
             @Override
-            protected String doInBackground(Void... params) {
+            public SingleSource<String> call() throws Exception {
                 InputStream rawResource = getActivity().getResources().openRawResource(R.raw.privacypolicy);
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(rawResource));
 
@@ -120,19 +126,22 @@ public class PrivacyPolicyFragment extends DialogFragment {
                     // TODO You may want to include some logging here.
                 }
 
-                return sb.toString();
+                return Single.just(sb.toString());
             }
-
-            @Override
-            protected void onPostExecute(String licensesBody) {
-                super.onPostExecute(licensesBody);
-                if (getActivity() == null || isCancelled()) return;
-                mIndeterminateProgress.setVisibility(View.INVISIBLE);
-                mWebView.setVisibility(View.VISIBLE);
-                mWebView.loadDataWithBaseURL(null, licensesBody, "text/html", "utf-8", null);
-                mLicenseLoader = null;
-            }
-
-        }.execute();
+        })
+                .subscribe(new Consumer<String>() {
+                    @Override
+                    public void accept(String licensesBody) throws Exception {
+                        if (getActivity() == null || !isAdded()) return;
+                        mIndeterminateProgress.setVisibility(View.INVISIBLE);
+                        mWebView.setVisibility(View.VISIBLE);
+                        mWebView.loadDataWithBaseURL(null, licensesBody, "text/html", "utf-8", null);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
+                        Log.e("PrivacyPolicyFragment", "An exception occurred while displaying the privacy policy", throwable);
+                    }
+                });
     }
 }

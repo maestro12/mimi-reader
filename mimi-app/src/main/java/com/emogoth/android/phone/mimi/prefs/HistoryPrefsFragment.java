@@ -17,120 +17,119 @@
 package com.emogoth.android.phone.mimi.prefs;
 
 import android.os.Bundle;
-import android.preference.ListPreference;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.preference.SwitchPreference;
+
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
+import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
+import com.google.android.material.snackbar.Snackbar;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
-public class HistoryPrefsFragment extends PreferenceFragment {
+public class HistoryPrefsFragment extends PreferenceFragmentCompat {
+
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.history_prefs);
-
         setupPrefs();
     }
 
     private void setupPrefs() {
         final ListPreference refreshInterval = (ListPreference) findPreference(getString(R.string.app_auto_refresh_time));
         refreshInterval.setSummary(refreshInterval.getEntry());
-        refreshInterval.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                int index = 0;
-                for (int i = 0; i < refreshInterval.getEntryValues().length; i++) {
-                    if (refreshInterval.getEntryValues()[i].equals(newValue)) {
-                        index = i;
-                    }
+        refreshInterval.setOnPreferenceChangeListener((preference, newValue) -> {
+            int index = 0;
+            for (int i = 0; i < refreshInterval.getEntryValues().length; i++) {
+                if (refreshInterval.getEntryValues()[i].equals(newValue)) {
+                    index = i;
                 }
-
-                refreshInterval.setSummary(refreshInterval.getEntries()[index]);
-
-                RefreshScheduler.getInstance().setInterval(Integer.valueOf(newValue.toString()));
-                RefreshScheduler.getInstance().scheduleNextRun();
-
-                return true;
             }
+
+            refreshInterval.setSummary(refreshInterval.getEntries()[index]);
+
+            return true;
         });
 
         final ListPreference backgroundRefreshInterval = (ListPreference) findPreference(getString(R.string.background_auto_refresh_time));
         backgroundRefreshInterval.setSummary(backgroundRefreshInterval.getEntry());
-        backgroundRefreshInterval.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                int index = 0;
-                for (int i = 0; i < backgroundRefreshInterval.getEntryValues().length; i++) {
-                    if (backgroundRefreshInterval.getEntryValues()[i].equals(newValue)) {
-                        index = i;
-                    }
+        backgroundRefreshInterval.setOnPreferenceChangeListener((preference, newValue) -> {
+            int index = 0;
+            for (int i = 0; i < backgroundRefreshInterval.getEntryValues().length; i++) {
+                if (backgroundRefreshInterval.getEntryValues()[i].equals(newValue)) {
+                    index = i;
                 }
-
-                backgroundRefreshInterval.setSummary(backgroundRefreshInterval.getEntries()[index]);
-
-                return true;
             }
+
+            backgroundRefreshInterval.setSummary(backgroundRefreshInterval.getEntries()[index]);
+
+            return true;
         });
 
         final ListPreference notificationPref = (ListPreference) findPreference(getString(R.string.background_notification_pref));
         notificationPref.setSummary(notificationPref.getEntry());
-        notificationPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object o) {
-                int index = 0;
-                for (int i = 0; i < notificationPref.getEntryValues().length; i++) {
-                    if (notificationPref.getEntryValues()[i].equals(o)) {
-                        index = i;
-                    }
+        notificationPref.setOnPreferenceChangeListener((preference, o) -> {
+            int index = 0;
+            for (int i = 0; i < notificationPref.getEntryValues().length; i++) {
+                if (notificationPref.getEntryValues()[i].equals(o)) {
+                    index = i;
                 }
-
-                notificationPref.setSummary(notificationPref.getEntries()[index]);
-
-                return true;
             }
+
+            notificationPref.setSummary(notificationPref.getEntries()[index]);
+
+            return true;
         });
 
-        final SwitchPreference saveHistory = (SwitchPreference) findPreference(getString(R.string.save_history_pref));
-        saveHistory.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (!((Boolean) newValue)) {
-                    HistoryTableConnection.pruneHistory(0).subscribe();
-                }
-                return true;
+        final SwitchPreferenceCompat saveHistory = findPreference(getString(R.string.save_history_pref));
+        saveHistory.setOnPreferenceChangeListener((preference, newValue) -> {
+            if (!((Boolean) newValue)) {
+                Disposable pruneSubscriber = MimiUtil.pruneHistory(0)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(aBoolean -> Snackbar.make(getView(), R.string.clearing_history, Snackbar.LENGTH_SHORT).show(), throwable -> Snackbar.make(getView(), R.string.error_while_clearing_history, Snackbar.LENGTH_SHORT).show());
+                BoardTableConnection.resetStats()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .onErrorReturn(throwable -> false)
+                        .subscribe();
             }
+            return true;
         });
 
         final ListPreference historyPruneTime = (ListPreference) findPreference(getString(R.string.history_prune_time_pref));
         historyPruneTime.setSummary(getString(R.string.history_prune_time_summary, historyPruneTime.getEntry()));
-        historyPruneTime.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                int index = 0;
-                for (int i = 0; i < historyPruneTime.getEntryValues().length; i++) {
-                    if (historyPruneTime.getEntryValues()[i].equals(newValue)) {
-                        index = i;
-                    }
+        historyPruneTime.setOnPreferenceChangeListener((preference, newValue) -> {
+            int index = 0;
+            for (int i = 0; i < historyPruneTime.getEntryValues().length; i++) {
+                if (historyPruneTime.getEntryValues()[i].equals(newValue)) {
+                    index = i;
                 }
-
-                preference.setSummary(getString(R.string.history_prune_time_summary, historyPruneTime.getEntries()[index]));
-
-                return true;
             }
+
+            preference.setSummary(getString(R.string.history_prune_time_summary, historyPruneTime.getEntries()[index]));
+
+            return true;
         });
 
         final Preference clearHistory = findPreference(getString(R.string.clear_history_pref));
-        clearHistory.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-            @Override
-            public boolean onPreferenceClick(final Preference preference) {
-                HistoryTableConnection.pruneHistory(0).subscribe();
-                return true;
-            }
+        clearHistory.setOnPreferenceClickListener(preference -> {
+            Disposable pruneSubscriber = MimiUtil.pruneHistory(0)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(aBoolean -> Snackbar.make(getView(), R.string.clearing_history, Snackbar.LENGTH_SHORT).show(), throwable -> Snackbar.make(getView(), R.string.error_while_clearing_history, Snackbar.LENGTH_SHORT).show());
+            BoardTableConnection.resetStats()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .onErrorReturn(throwable -> false)
+                    .subscribe();
+            return true;
         });
     }
 }

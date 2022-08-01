@@ -24,7 +24,8 @@ public class OutsideLink implements Parcelable {
     private String boardName;
     private String threadId;
 
-    public OutsideLink() {}
+    public OutsideLink() {
+    }
 
     protected OutsideLink(Parcel in) {
         boardName = in.readString();

@@ -20,7 +20,7 @@
     android:layout_width="match_parent"
     android:orientation="vertical">
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/mimi_toolbar"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
@@ -33,13 +33,13 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#00000000"/>
+        android:background="#00000000" />
 
     <!--<FrameLayout-->
-        <!--style="?defaultLayoutBackground"-->
-        <!--android:id="@+id/advert_container"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:background="#FF000000"-->
-        <!--/>-->
+    <!--style="?defaultLayoutBackground"-->
+    <!--android:id="@+id/advert_container"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:background="#FF000000"-->
+    <!--/>-->
 </LinearLayout>

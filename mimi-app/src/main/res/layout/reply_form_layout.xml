@@ -17,112 +17,118 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="?attr/replyFormBackground"
     android:id="@+id/full_reply_panel"
-    android:orientation="vertical"
+    style="?attr/replyFormBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="bottom">
+    android:layout_gravity="bottom"
+    android:orientation="vertical">
 
     <ViewSwitcher
         android:id="@+id/reply_form_switcher"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal" >
+        android:layout_gravity="center_horizontal">
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <LinearLayout
-                android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:paddingLeft="2dp"
                 android:paddingRight="2dp">
 
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-                    <TextView
+
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/edit_user_info"
+                        style="?defaultSubtextColor"
                         android:layout_width="wrap_content"
                         android:layout_height="40dp"
-                        android:layout_marginLeft="8dp"
-                        android:minWidth="40dp"
                         android:layout_gravity="left"
-                        android:singleLine="true"
+                        android:layout_marginLeft="8dp"
+                        android:background="?attr/selectableItemBackground"
                         android:ellipsize="end"
                         android:gravity="center_vertical"
-                        android:background="?attr/selectableItemBackground"
-                        tools:text="Anonymous"/>
+                        android:maxLines="1"
+                        android:minWidth="40dp"
+                        tools:text="Anonymous" />
 
                     <com.emogoth.android.phone.mimi.view.IconTextView
-                        style="?defaultTextColor"
                         android:id="@+id/cancel_button"
+                        style="?defaultTextColor"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:layout_gravity="right|center_vertical"
                         android:layout_marginRight="8dp"
-                        android:gravity="center"
-                        android:textSize="26sp"
                         android:background="?attr/selectableItemBackground"
-                        android:text="@string/ic_close"/>
+                        android:gravity="center"
+                        android:text="@string/ic_close"
+                        android:textSize="26sp" />
 
                 </FrameLayout>
 
                 <!--<FrameLayout-->
-                    <!--style="?selectableItemBackground"-->
-                    <!--android:id="@+id/shrink_form_container"-->
-                    <!--android:layout_width="match_parent"-->
-                    <!--android:layout_height="50dp" />-->
+                <!--style="?selectableItemBackground"-->
+                <!--android:id="@+id/shrink_form_container"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="50dp" />-->
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp">
+
                     <com.emogoth.android.phone.mimi.view.IconTextView
                         android:id="@+id/submit_button"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        android:layout_marginRight="8dp"
                         android:layout_alignParentRight="true"
                         android:layout_centerVertical="true"
-                        android:gravity="center"
+                        android:layout_marginRight="8dp"
                         android:background="?attr/selectableItemBackground"
-                        android:textSize="26sp"
+                        android:gravity="center"
+                        android:text="@string/ic_send"
                         android:textColor="?colorAccent"
-                        android:text="@string/ic_send"/>
+                        android:textSize="26sp" />
 
-                    <android.support.v7.widget.AppCompatEditText
+                    <androidx.appcompat.widget.AppCompatEditText
                         android:id="@+id/comment_input"
+                        style="?postCommentText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="top"
                         android:layout_marginTop="2dp"
                         android:layout_toLeftOf="@id/submit_button"
-                        android:inputType="textMultiLine|textAutoCorrect|textCapSentences"
-                        android:maxLines="8"
-                        android:hint="@string/comment" />
+                        android:hint="@string/comment"
+                        android:inputType="textMultiLine|textAutoCorrect|textCapSentences|textAutoComplete"
+                        android:saveEnabled="false" />
                 </RelativeLayout>
 
                 <FrameLayout
                     android:layout_width="wrap_content"
                     android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_gravity="center_horizontal">
+                    android:layout_gravity="center_horizontal"
+                    android:layout_weight="1">
 
-                    <TextView
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/attach_image_button"
+                        style="?defaultSubtextColor"
                         android:layout_width="wrap_content"
                         android:layout_height="50dp"
                         android:layout_gravity="left"
-                        android:gravity="center"
-                        android:text="@string/attach_image"
-                        android:layout_marginTop="10dp"
                         android:layout_marginLeft="8dp"
-                        android:background="?attr/selectableItemBackground" />
+                        android:layout_marginTop="10dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center"
+                        android:text="@string/attach_image" />
 
                     <FrameLayout
                         android:id="@+id/image_container"
@@ -132,8 +138,8 @@
                         android:visibility="gone">
 
                         <ImageView
-                            style="?placeholderImage"
                             android:id="@+id/attached_image"
+                            style="?placeholderImage"
                             android:layout_width="match_parent"
                             android:layout_height="100dp" />
 
@@ -141,9 +147,9 @@
                             android:id="@+id/clear_image"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:padding="8dp"
                             android:layout_gravity="right"
-                            android:text="@string/ic_close"/>
+                            android:padding="8dp"
+                            android:text="@string/ic_close" />
                     </FrameLayout>
                 </FrameLayout>
 
@@ -152,61 +158,81 @@
         </ScrollView>
 
         <LinearLayout
-            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="4dp">
 
             <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_gravity="center_horizontal">
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal">
 
-                <TextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/clear_info"
+                    style="?postCommentText"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="@string/clear_info"
+                    android:layout_gravity="center_horizontal"
                     android:layout_marginRight="10dp"
-                    android:layout_gravity="center_horizontal" />
+                    android:gravity="center"
+                    android:text="@string/clear_info" />
 
-                <TextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/sage_info"
+                    style="?postCommentText"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:gravity="center"
                     android:layout_weight="1"
+                    android:gravity="center"
                     android:text="@string/sage_info" />
 
-                <TextView
+                <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/done_info"
+                    style="?postCommentText"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:text="@string/done_info" />
             </LinearLayout>
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatAutoCompleteTextView
                 android:id="@+id/name_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/name" />
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/options_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:hint="@string/options"/>
+                android:hint="@string/options" />
 
-            <android.support.v7.widget.AppCompatEditText
+            <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/subject_input"
+                style="?postCommentText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:hint="@string/subject"/>
+                android:hint="@string/subject" />
+
+            <androidx.appcompat.widget.AppCompatSpinner
+                android:id="@+id/flag_selector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/spoiler_selection"
+                style="?postCommentText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/spoiler"
+                android:visibility="gone" />
 
         </LinearLayout>
 

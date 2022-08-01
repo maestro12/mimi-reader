@@ -15,7 +15,8 @@
   -->
 
 <resources>
-    <style name="Theme.Mimi.Gallery" parent="@style/Theme.AppCompat.NoActionBar">
+
+    <style name="Theme.Mimi.Gallery" parent="@style/Theme.MaterialComponents.NoActionBar">
         <item name="galleryToolbarBackground">@style/Theme.Mimi.Gallery.ToolbarBackground</item>
 
         <item name="android:windowIsTranslucent">true</item>
@@ -29,6 +30,7 @@
         <item name="actionModeBackground">@drawable/cab_background_top_thememimidark</item>
         <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimidark</item>
         <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Dark</item>
+        <item name="windowActionModeOverlay">true</item>
 
         <item name="elevation">0dp</item>
         <item name="displayOptions">showHome|homeAsUp|showTitle</item>
@@ -59,8 +61,7 @@
     </style>
 
     <!-- ActionBar title text -->
-    <style name="Mimi.ActionBar.Title"
-        parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+    <style name="Mimi.ActionBar.Title" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
         <item name="android:textColor">@color/actionbar_text</item>
     </style>
 
@@ -69,9 +70,16 @@
         <item name="android:textColorPrimary">#fff</item>
     </style>
 
-    <style name="Theme.Mimi.TabLayout" parent="Widget.Design.TabLayout">
+    <style name="Theme.Mimi.TabLayout" parent="Widget.MaterialComponents.TabLayout">
         <item name="tabTextAppearance">@style/Theme.Mimi.TabText</item>
-        <item name="tabSelectedTextColor">#F1F1F1</item>
+        <item name="tabSelectedTextColor">@color/tab_selected_text_color</item>
+        <item name="tabTextColor">@color/tab_text_color</item>
+    </style>
+
+    <style name="Theme.Mimi.ActionButtonStyle" parent="@style/Widget.AppCompat.ActionButton">
+        <item name="android:minWidth">2dip</item>
+        <item name="android:paddingLeft">2dip</item>
+        <item name="android:paddingRight">2dip</item>
     </style>
 
     <style name="Dialog.Mimi.VideoPlayer" parent="@android:style/Theme.Dialog">
@@ -92,8 +100,7 @@
         <item name="android:textAllCaps">false</item>
     </style>
 
-    <style name="FontStyle">
-    </style>
+    <style name="FontStyle"></style>
 
     <style name="FontStyle.Small">
         <item name="font_xxsmall">10sp</item>
@@ -143,4 +150,14 @@
         <item name="font_board_height">65dp</item>
     </style>
 
+    <style name="Theme.Mimi.Light.Toolbar.Default.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="Theme.Mimi.Light.Toolbar.Default.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="Theme.Mimi.Launch" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowBackground">@drawable/startup_background</item>
+    </style>
 </resources>

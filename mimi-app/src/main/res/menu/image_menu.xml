@@ -28,8 +28,13 @@
         android:id="@+id/save_menu"
         android:title="@string/save"
         android:icon="@drawable/ic_save"
-        mimi:showAsAction="always"
-        />
+        mimi:showAsAction="always" />
+
+    <item
+        android:id="@+id/save_folder_menu"
+        android:title="@string/save_to_folder"
+        android:icon="@drawable/ic_sd_storage"
+        mimi:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/fullscreen_menu"

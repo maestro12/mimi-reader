@@ -16,9 +16,9 @@
 
 package com.emogoth.android.phone.mimi.interfaces;
 
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 
 public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScrollListener {
@@ -39,15 +39,15 @@ public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScr
     }
 
     private int getFirstVisibleItemPosition(RecyclerView.LayoutManager layoutManager) {
-        if(layoutManager instanceof LinearLayoutManager) {
+        if (layoutManager instanceof LinearLayoutManager) {
             return ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
         }
 
-        if(layoutManager instanceof StaggeredGridLayoutManager) {
+        if (layoutManager instanceof StaggeredGridLayoutManager) {
             int[] firstVisibleItems = null;
-            firstVisibleItems = ((StaggeredGridLayoutManager)layoutManager).findFirstVisibleItemPositions(firstVisibleItems);
+            firstVisibleItems = ((StaggeredGridLayoutManager) layoutManager).findFirstVisibleItemPositions(firstVisibleItems);
 
-            if(firstVisibleItems != null && firstVisibleItems.length > 0) {
+            if (firstVisibleItems != null && firstVisibleItems.length > 0) {
                 return firstVisibleItems[0];
             }
         }

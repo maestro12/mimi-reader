@@ -19,12 +19,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    >
+    android:layout_height="wrap_content">
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="15dp">
-    </FrameLayout>
+        android:layout_height="15dp"></FrameLayout>
 
 </LinearLayout>

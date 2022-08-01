@@ -42,6 +42,7 @@
     <attr name="basicButton" format="color|reference" />
     <attr name="postSubjectText" format="color|reference" />
     <attr name="postCommentText" format="color|reference" />
+    <attr name="postFirstCommentText" format="color|reference" />
     <attr name="postHighlight" format="color|reference" />
     <attr name="boardOrderBackground" format="color|reference" />
     <attr name="boardOrderItem" format="color|reference" />
@@ -53,7 +54,6 @@
     <attr name="mimiPrimaryColor" format="color|reference" />
     <attr name="mimiPrimaryColorDark" format="color|reference" />
     <attr name="mimiAccentColor" format="color|reference" />
-
     <attr name="mimiAccentTextColor" format="color|reference" />
 
     <declare-styleable name="panel_layout_attributes">
@@ -103,5 +103,12 @@
         </attr>
     </declare-styleable>
 
+    <!-- TODO: This is a temporary fix for this issue: https://issuetracker.google.com/issues/136103084 -->
+    <attr name="flow_horizontalSeparator"/>
+    <attr name="flow_verticalSeparator"/>
+    <attr name="motionProgress"/>
+    <attr name="waveDecay"/>
+    <attr name="motionPathRotate"/>
+    <attr name="duration"/>
 
 </resources>

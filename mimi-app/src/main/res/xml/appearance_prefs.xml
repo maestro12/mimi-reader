@@ -14,49 +14,54 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <PreferenceCategory
-        android:title="@string/appearance_title">
+        app:iconSpaceReserved="false"
+        app:title="@string/appearance_title">
 
         <ListPreference
-            android:title="@string/theme_title"
-            android:summary="@string/theme_summary"
-            android:key="@string/theme_pref"
-            android:defaultValue="0"
-            android:entries="@array/listThemes"
-            android:entryValues="@array/listThemeValues" />
+            app:defaultValue="0"
+            app:entries="@array/listThemes"
+            app:entryValues="@array/listThemeValues"
+            app:iconSpaceReserved="false"
+            app:key="@string/theme_pref"
+            app:summary="@string/theme_summary"
+            app:title="@string/theme_title" />
 
         <ListPreference
-            android:title="@string/toolbar_color"
-            android:summary="@string/toolbar_color_summary"
-            android:key="@string/theme_color_pref"
-            android:defaultValue="0"
-            android:entries="@array/list_theme_color_names"
-            android:entryValues="@array/list_theme_color_values" />
+            app:defaultValue="0"
+            app:entries="@array/list_theme_color_names"
+            app:entryValues="@array/list_theme_color_values"
+            app:iconSpaceReserved="false"
+            app:key="@string/theme_color_pref"
+            app:summary="@string/toolbar_color_summary"
+            app:title="@string/toolbar_color" />
 
         <ListPreference
-            android:title="@string/layout_type"
-            android:summary="@string/layout_type_summary"
-            android:key="@string/start_activity_pref"
-            android:defaultValue="tabbed"
-            android:entries="@array/layoutTypes"
-            android:entryValues="@array/layoutTypeValues" />
+            app:defaultValue="tabbed"
+            app:entries="@array/layoutTypes"
+            app:entryValues="@array/layoutTypeValues"
+            app:iconSpaceReserved="false"
+            app:key="@string/start_activity_pref"
+            app:summary="@string/layout_type_summary"
+            app:title="@string/layout_type" />
 
         <ListPreference
-            android:title="@string/font_size"
-            android:key="@string/font_style_pref"
-            android:defaultValue="0"
-            android:entries="@array/fontList"
-            android:entryValues="@array/fontListValues" />
+            app:defaultValue="0"
+            app:entries="@array/fontList"
+            app:entryValues="@array/fontListValues"
+            app:iconSpaceReserved="false"
+            app:key="@string/font_style_pref"
+            app:title="@string/font_size" />
 
         <Preference
-            android:title="@string/text_colors"
-            android:summary="@string/text_colors_summary">
+            app:iconSpaceReserved="false"
+            app:summary="@string/text_colors_summary"
+            app:key="@string/text_colors_pref"
+            app:title="@string/text_colors">
 
-            <intent
-                android:action="com.emogoth.android.phone.mimi.activity.ThemeSettingsActivity" />
+            <intent android:action="com.emogoth.android.phone.mimi.activity.ThemeSettingsActivity" />
         </Preference>
 
     </PreferenceCategory>

@@ -16,106 +16,116 @@
 
 package com.emogoth.android.phone.mimi.fragment;
 
-import android.animation.Animator;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
-import android.support.v7.widget.Toolbar;
-import android.text.Html;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewStub;
 import android.view.animation.AlphaAnimation;
+import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatTextView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.res.ResourcesCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
 import com.emogoth.android.phone.mimi.activity.TabsActivity;
+import com.emogoth.android.phone.mimi.activity.WebActivity;
 import com.emogoth.android.phone.mimi.adapter.ThreadListAdapter;
-import com.emogoth.android.phone.mimi.async.ProcessThreadTask;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
 import com.emogoth.android.phone.mimi.dialog.RepliesDialog;
-import com.emogoth.android.phone.mimi.event.CloseTabEvent;
-import com.emogoth.android.phone.mimi.event.GalleryPagerScrolledEvent;
-import com.emogoth.android.phone.mimi.event.ReplyClickEvent;
-import com.emogoth.android.phone.mimi.event.ShowRepliesEvent;
-import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
-import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
+import com.emogoth.android.phone.mimi.exceptions.ChanPostException;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
+import com.emogoth.android.phone.mimi.interfaces.GoToPostListener;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
-import com.emogoth.android.phone.mimi.interfaces.OnThumbnailClickListener;
+import com.emogoth.android.phone.mimi.interfaces.ReplyClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ReplyMenuClickListener;
+import com.emogoth.android.phone.mimi.interfaces.TabEventListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
+import com.emogoth.android.phone.mimi.interfaces.ThumbnailClickListener;
 import com.emogoth.android.phone.mimi.model.OutsideLink;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
-import com.emogoth.android.phone.mimi.util.HttpClientFactory;
+import com.emogoth.android.phone.mimi.util.GalleryScrollReceiver;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.emogoth.android.phone.mimi.viewmodel.ThreadViewModel;
 import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
-import com.mimireader.chanlib.ChanConnector;
-import com.mimireader.chanlib.models.ChanBoard;
+import com.google.android.material.snackbar.Snackbar;
+;
+import com.mimireader.chanlib.models.ArchivedChanThread;
 import com.mimireader.chanlib.models.ChanPost;
 import com.mimireader.chanlib.models.ChanThread;
-import com.squareup.otto.Subscribe;
+import com.mimireader.chanlib.models.ErrorChanThread;
 
-import java.io.File;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-import retrofit2.adapter.rxjava.HttpException;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import kotlin.Unit;
+import retrofit2.HttpException;
 
 
 public class ThreadDetailFragment extends MimiFragmentBase implements
-        Toolbar.OnMenuItemClickListener,
         TabInterface,
-        ContentInterface {
+        ContentInterface,
+        ReplyClickListener,
+        GoToPostListener {
     private static final String LOG_TAG = ThreadDetailFragment.class.getSimpleName();
+    private static final boolean LOG_DEBUG = true;
     private static final String REPLY_FRAGMENT_TAG = "reply_fragment";
     private static final int LOADER_ID = 2;
 
-    private static final int MAX_RETRIES = 5;
-
-    private static final long FAST_SCROLL_TIMEOUT = 2000;
+    public static final int REPLIES_DIALOG_CODE = 100;
 
     private String threadReplyFragmentTag;
-
-    private String postUrl;
 
     private MimiRecyclerView recyclerView;
     private LinearLayoutManager layoutManager;
     private ThreadListAdapter threadListAdapter;
     private String boardName;
     private String boardTitle;
-    private int threadId;
-    private ChanThread currentThread = new ChanThread();
+    private long threadId;
+    private ChanThread currentThread = ChanThread.empty();
     private View loadingLayout;
 
     private int[] listViewItemHeight;
@@ -123,7 +133,6 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private ViewGroup messageContainer;
 
     private TextView messageText;
-    private boolean doThreadRegistryUpdate = false;
 
     private String replyComment;
     private PostFragment postFragment;
@@ -131,87 +140,48 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
     private int loaderId = LOADER_ID;
     private TextView closeMessageButton;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private boolean createNewPostFragment = true;
-    private boolean isWatched;
+    private boolean createNewPostFragment = false;
+    //    private boolean isWatched;
     private boolean rememberThreadScrollPosition;
     private int postFromExtras = 0;
     private MenuItem bookmarkMenuItem;
     private Toolbar toolbar;
-    private boolean wasVisibleToUser;
 
-    private long profileTimer;
+    private final Handler lastReadHandler = new Handler();
+    private LastReadRunnable lastReadRunnable;
 
-    private Handler lastReadHandler = new Handler();
-    private Runnable lastReadRunnable = new Runnable() {
-        @Override
-        public void run() {
-            ThreadRegistry.getInstance().setLastReadPosition(threadId, layoutManager.findLastVisibleItemPosition());
-            Log.d(LOG_TAG, "set last read position: set=" + layoutManager.findLastVisibleItemPosition() + ", get=" + ThreadRegistry.getInstance().getLastReadPosition(threadId));
-
-            BusProvider.getInstance().post(new UpdateHistoryEvent(boardName, currentThread));
-        }
-    };
-
-    private Runnable hideFastScrollRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (fastScrollLayout != null) {
-                fastScrollLayout.animate()
-                        .alpha(0)
-                        .setDuration(200)
-                        .setListener(new Animator.AnimatorListener() {
-                            @Override
-                            public void onAnimationStart(Animator animation) {
-
-                            }
-
-                            @Override
-                            public void onAnimationEnd(Animator animation) {
-                                if (fastScrollLayout != null) {
-                                    fastScrollLayout.setVisibility(View.INVISIBLE);
-                                }
-                            }
-
-                            @Override
-                            public void onAnimationCancel(Animator animation) {
-
-                            }
-
-                            @Override
-                            public void onAnimationRepeat(Animator animation) {
-
-                            }
-                        })
-                        .start();
-            }
-        }
-    };
-    private Handler hideFastScrollHandler = new Handler();
-
-    //    private CoordinatorLayout coordinatorLayout;
     private Snackbar postingSnackbar;
     private boolean stickyAutoRefresh;
-    private ChanConnector chanConnector;
-    private VerticalRecyclerViewFastScroller fastScrollLayout;
-    private RecyclerView.OnScrollListener fastScrollListener;
+    //    private ChanConnector chanConnector;
+    private RecyclerView.OnScrollListener recyclerViewScrollListener;
+    private ViewStub findViewStub;
+    private View findView;
 
-    private Subscription threadSubscription;
-    private Subscription boardInfoSubscription;
+    private Disposable threadSubscription;
+    private Disposable boardInfoSubscription;
+    private Disposable threadWatcherSubscription;
 
-    private View listHeader;
-    private View listFooter;
+    private ThreadViewModel viewModel;
 
-    private Subscription fetchPostSubscription;
-    private Subscription historyRemovedSubscription;
-    private Subscription removeHistorySubscription;
-    private Subscription addPostSubscription;
+    private Disposable fetchPostSubscription;
+    private Disposable historyRemovedSubscription;
+    private Disposable putHistorySubscription;
+    private Disposable fetchHistorySubscription;
+    private Disposable fetchThreadSubscription;
 
-    public static ThreadDetailFragment newInstance(int threadId, String boardName, String boardTitle, ChanPost firstPost, boolean stickyAutoRefresh) {
+    private Handler textFindHandler;
+    private Runnable updateAdapterRunnable;
+
+    private Bundle postState;
+    private GalleryScrollReceiver scrollReceiver;
+
+    public static ThreadDetailFragment newInstance(long threadId, String boardName, String boardTitle, ChanPost firstPost, boolean stickyAutoRefresh, boolean hasOptionsMenu) {
         final Bundle args = new Bundle();
-        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+        args.putLong(Extras.EXTRAS_THREAD_ID, threadId);
         args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
         args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
         args.putBoolean(Extras.EXTRAS_STICKY_AUTO_REFRESH, stickyAutoRefresh);
+        args.putBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, hasOptionsMenu);
 
         if (firstPost != null) {
             args.putParcelable(Extras.EXTRAS_THREAD_FIRST_POST, firstPost);
@@ -223,12 +193,17 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         return fragment;
     }
 
+    public static ThreadDetailFragment newInstance(long threadId, String boardName, String boardTitle, ChanPost firstPost, boolean stickyAutoRefresh) {
+        return newInstance(threadId, boardName, boardTitle, firstPost, stickyAutoRefresh, true);
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setHasOptionsMenu(true);
-        setRetainInstance(false);
+        if (LOG_DEBUG) {
+            Log.d(LOG_TAG, "Entered onCreate()");
+        }
 
         if (savedInstanceState == null) {
             extractExtras(getArguments());
@@ -236,7 +211,7 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             if (savedInstanceState.containsKey(Extras.EXTRAS_THREAD_ID)
                     && getArguments() != null
                     && getArguments().containsKey(Extras.EXTRAS_THREAD_ID)
-                    && savedInstanceState.getInt(Extras.EXTRAS_THREAD_ID) == getArguments().getInt(Extras.EXTRAS_THREAD_ID)) {
+                    && savedInstanceState.getLong(Extras.EXTRAS_THREAD_ID) == getArguments().getLong(Extras.EXTRAS_THREAD_ID)) {
                 extractExtras(savedInstanceState);
             } else {
                 extractExtras(getArguments());
@@ -244,73 +219,75 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         }
 
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+//        prefs.edit().remove(RefreshJobService.NOTIFICATIONS_KEY_THREAD_SIZE + "." + threadId).apply();
+
+        lastReadRunnable = new LastReadRunnable(threadId, boardName);
         threadReplyFragmentTag = REPLY_FRAGMENT_TAG + "_" + threadId;
+
+        ViewModelProvider.Factory factory = new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new ThreadViewModel(boardName, threadId);
+            }
+        };
+
+        viewModel = new ViewModelProvider(this, factory)
+                .get(ThreadViewModel.class);
     }
 
     @Override
     public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState) {
+        if (LOG_DEBUG) {
+            Log.d(LOG_TAG, "Entered onCreateView()");
+        }
+
         final View view = inflater.inflate(R.layout.fragment_thread_detail, container, false);
 
         loadingLayout = view.findViewById(R.id.loading_layout);
-        recyclerView = (MimiRecyclerView) view.findViewById(R.id.thread_list);
-        messageContainer = (ViewGroup) view.findViewById(R.id.message_container);
-        messageText = (TextView) view.findViewById(R.id.message);
-        closeMessageButton = (TextView) view.findViewById(R.id.close_message_button);
-        swipeRefreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_refresh_layout);
+        recyclerView = view.findViewById(R.id.thread_list);
+        messageContainer = view.findViewById(R.id.message_container);
+        messageText = view.findViewById(R.id.message);
+        closeMessageButton = view.findViewById(R.id.close_message_button);
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
         rememberThreadScrollPosition = MimiUtil.rememberThreadScrollPosition(getActivity());
-        fastScrollLayout = (VerticalRecyclerViewFastScroller) view.findViewById(R.id.fast_scroll_layout);
-        fastScrollLayout.setRecyclerView(recyclerView);
+        findViewStub = view.findViewById(R.id.find_bar_stub);
 
         final MimiActivity activity = (MimiActivity) getActivity();
         toolbar = activity.getToolbar();
-
-        if (MimiUtil.getLayoutType(getActivity()) == LayoutType.TABBED) {
-            listHeader = inflater.inflate(R.layout.header_layout, container, false);
-        } else {
-            listHeader = inflater.inflate(R.layout.header_layout_tall, container, false);
-        }
-        listFooter = inflater.inflate(R.layout.list_footer, container, false);
 
         return view;
     }
 
     @Override
-    public void onViewCreated(final View view, final Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Log.d(LOG_TAG, "Inside onViewCreated for thread " + threadId);
-
-        final boolean secure = MimiUtil.isSecureConnection(getActivity());
-        chanConnector = new FourChanConnector.Builder()
-                .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
-                .setEndpoint(FourChanConnector.getDefaultEndpoint(secure))
-                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
-                .setClient(HttpClientFactory.getInstance().getOkHttpClient())
-                .build();
+        if (LOG_DEBUG) {
+            Log.d(LOG_TAG, "Entered onViewCreated() for thread " + threadId);
+        }
 
         layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
-        threadListAdapter = new ThreadListAdapter(getActivity(), getChildFragmentManager(), currentThread, boardName);
+        recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), LinearLayoutManager.VERTICAL));
+
+        threadListAdapter = new ThreadListAdapter(currentThread, getChildFragmentManager());
 
         setupRepliesDialog();
-        if (getActivity() instanceof OnThumbnailClickListener) {
-            threadListAdapter.setOnThumbnailClickListener((OnThumbnailClickListener) getActivity());
+        if (getActivity() instanceof ThumbnailClickListener) {
+            threadListAdapter.setOnThumbnailClickListener((ThumbnailClickListener) getActivity());
         }
 
         recyclerView.setAdapter(threadListAdapter);
-        threadListAdapter.addHeader(listHeader);
-        threadListAdapter.addFooter(listFooter);
 
         TypedValue typedValue = new TypedValue();
         getActivity().getTheme().resolveAttribute(R.attr.actionBarSize, typedValue, true);
         int pixels = getResources().getDimensionPixelSize(typedValue.resourceId);
 
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                swipeRefreshLayout.setRefreshing(true);
-                refresh(false);
-            }
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            swipeRefreshLayout.setRefreshing(true);
+            refresh(false);
         });
 
         swipeRefreshLayout.setProgressViewOffset(false, pixels, pixels + 100);
@@ -320,92 +297,73 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
 
         if (!TextUtils.isEmpty(boardName)) {
-
-            Log.d(LOG_TAG, "Board name for thread " + threadId + " is " + boardName);
-            if (currentThread == null || currentThread.getPosts() == null || currentThread.getPosts().size() == 0) {
-                showContent();
-            }
-
-            RxUtil.safeUnsubscribe(fetchPostSubscription);
-            fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                    .flatMap(new Func1<History, Observable<ChanThread>>() {
-                        @Override
-                        public Observable<ChanThread> call(History history) {
-                            if (getActivity() == null) {
-                                return Observable.just(null);
-                            }
-
-                            isWatched = history != null && history.watched;
-
-                            if (stickyAutoRefresh) {
-                                RefreshScheduler.getInstance().addThread(boardName, threadId, isWatched);
-                            }
-
-                            final ChanThread chanThread;
-                            if (isWatched) {
-                                chanThread = MimiUtil.getInstance().getBookmarkedThread(boardName, threadId);
-                                if (chanThread != null) {
-                                    currentThread = chanThread;
-                                    return Observable.just(chanThread);
-                                } else {
-                                    getActivity().runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            showLoadingLayout();
-                                        }
-                                    });
-                                    return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT);
-                                }
-                            } else {
-                                if (currentThread == null || currentThread.getPosts() == null || currentThread.getPosts().size() == 0) {
-                                    getActivity().runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            showLoadingLayout();
-                                        }
-                                    });
-                                }
-                                return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_DEFAULT);
-                            }
-                        }
-                    })
-                    .flatMap(ProcessThreadTask.processThreadFlatMap(getActivity(), boardName, threadId))
-                    .compose(DatabaseUtils.<ChanThread>applySchedulers())
-                    .subscribe(new Action1<ChanThread>() {
-                        @Override
-                        public void call(ChanThread chanThread) {
-                            if (chanThread != null && chanThread.getPosts() != null && chanThread.getPosts().size() > 0) {
-                                final int size;
-                                if (isWatched) {
-                                    if (currentThread == null || currentThread.getPosts() == null || currentThread.getPosts().size() == 0) {
-                                        size = 0;
-                                    } else {
-                                        size = ThreadRegistry.getInstance().getThreadSize(threadId) - ThreadRegistry.getInstance().getUnreadCount(threadId);
-                                    }
-
-//                                    refresh(false);
-                                } else {
-                                    size = -1;
-                                }
-
-                                showThread(chanThread, size, isWatched && rememberThreadScrollPosition);
-                            }
-
-                            currentThread = chanThread;
-
-//                            RxUtil.safeUnsubscribe(fetchPostSubscription);
-                        }
-                    }, new Action1<Throwable>() {
-                        @Override
-                        public void call(Throwable throwable) {
-                            onErrorResponse(throwable);
-//                            RxUtil.safeUnsubscribe(fetchPostSubscription);
-                        }
-                    });
+            initPosts();
         } else {
             Log.w(LOG_TAG, "No board name for thread " + threadId);
         }
+    }
 
+    private void initPosts() {
+        if (getActivity() == null || !isAdded()) {
+            return;
+        }
+
+//        RxUtil.safeUnsubscribe(threadSubscription);
+        threadWatcherSubscription = viewModel.watchThread()
+                .compose(DatabaseUtils.applySchedulers())
+                .doOnNext(chanThread -> {
+                    if (chanThread.getPosts().size() == 0) {
+                        return;
+                    }
+
+                    if (threadId == chanThread.getThreadId()
+                            && (chanThread.getPosts().size() > currentThread.getPosts().size() || !chanThread.getClass().equals(currentThread.getClass()))) {
+                        final int pos;
+                        if (!viewModel.getFirstFetchComplete()) {
+                            pos = viewModel.lastReadPos();
+//                            RefreshScheduler.getInstance().addThread(boardName, threadId, viewModel.bookmarked());
+                        } else {
+                            pos = 0;
+                        }
+
+                        viewModel.setFirstFetchComplete(true);
+
+                        if (threadListAdapter != null) {
+                            threadListAdapter.setUserPosts(viewModel.getUserPosts());
+                        }
+
+                        currentThread = chanThread;
+                        showThread(chanThread, pos > 0 && rememberThreadScrollPosition);
+
+                    } else {
+                        Log.w(LOG_TAG, "Database updated but the thread has no posts");
+                    }
+                })
+                .onErrorResumeNext(throwable -> {
+                    Log.e(LOG_TAG, "Error occurred while watching thread", throwable);
+                    return Flowable.just(new ErrorChanThread(new ChanThread(boardName, threadId, Collections.emptyList()), throwable));
+                })
+                .subscribe();
+
+//        RxUtil.safeUnsubscribe(fetchThreadSubscription);
+        fetchThreadSubscription = viewModel.fetchThread(false)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnSuccess(t -> {
+                    if (t instanceof ErrorChanThread) {
+                        Log.e(LOG_TAG, "Error while fetching thread", ((ErrorChanThread) t).getError());
+                        onErrorResponse(((ErrorChanThread) t).getError());
+                    } else if (t instanceof ArchivedChanThread) {
+                        if (getActivity() != null && isAdded()) {
+                            final String archiveMessage = getString(R.string.archive_message, ((ArchivedChanThread) t).getName());
+                            onErrorResponse(new Exception(archiveMessage));
+                        }
+                    } else {
+                        Log.e(LOG_TAG, "Returned with " + t.getPosts().size() + " posts in thread /" + t.getBoardName() + "/" + t.getThreadId());
+                    }
+                })
+                .doOnError(this::onErrorResponse)
+                .subscribe();
     }
 
     @Override
@@ -414,134 +372,279 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
         if (toolbar != null) {
             toolbar.getMenu().clear();
-
-            if (MimiUtil.getLayoutType(getActivity()) == LayoutType.TABBED) {
-                toolbar.inflateMenu(R.menu.detail_tab);
-            } else {
-                toolbar.inflateMenu(R.menu.detail);
-            }
-            toolbar.setOnMenuItemClickListener(this);
-
-            if (isWatched && bookmarkMenuItem != null) {
+            if (viewModel.bookmarked() && bookmarkMenuItem != null) {
                 bookmarkMenuItem.setIcon(R.drawable.ic_bookmark);
             }
 
             if (TextUtils.isEmpty(boardTitle)) {
                 RxUtil.safeUnsubscribe(boardInfoSubscription);
                 boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                        .compose(DatabaseUtils.<ChanBoard>applySchedulers())
-                        .subscribe(new Action1<ChanBoard>() {
-                            @Override
-                            public void call(ChanBoard chanBoard) {
-                                if (chanBoard != null) {
-                                    boardTitle = chanBoard.getTitle();
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe(chanBoard -> {
+                            if (!TextUtils.isEmpty(chanBoard.getName())) {
+                                boardTitle = chanBoard.getTitle();
 
-                                    toolbar.setTitle(boardTitle);
-                                    toolbar.setSubtitle(String.valueOf(threadId));
+                                if (getActivity() instanceof MimiActivity) {
+                                    MimiActivity activity = (MimiActivity) getActivity();
+                                    activity.getSupportActionBar().setTitle(boardTitle);
+                                    activity.getSupportActionBar().setSubtitle(String.valueOf(threadId));
                                 }
-
                             }
+
                         });
             } else {
-                toolbar.setTitle(boardTitle);
-                toolbar.setSubtitle(String.valueOf(threadId));
+                if (getActivity() instanceof MimiActivity) {
+                    MimiActivity activity = (MimiActivity) getActivity();
+                    activity.getSupportActionBar().setTitle(boardTitle);
+                    activity.getSupportActionBar().setSubtitle(String.valueOf(threadId));
+                }
             }
 
             final View spinner = toolbar.findViewById(R.id.board_spinner);
             if (spinner != null) {
                 spinner.setVisibility(View.GONE);
             }
+        }
 
-            final MenuItem bookmarkItem = toolbar.getMenu().findItem(R.id.bookmark_menu);
-            if (bookmarkItem != null) {
-                if (isWatched) {
-                    bookmarkItem.setIcon(R.drawable.ic_bookmark);
-                }
-                bookmarkMenuItem = bookmarkItem;
-            }
-
-            final MenuItem closeTabItem = toolbar.getMenu().findItem(R.id.close_tab);
-            if (closeTabItem != null) {
-                if (getActivity() instanceof TabsActivity) {
-                    closeTabItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            BusProvider.getInstance().post(new CloseTabEvent(threadId, boardName, boardTitle, false));
-                            return true;
-                        }
-                    });
-                } else {
-                    closeTabItem.setVisible(false);
-                }
-            }
-
-            final MenuItem closeOtherTabsItem = toolbar.getMenu().findItem(R.id.close_other_tabs);
-            if (closeOtherTabsItem != null) {
-                if (getActivity() instanceof TabsActivity) {
-                    closeOtherTabsItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            BusProvider.getInstance().post(new CloseTabEvent(threadId, boardName, boardTitle, true));
-                            return true;
-                        }
-                    });
-                } else {
-                    closeOtherTabsItem.setVisible(false);
-                }
-            }
+        if (getActivity() != null) {
+            getActivity().invalidateOptionsMenu();
         }
 
     }
 
-    private void createRecyclerViewScrollListeners(final boolean useFastScroll) {
-        recyclerView.removeOnScrollListener(fastScrollLayout.getOnScrollListener());
-        recyclerView.addOnScrollListener(fastScrollLayout.getOnScrollListener());
-
-        if (useFastScroll) {
-            recyclerView.setVerticalScrollBarEnabled(false);
+    @Override
+    public int getMenuRes() {
+        if (MimiUtil.getLayoutType(getActivity()) == LayoutType.TABBED) {
+            return R.menu.detail_tab;
         } else {
-            recyclerView.setVerticalFadingEdgeEnabled(true);
-            recyclerView.setVerticalScrollBarEnabled(true);
+            return R.menu.detail;
+        }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        int menuRes = getMenuRes();
+        inflater.inflate(menuRes, menu);
+
+        final MenuItem bookmarkItem = menu.findItem(R.id.bookmark_menu);
+        if (bookmarkItem != null) {
+            if (viewModel.bookmarked()) {
+                bookmarkItem.setIcon(R.drawable.ic_bookmark);
+            }
+            bookmarkMenuItem = bookmarkItem;
         }
 
-        if (fastScrollListener == null) {
-            fastScrollListener = new RecyclerView.OnScrollListener() {
+        final MenuItem closeTabItem = menu.findItem(R.id.close_tab);
+        if (!(getActivity() instanceof TabsActivity) && closeTabItem != null) {
+            closeTabItem.setVisible(false);
+        }
+
+        final MenuItem closeOtherTabsItem = menu.findItem(R.id.close_other_tabs);
+        if (!(getActivity() instanceof TabsActivity) && closeOtherTabsItem != null) {
+            closeOtherTabsItem.setVisible(false);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NotNull MenuItem item) {
+        if (getActivity() != null) {
+
+            int itemId = item.getItemId();
+            if (itemId == R.id.refresh_menu) {
+                refresh(true);
+                return true;
+            } else if (itemId == R.id.bookmark_menu) {
+                toggleWatch();
+                return true;
+            } else if (itemId == R.id.share_menu) {
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_SEND);
+                sendIntent.putExtra(Intent.EXTRA_TEXT,
+                        MimiUtil.https() + getResources().getString(R.string.board_link) + getResources().getString(R.string.raw_thread_path, getBoardName(), getThreadId()));
+                sendIntent.setType("text/plain");
+                startActivity(sendIntent);
+                return true;
+            } else if (itemId == R.id.find_menu) {
+                showFindView();
+                return true;
+            } else if (itemId == R.id.mark_as_read_menu) {
+                if (currentThread == null || currentThread.getPosts() == null) {
+                    return true;
+                }
+
+                lastReadRunnable.setPosition(currentThread.getPosts().size());
+                lastReadRunnable.run();
+                return true;
+            } else if (itemId == R.id.close_tab) {
+                if (getActivity() instanceof TabEventListener) {
+                    ((TabEventListener) getActivity()).onTabClosed(threadId, boardName, boardTitle, false);
+                }
+                return true;
+            } else if (itemId == R.id.close_other_tabs) {
+                if (getActivity() instanceof TabEventListener) {
+                    ((TabEventListener) getActivity()).onTabClosed(threadId, boardName, boardTitle, true);
+                }
+                return true;
+            } else if (itemId == R.id.quick_top) {
+                if (recyclerView != null) {
+                    recyclerView.scrollToPosition(0);
+                }
+                return true;
+            } else if (itemId == R.id.quick_bottom) {
+                if (recyclerView != null && currentThread != null && currentThread.getPosts() != null) {
+                    recyclerView.scrollToPosition(currentThread.getPosts().size() - 1);
+                }
+                return true;
+            }
+
+            return false;
+
+        }
+
+        return false;
+    }
+
+    private void showFindView() {
+        if (textFindHandler == null) {
+            textFindHandler = new Handler();
+        }
+        if (findView != null) {
+            findView.setVisibility(View.VISIBLE);
+            AppCompatEditText input = findView.findViewById(R.id.find_text);
+            if (input != null) {
+                input.requestFocus();
+                MimiUtil.showKeyboard();
+            }
+            return;
+        }
+
+        findViewStub.setLayoutResource(R.layout.find_bar_view);
+        findViewStub.setOnInflateListener((stub, inflated) -> {
+            findView = inflated;
+
+            final AppCompatTextView foundText = inflated.findViewById(R.id.number_found);
+            final AppCompatEditText input = inflated.findViewById(R.id.find_text);
+            input.requestFocus();
+            MimiUtil.showKeyboard();
+            input.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                    findNext();
+                    return true;
+                }
+                return false;
+            });
+            input.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    super.onScrolled(recyclerView, dx, dy);
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-                    if (dy > 0) {
-                        lastReadHandler.removeCallbacks(lastReadRunnable);
-                        lastReadHandler.postDelayed(lastReadRunnable, 500);
+                }
+
+                @Override
+                public void onTextChanged(final CharSequence s, int start, int before, int count) {
+                    if (threadListAdapter != null) {
+                        textFindHandler.removeCallbacks(updateAdapterRunnable);
+
+                        if (!TextUtils.isEmpty(s)) {
+                            textFindHandler.postDelayed(updateAdapterRunnable, 500);
+                            updateAdapterRunnable = () -> {
+                                if (threadListAdapter != null) {
+                                    threadListAdapter.getFilter().filter(s);
+                                    int count1 = threadListAdapter.getFilterCount();
+                                    foundText.setText(inflated.getResources().getString(R.string.found_number, count1));
+                                }
+                            };
+                        }
                     }
+                }
 
-                    if (useFastScroll && (Math.abs(dy) > 220 || fastScrollLayout.getVisibility() == View.VISIBLE)) {
-                        fastScrollLayout.clearAnimation();
-                        fastScrollLayout.setAlpha(1.0F);
-                        fastScrollLayout.setVisibility(View.VISIBLE);
+                @Override
+                public void afterTextChanged(Editable s) {
 
-                        hideFastScrollHandler.removeCallbacks(hideFastScrollRunnable);
-                        hideFastScrollHandler.postDelayed(hideFastScrollRunnable, FAST_SCROLL_TIMEOUT);
+                }
+            });
+
+            View nextButton = inflated.findViewById(R.id.find_next);
+            nextButton.setOnClickListener(v -> findNext());
+
+            View prevButton = inflated.findViewById(R.id.find_prev);
+            prevButton.setOnClickListener(v -> findPrevious());
+
+            View closeButton = inflated.findViewById(R.id.close_find_bar);
+            closeButton.setOnClickListener(v -> {
+                if (threadListAdapter != null) {
+                    threadListAdapter.clearFilter();
+                }
+
+                if (input != null) {
+                    input.setText("");
+                    MimiUtil.hideKeyboard(input);
+                }
+
+                if (inflated != null) {
+                    inflated.setVisibility(View.GONE);
+                }
+            });
+
+            threadListAdapter.setOnFilterUpdateCallback((filteredString, count) -> foundText.setText(inflated.getResources().getString(R.string.found_number, count)));
+        });
+        findViewStub.inflate();
+    }
+
+    private void findNext() {
+        int pos = threadListAdapter.getNextFoundStringPosition();
+        if (pos >= 0) {
+            layoutManager.scrollToPositionWithOffset(pos, 20);
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "Position = " + pos);
+        }
+    }
+
+    private void findPrevious() {
+        int pos = threadListAdapter.getPrevFoundStringPosition();
+        if (pos >= 0) {
+            layoutManager.scrollToPositionWithOffset(pos, 20);
+        }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "Position = " + pos);
+        }
+    }
+
+    private void createRecyclerViewScrollListeners() {
+        if (recyclerViewScrollListener == null) {
+            recyclerViewScrollListener = new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    super.onScrolled(recyclerView, dx, dy);
+                    final int lastPos = viewModel.lastReadPos();
+                    final int currentPos = layoutManager.findFirstVisibleItemPosition() - 1;
+                    if (currentPos > lastPos) {
+                        lastReadHandler.removeCallbacks(lastReadRunnable);
+                        lastReadRunnable
+                                .setSize(currentThread.getPosts().size())
+                                .setWatched(viewModel.bookmarked())
+                                .setPosition(currentPos);
+
+                        lastReadHandler.postDelayed(lastReadRunnable, 500);
                     }
                 }
             };
         }
 
-        recyclerView.removeOnScrollListener(fastScrollListener);
-        recyclerView.addOnScrollListener(fastScrollListener);
+        recyclerView.removeOnScrollListener(recyclerViewScrollListener);
+        recyclerView.addOnScrollListener(recyclerViewScrollListener);
     }
 
     private void extractExtras(final Bundle bundle) {
         if (bundle != null) {
             if (bundle.containsKey(Extras.EXTRAS_THREAD_ID)) {
-                threadId = bundle.getInt(Extras.EXTRAS_THREAD_ID);
+                threadId = bundle.getLong(Extras.EXTRAS_THREAD_ID);
             }
             if (bundle.containsKey(Extras.EXTRAS_BOARD_NAME)) {
                 boardName = bundle.getString(Extras.EXTRAS_BOARD_NAME);
-                if (getActivity() != null) {
-                    final String url = getResources().getString(R.string.sys_link);
-                    postUrl = "https://" + url + "/" + boardName + "/post";
-                }
             }
             if (bundle.containsKey(Extras.EXTRAS_BOARD_TITLE)) {
                 boardTitle = bundle.getString(Extras.EXTRAS_BOARD_TITLE);
@@ -558,11 +661,13 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             if (bundle.containsKey(Extras.EXTRAS_THREAD_FIRST_POST)) {
                 final ChanPost post = bundle.getParcelable(Extras.EXTRAS_THREAD_FIRST_POST);
 
+                List<ChanPost> posts = new ArrayList<>(1);
+                posts.add(post);
+
                 currentThread = new ChanThread();
                 currentThread.setThreadId(threadId);
                 currentThread.setBoardName(boardName);
-                currentThread.setPosts(new ArrayList<ChanPost>());
-                currentThread.getPosts().add(post);
+                currentThread.setPosts(posts);
 
                 postFromExtras++;
             }
@@ -572,111 +677,40 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             } else {
                 stickyAutoRefresh = false;
             }
+
+            if (bundle.containsKey(Extras.EXTRAS_POST_STATE)) {
+                postState = bundle.getBundle(Extras.EXTRAS_POST_STATE);
+            }
         }
 
     }
 
     private void toggleWatch() {
+        final boolean bookmarked = viewModel.bookmarked();
         if (currentThread != null) {
-            final File bookmarkFile = MimiUtil.getBookmarkFile(MimiUtil.getInstance().getBookmarkDir(), boardName, threadId);
             final ChanPost post;
-
-
-            if (isWatched) {
+            if (viewModel.bookmarked()) {
 
                 if (bookmarkMenuItem != null) {
                     bookmarkMenuItem.setIcon(R.drawable.ic_bookmark_outline);
                 }
-                RxUtil.safeUnsubscribe(removeHistorySubscription);
-                removeHistorySubscription = HistoryTableConnection.removeHistory(boardName, threadId)
-                        .doOnNext(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean success) {
-                                MimiUtil.getInstance().removeBookmark(boardName, threadId);
-                            }
-                        })
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe();
-                ThreadRegistry.getInstance().remove(threadId);
 
-            } else {
-
-                if (bookmarkMenuItem != null) {
-                    bookmarkMenuItem.setIcon(R.drawable.ic_bookmark);
-                }
-                ThreadRegistry.getInstance().update(threadId, threadListAdapter.getLastPosition(), true, true);
-
-                try {
-                    if (bookmarkFile != null) {
-                        MimiUtil.getInstance().saveBookmark(currentThread, new MimiUtil.OperationCompleteListener() {
-                            @Override
-                            public void onOperationComplete() {
-                                Log.d(LOG_TAG, "Saved bookmark successfully: thread=" + threadId);
-                            }
-
-                            @Override
-                            public void onOperationFailed() {
-                                Log.e(LOG_TAG, "Error saving bookmark: thread=" + threadId);
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            } else if (bookmarkMenuItem != null) {
+                bookmarkMenuItem.setIcon(R.drawable.ic_bookmark);
             }
-
-            isWatched = !isWatched;
 
             if (currentThread.getPosts().size() > 0) {
                 post = currentThread.getPosts().get(0);
-                RxUtil.safeUnsubscribe(fetchPostSubscription);
-                fetchPostSubscription = HistoryTableConnection.putHistory(boardName, post, currentThread.getPosts().size(), isWatched)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean success) {
-                                if (success) {
-                                    post.setWatched(isWatched);
-                                }
+                RxUtil.safeUnsubscribe(putHistorySubscription);
+                putHistorySubscription = viewModel.setBookmarked(!bookmarked)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(success -> {
+                            if (success && currentThread.getPosts().size() > 0) {
+                                post.setWatched(bookmarked);
                             }
                         });
-
-                BusProvider.getInstance().post(new UpdateHistoryEvent(boardName, currentThread));
             }
-        }
-    }
-
-    private void saveHistory() {
-        if (currentThread != null && currentThread.getPosts() != null) {
-            final ChanPost firstPost = getFirstPost(currentThread);
-            final int postCount = currentThread.getPosts().size();
-
-            RxUtil.safeUnsubscribe(fetchPostSubscription);
-            fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                    .flatMap(new Func1<History, Observable<Boolean>>() {
-                        @Override
-                        public Observable<Boolean> call(History history) {
-                            final boolean watched;
-                            if (history == null) {
-                                watched = isWatched;
-                            } else {
-                                watched = history.watched;
-                            }
-
-                            return HistoryTableConnection.putHistory(boardName, firstPost, postCount, watched);
-                        }
-                    })
-                    .compose(DatabaseUtils.<Boolean>applySchedulers())
-                    .subscribe(new Action1<Boolean>() {
-                        @Override
-                        public void call(Boolean success) {
-                            if (success) {
-                                Log.d(LOG_TAG, "Successfully updated history");
-                            } else {
-                                Log.e(LOG_TAG, "Error while updating history");
-                            }
-                        }
-                    });
         }
     }
 
@@ -690,79 +724,93 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             showLoadingLayout();
         }
 
-        final int oldThreadSize = ThreadRegistry.getInstance().getLastReadPosition(threadId);
-
         RxUtil.safeUnsubscribe(threadSubscription);
         threadSubscription = refreshObservable()
-                .subscribe(showThreadAction(oldThreadSize, showLoading), new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        onErrorResponse(throwable);
+                .subscribe(chanThread -> {
+                    if (chanThread.getPosts().size() > 0 && showLoading) {
+                        showContent();
+                    } else if (showLoading) {
+                        onErrorResponse(new Exception("Empty response from server"));
                     }
-                });
 
-        swipeRefreshLayout.setEnabled(false);
+                    Log.d(LOG_TAG, "Refreshed thread: /" + boardName + "/" + threadId);
+                }, this::onErrorResponse);
+
+        swipeRefreshLayout.setRefreshing(false);
     }
 
-    private Observable<ChanThread> refreshObservable() {
-        return chanConnector.fetchThread(getActivity(), boardName, threadId, ChanConnector.CACHE_FORCE_NETWORK)
-                .map(ProcessThreadTask.processThread(getActivity(), boardName, threadId))
-                .zipWith(HistoryTableConnection.fetchPost(boardName, threadId), threadLookupZipper(boardName, threadId))
-                .compose(DatabaseUtils.<ChanThread>applySchedulers());
-
+    private Single<ChanThread> refreshObservable() {
+        return viewModel.fetchThread(true)
+                .doOnSuccess(chanThread -> {
+                    if (chanThread instanceof ErrorChanThread) {
+                        onErrorResponse(((ErrorChanThread) chanThread).getError());
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
     }
 
     private void showPostFragment() {
-        final FragmentManager fm = getChildFragmentManager();
 
-        recyclerView.smoothScrollBy(0, 0);
-        if (!createNewPostFragment) {
-            createNewPostFragment = false;
-            postFragment = (PostFragment) fm.findFragmentByTag(threadReplyFragmentTag);
+        if (getActivity() == null || !isAdded()) {
+            return;
         }
 
-        if (postFragment == null) {
-            final Bundle args = new Bundle();
-            args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-            args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
-            args.putInt(Extras.LOADER_ID, loaderId);
+        try {
+            final FragmentManager fm = getChildFragmentManager();
+
+            recyclerView.smoothScrollBy(0, 0);
+            final int threadSize;
+            if (currentThread != null && currentThread.getPosts() != null) {
+                threadSize = currentThread.getPosts().size();
+            } else {
+                threadSize = 0;
+            }
+
+            final Bundle args;
+            if (postState == null || createNewPostFragment) {
+                createNewPostFragment = false;
+
+                args = new Bundle();
+                args.putLong(Extras.EXTRAS_THREAD_ID, threadId);
+                args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+                args.putInt(Extras.EXTRAS_THREAD_SIZE, threadSize);
+
+            } else {
+                args = postState;
+            }
 
             if (!TextUtils.isEmpty(replyComment)) {
-                args.putString(Extras.EXTRAS_POST_COMMENT, replyComment);
+                args.putString(Extras.EXTRAS_POST_REPLY, replyComment);
                 replyComment = null;
             }
 
             postFragment = new PostFragment();
             postFragment.setPostListener(createPostCompleteListener());
             postFragment.setArguments(args);
-        } else {
-            if (!TextUtils.isEmpty(replyComment)) {
-                postFragment.setComment(replyComment);
-            }
-        }
 
-        postFragment.show(fm, threadReplyFragmentTag);
+            postFragment.show(fm, threadReplyFragmentTag);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error showing post form", e);
+        }
     }
 
     private PostFragment.PostListener createPostCompleteListener() {
         return new PostFragment.PostListener() {
             @Override
             public void onStartPost() {
-                RxUtil.safeUnsubscribe(fetchPostSubscription);
-                fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                        .compose(DatabaseUtils.<History>applySchedulers())
-                        .subscribe(new Action1<History>() {
-                            @Override
-                            public void call(History history) {
-                                if (history == null) {
-                                    return;
-                                }
+                RxUtil.safeUnsubscribe(fetchHistorySubscription);
+                fetchHistorySubscription = HistoryTableConnection.fetchPost(boardName, threadId)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe(history -> {
+                            if (history.getThreadId() == -1) {
+                                return;
+                            }
 
-                                final boolean watched = history.watched;
-                                if (!watched) {
-                                    toggleWatch();
-                                }
+                            final boolean watched = history.getWatched();
+                            if (!watched) {
+                                toggleWatch();
                             }
                         });
 
@@ -772,62 +820,57 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
             @Override
             public void onSuccess(final String postId) {
-                if (getActivity() == null) {
-                    return;
+                try {
+                    if (threadWatcherSubscription == null || threadWatcherSubscription.isDisposed()) {
+                        return;
+                    }
+
+                    Log.i(LOG_TAG, "Post ID: " + postId);
+
+                    if (getActivity() == null) {
+                        return;
+                    }
+
+                    showPostStatus("Success!", null);
+                    refresh(false);
+
+                    final FragmentTransaction ft = getChildFragmentManager().beginTransaction();
+                    ft.remove(postFragment);
+                    ft.commit();
+
+                    createNewPostFragment = true;
+                    postFragment = null;
+                    replyComment = null;
+                    postState = null;
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Error creating post", e);
                 }
-
-                Log.i(LOG_TAG, "Post ID: " + postId);
-                showPostStatus("Success!");
-
-                final int id = Integer.valueOf(postId);
-                RxUtil.safeUnsubscribe(fetchPostSubscription);
-                fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
-                        .compose(DatabaseUtils.<History>applySchedulers())
-                        .subscribe(new Action1<History>() {
-                            @Override
-                            public void call(History history) {
-                                if (history != null) {
-                                    ThreadRegistry.getInstance().add(boardName, threadId, id, currentThread.getPosts().size(), history.watched);
-                                }
-                            }
-                        });
-
-                RxUtil.safeUnsubscribe(addPostSubscription);
-                addPostSubscription = UserPostTableConnection.addPost(boardName, threadId, id)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean success) {
-                                if (success) {
-                                    Log.d(LOG_TAG, "Added post to database: board=" + boardName + ", thread=" + threadId + ", post=" + postId);
-                                } else {
-                                    Log.e(LOG_TAG, "Error Adding post to database: board=" + boardName + ", thread=" + threadId + ", post=" + postId);
-                                }
-                            }
-                        });
-
-                refresh(false);
-
-                final FragmentTransaction ft = getChildFragmentManager().beginTransaction();
-                ft.remove(postFragment);
-                ft.commit();
-
-                createNewPostFragment = true;
-                postFragment = null;
-
             }
 
             @Override
             public void onError(Throwable error) {
                 if (getActivity() != null) {
                     error.printStackTrace();
-                    showPostStatus(error.getLocalizedMessage());
+                    final String html;
+                    if (error instanceof ChanPostException) {
+                        html = ((ChanPostException) error).getHtml();
+                    } else {
+                        html = null;
+                    }
+                    showPostStatus(error.getLocalizedMessage(), html);
+                }
+            }
+
+            @Override
+            public void onDismiss() {
+                if (postFragment != null) {
+                    postState = postFragment.saveState();
                 }
             }
 
             @Override
             public void onCanceled() {
-                if (getActivity() != null) {
+                if (getActivity() != null && postFragment != null) {
                     final FragmentTransaction ft = getChildFragmentManager().beginTransaction();
                     postFragment.dismiss();
                     ft.remove(postFragment);
@@ -835,46 +878,11 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
 
                     createNewPostFragment = true;
                     postFragment = null;
+                    replyComment = null;
+                    postState = null;
                 }
             }
         };
-    }
-
-    @Subscribe
-    public void autoRefreshThread(final UpdateHistoryEvent event) {
-        if (event != null && getActivity() != null) {
-
-            if (event.getThread() == null) {
-                refresh(false);
-                return;
-            }
-
-            if (event.getThreadId() == threadId
-                    && event.getBoardName().equals(boardName)
-                    && (currentThread == null || event.getThread().getPosts().size() != currentThread.getPosts().size())
-                    && threadListAdapter != null) {
-
-                refresh(false);
-            }
-        }
-    }
-
-    @Subscribe
-    public void onGalleryPagerScrolled(final GalleryPagerScrolledEvent event) {
-
-        if (getUserVisibleHint()) {
-            if (currentThread != null) {
-                final ChanPost p = new ChanPost();
-                p.setNo(event.getPostNumber());
-                final int index = currentThread.getPosts().indexOf(p);
-
-                if (index >= 0 && recyclerView != null) {
-                    scrollListToPosition(recyclerView, index);
-//                    recyclerView.smoothScrollToPosition(index);
-//                    recyclerView.smoothScrollToPosition(index + 2);
-                }
-            }
-        }
     }
 
     private void showPostProgress() {
@@ -888,124 +896,124 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
     }
 
-    private void showPostStatus(final String status) {
+    private void showPostStatus(final String status, final String html) {
         if (getActivity() != null) {
             final View v = getActivity().findViewById(android.R.id.content);
             if (postingSnackbar != null && postingSnackbar.isShown()) {
                 postingSnackbar.dismiss();
             }
-            Snackbar.make(v, status, Snackbar.LENGTH_LONG).show();
-        }
+            Snackbar snackbar = Snackbar.make(v, status, Snackbar.LENGTH_LONG);
+            if (!TextUtils.isEmpty(html)) {
+                snackbar.setAction(R.string.view,
+                        view -> WebActivity
+                                .start(getActivity(), html))
+                        .setActionTextColor(ResourcesCompat.getColor(getResources(), R.color.md_green_400, getActivity().getTheme()));
+            }
 
+            snackbar.show();
+        }
     }
 
     @Override
     public void onSaveInstanceState(final Bundle outState) {
-        outState.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+        outState.putLong(Extras.EXTRAS_THREAD_ID, threadId);
         outState.putString(Extras.EXTRAS_BOARD_NAME, boardName);
         outState.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
         outState.putInt(Extras.LOADER_ID, loaderId);
         outState.putBoolean(Extras.EXTRAS_STICKY_AUTO_REFRESH, stickyAutoRefresh);
 
+        if (postState != null) {
+            outState.putBundle(Extras.EXTRAS_POST_STATE, postState);
+        }
+
         super.onSaveInstanceState(outState);
     }
 
     private void showLoadingLayout() {
-        recyclerView.setVisibility(View.GONE);
-        loadingLayout.setVisibility(View.VISIBLE);
-        messageContainer.setVisibility(View.GONE);
+        if (recyclerView != null) {
+            recyclerView.setVisibility(View.GONE);
+        }
+
+        if (loadingLayout != null) {
+            loadingLayout.setVisibility(View.VISIBLE);
+        }
+
+        if (messageContainer != null) {
+            messageContainer.setVisibility(View.GONE);
+        }
     }
 
     private void showContent() {
-        loadingLayout.setVisibility(View.GONE);
-        recyclerView.setVisibility(View.VISIBLE);
+        if (loadingLayout != null) {
+            loadingLayout.setVisibility(View.GONE);
+        }
 
-        swipeRefreshLayout.setEnabled(true);
-        swipeRefreshLayout.setRefreshing(false);
+        if (recyclerView != null) {
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setEnabled(true);
+            swipeRefreshLayout.setRefreshing(false);
+        }
     }
 
     private void setupRepliesDialog() {
         threadListAdapter.setOnReplyMenuClickListener(new ReplyMenuClickListener() {
             @Override
-            public void onReply(View view, int threadId) {
-                String comment = null;
-                if (postFragment != null) {
-                    comment = postFragment.getComment();
-                }
-
-                if (TextUtils.isEmpty(comment)) {
-                    comment = ">>" + threadId + "\n";
-                } else {
-                    comment = comment + ">>" + threadId + "\n";
-                }
-
-//                comment = (comment == null ? "" : comment + "\n") + ">>" + threadId + "\n";
-
-                replyComment = comment;
-
+            public void onReply(View view, long threadId) {
+                replyComment = ">>" + threadId + "\n";
                 showPostFragment();
-
             }
 
             @Override
-            public void onQuote(View view, int position, ChanPost post) {
+            public void onQuote(View view, ChanPost post) {
 
                 if (post.getCom() != null) {
-                    String comment = null;
-                    String quote = Html.fromHtml(post.getCom()).toString();
-
-                    if (postFragment != null) {
-                        comment = postFragment.getComment();
-                    }
+                    String quote = post.getComment().toString();
 
                     if (!TextUtils.isEmpty(quote)) {
                         quote = ">" + quote;
                         quote = quote.replace("\n", "\n>");
                     }
-
-                    if (TextUtils.isEmpty(comment)) {
-                        comment = ">>" + threadId + "\n" + quote + "\n";
-                    } else {
-
-                        comment = comment + ">>" + threadId + "\n" + quote + "\n";
-                    }
-
-//                    comment = (comment == null ? "" : comment + "\n") + ">>" + post.getNo() + "\n" + quote + "\n";
-
-                    replyComment = comment;
+                    replyComment = ">>" + post.getNo() + "\n" + quote + "\n";
                 }
                 showPostFragment();
+            }
 
+            @Override
+            public void onQuoteSelection(View view, ChanPost post, int start, int end) {
+                if (post.getCom() != null) {
+                    String quote = post.getComment().toString();
+                    if (!TextUtils.isEmpty(quote) && start < quote.length() && end <= quote.length()) {
+                        quote = ">" + quote.substring(start, end);
+                        quote = quote.replace("\n", "\n>");
+                    }
+                    replyComment = ">>" + post.getNo() + "\n" + quote + "\n";
+                }
+
+                showPostFragment();
             }
         });
     }
 
-    private void closeThread(final int threadId) {
-        ThreadRegistry.getInstance().remove(threadId);
-    }
-
-    private Func2<ChanThread, History, ChanThread> threadLookupZipper(final String boardName, final int threadId) {
-        return new Func2<ChanThread, History, ChanThread>() {
-            @Override
-            public ChanThread call(ChanThread chanThread, History history) {
-                isWatched = history != null && history.watched;
-                return chanThread;
+    private void showThread(final ChanThread thread, final boolean scrollToPosition) {
+        if (thread == null || thread.getPosts() == null || !isAdded()) {
+            if (isAdded()) {
+                Log.d(LOG_TAG, "Thread object does not have posts; not showing thread");
+            } else {
+                Log.d(LOG_TAG, "Thread fragment has not been added yet; not showing thread");
             }
-        };
-    }
-
-    private void showThread(final ChanThread thread, final int originalThreadSize, final boolean scrollToPosition) {
-        if (thread == null || thread.getPosts() == null) {
             return;
         }
 
-        currentThread = thread;
+        Log.d(LOG_TAG, "Showing thread...");
 
         listViewItemHeight = new int[thread.getPosts().size()];
         Arrays.fill(listViewItemHeight, -1);
 
         if (bookmarkMenuItem != null) {
-            if (isWatched) {
+            if (viewModel.bookmarked()) {
                 bookmarkMenuItem.setIcon(R.drawable.ic_bookmark);
             } else {
                 bookmarkMenuItem.setIcon(R.drawable.ic_bookmark_outline);
@@ -1013,50 +1021,16 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
 
         if (threadListAdapter != null) {
-            threadListAdapter.setThread(thread);
-            if (getUserVisibleHint()) {
-                ThreadRegistry.getInstance().update(threadId, thread.getPosts().size(), true, isWatched);
-            } else {
-                doThreadRegistryUpdate = true;
+            if (recyclerView.isComputingLayout()) {
+                Log.d(LOG_TAG, "RecyclerView is computing layout");
             }
+
+            threadListAdapter.setThread(thread);
         }
 
         if (scrollToPosition) {
-            // unnecessary?
-            if (originalThreadSize >= 0) {
-                recyclerView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        scrollListToPosition(recyclerView, originalThreadSize);
-                    }
-                });
-
-//                recyclerView.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        layoutManager.scrollToPosition(originalThreadSize);
-//                        Log.d(LOG_TAG, "[processThread] Setting list selection: id=" + threadId + ", position=" + originalThreadSize + ", current thread size=" + thread.getPosts().size() + ", last visible position=" + (originalThreadSize + layoutManager.findLastVisibleItemPosition()));
-//                    }
-//                });
-            } else {
-                recyclerView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        scrollListToPosition(recyclerView, 0);
-                    }
-                });
-
-//                recyclerView.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        layoutManager.scrollToPosition(0);
-//                    }
-//                });
-            }
+            recyclerView.post(() -> scrollListToPosition(recyclerView, viewModel.lastReadPos()));
         }
-
-        final ThreadRegistry threadRegistry = ThreadRegistry.getInstance();
-        threadRegistry.add(boardName, threadId, currentThread.getPosts().size(), isWatched);
 
         if (postFromExtras > 1) {
             Log.d(LOG_TAG, "Showing footer refresh icon");
@@ -1064,88 +1038,59 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         }
         showContent();
 
-        if (isWatched) {
-            try {
-                final File bookmarkFile = MimiUtil.getBookmarkFile(MimiUtil.getInstance().getBookmarkDir(), boardName, threadId);
-                if (bookmarkFile != null) {
-                    if (currentThread.getPosts().size() > ThreadRegistry.getInstance().getThreadSize(threadId)) {
-                        MimiUtil.getInstance().saveBookmark(currentThread, new MimiUtil.OperationCompleteListener() {
-                                    @Override
-                                    public void onOperationComplete() {
-                                        Log.d(LOG_TAG, "Saved bookmark successfully: thread=" + threadId);
-                                    }
+        final FragmentManager fm = getChildFragmentManager();
+        final PostFragment fragment = (PostFragment) fm.findFragmentByTag(threadReplyFragmentTag);
 
-                                    @Override
-                                    public void onOperationFailed() {
-                                        Log.e(LOG_TAG, "Error saving bookmark: thread=" + threadId);
-                                    }
-                                }
-                        );
-                        Log.i(LOG_TAG, "Saving bookmark for thread: thread=" + threadId);
-                    }
-                }
-            } catch (final Exception authFailureError) {
-                authFailureError.printStackTrace();
-            }
-        } else if (getUserVisibleHint() && MimiUtil.historyEnabled(getActivity())) {
-            saveHistory();
+        if (fragment != null && fragment.getUserVisibleHint()) {
+            postFragment = fragment;
+            postFragment.setPostListener(createPostCompleteListener());
         }
     }
 
-    private Action1<ChanThread> showThreadAction(final int oldThreadSize, final boolean scrollToPosition) {
-
-        return new Action1<ChanThread>() {
-            @Override
-            public void call(ChanThread thread) {
-                showThread(thread, oldThreadSize, scrollToPosition);
-            }
-        };
-
-    }
-
-    public void onErrorResponse(final Throwable error) {
+    private void onErrorResponse(final Throwable error) {
         Log.e(LOG_TAG, "Error: " + error.getLocalizedMessage(), error);
 
         showContent();
 
-        if (error instanceof HttpException) {
-            HttpException exception = (HttpException) error;
+        if (error instanceof HttpException && ((HttpException) error).code() == 404 && messageText != null) {
+            messageText.setText(R.string.error_404);
+        } else if (messageText != null) {
+            messageText.setText(error.getLocalizedMessage());
+        } else if (getActivity() != null) {
+            Toast.makeText(getActivity(), R.string.unknown_error, Toast.LENGTH_SHORT).show();
+//            return;
+        }
 
-            if (exception.code() == 404) {
-                if (currentThread == null) {
-                    closeMessageButton.setVisibility(View.INVISIBLE);
-                } else {
-                    closeMessageButton.setVisibility(View.VISIBLE);
-                    closeMessageButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            final AlphaAnimation animation = new AlphaAnimation(1.0F, 0.0F);
-                            animation.setDuration(100);
-                            messageContainer.setAnimation(animation);
-                            messageContainer.setVisibility(View.GONE);
-                        }
-                    });
-                }
-                messageText.setText(R.string.error_404);
-                messageContainer.setVisibility(View.VISIBLE);
-                if (isWatched) {
-                    RxUtil.safeUnsubscribe(historyRemovedSubscription);
-                    historyRemovedSubscription = HistoryTableConnection.setHistoryRemovedStatus(boardName, threadId, true)
-                            .compose(DatabaseUtils.<Boolean>applySchedulers())
-                            .subscribe();
-                }
+        if (currentThread == null) {
+            if (closeMessageButton != null) {
+                closeMessageButton.setVisibility(View.INVISIBLE);
+            }
+        } else {
+            if (closeMessageButton != null) {
+                closeMessageButton.setVisibility(View.VISIBLE);
+                closeMessageButton.setOnClickListener(v -> {
+                    if (messageContainer != null) {
+                        final AlphaAnimation animation = new AlphaAnimation(1.0F, 0.0F);
+                        animation.setDuration(100);
+                        messageContainer.setAnimation(animation);
+                        messageContainer.setVisibility(View.GONE);
+                    }
+                });
             }
         }
 
-        Log.d(LOG_TAG, "Exception while accessing network", error);
-    }
-
-    private ChanPost getLastPost(final ChanThread thread) {
-        if (thread != null && thread.getPosts() != null) {
-            return thread.getPosts().get(thread.getPosts().size() - 1);
+        if (messageContainer != null) {
+            messageContainer.setVisibility(View.VISIBLE);
         }
 
-        return null;
+        if (viewModel.bookmarked()) {
+            RxUtil.safeUnsubscribe(historyRemovedSubscription);
+            historyRemovedSubscription = HistoryTableConnection.setHistoryRemovedStatus(boardName, threadId, true)
+                    .compose(DatabaseUtils.applySingleSchedulers())
+                    .subscribe();
+        }
+
+        Log.d(LOG_TAG, "Exception while accessing network", error);
     }
 
     private ChanPost getFirstPost(final ChanThread thread) {
@@ -1153,66 +1098,112 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             return thread.getPosts().get(0);
         }
 
-        return null;
+        return new ChanPost();
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
+    public void onResume() {
+        super.onResume();
 
-        RxUtil.safeUnsubscribe(fetchPostSubscription);
-        RxUtil.safeUnsubscribe(threadSubscription);
-        RxUtil.safeUnsubscribe(boardInfoSubscription);
-        RxUtil.safeUnsubscribe(historyRemovedSubscription);
-        RxUtil.safeUnsubscribe(removeHistorySubscription);
-        RxUtil.safeUnsubscribe(addPostSubscription);
-
-        if (!isWatched) {
-            if (!stickyAutoRefresh) {
-                RefreshScheduler.getInstance().removeThread(boardName, threadId);
-            }
-        } else {
-            if (recyclerView != null) {
-                ThreadRegistry.getInstance().setLastReadPosition(threadId, layoutManager.findLastVisibleItemPosition());
-            }
-            HistoryTableConnection.setLastReadPost(threadId, ThreadRegistry.getInstance().getLastReadPosition(threadId))
-                    .compose(DatabaseUtils.<Boolean>applySchedulers())
-                    .subscribe();
-        }
-
-        recyclerView.clearOnScrollListeners();
+        RefreshScheduler2.addThread(boardName, threadId);
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
-        BusProvider.getInstance().unregister(this);
+        viewModel.setFirstFetchComplete(false);
+
+        if (scrollReceiver != null) {
+            scrollReceiver.destroy();
+        }
+
+        getActivity().unregisterReceiver(scrollReceiver);
+
+        RxUtil.safeUnsubscribe(threadSubscription);
+        RxUtil.safeUnsubscribe(boardInfoSubscription);
+        RxUtil.safeUnsubscribe(putHistorySubscription);
+        RxUtil.safeUnsubscribe(fetchHistorySubscription);
+        RxUtil.safeUnsubscribe(historyRemovedSubscription);
+        RxUtil.safeUnsubscribe(fetchThreadSubscription);
+        RxUtil.safeUnsubscribe(threadWatcherSubscription);
+
+        threadWatcherSubscription = null;
+
+        viewModel.setFirstFetchComplete(false);
+
+        if (!stickyAutoRefresh) {
+            RefreshScheduler2.removeThread(boardName, threadId);
+//            RefreshScheduler.getInstance().removeThread(boardName, threadId);
+        }
+//        else if (recyclerView != null) {
+////            ThreadRegistry.getInstance().setLastReadPosition(threadId, layoutManager.findFirstVisibleItemPosition() - 1);
+//            final StringBuilder sb = new StringBuilder("Setting last read thread position: pos=");
+//            sb.append(layoutManager.findFirstVisibleItemPosition() - 1).append(", thread size=").append(currentThread.getPosts().size());
+//            Log.d(LOG_TAG, sb.toString());
+//            viewModel.setLastReadPosition(layoutManager.findFirstVisibleItemPosition() - 1)
+//                    .subscribeOn(Schedulers.io())
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe();
+//
+//        }
+
+        recyclerView.clearOnScrollListeners();
     }
 
     @Override
     public void onStart() {
         super.onStart();
 
-        BusProvider.getInstance().register(this);
-    }
+        scrollReceiver = new GalleryScrollReceiver(boardName, threadId, id -> {
+            if (getUserVisibleHint()) {
+                if (currentThread != null) {
+                    final int index = MimiUtil.findPostPositionById(id, currentThread.getPosts());
+                    if (index >= 0 && recyclerView != null) {
+                        scrollListToPosition(recyclerView, index);
+                    }
+                }
+            }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (recyclerView != null && getActivity() != null) {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            final boolean useFastScroll = preferences.getBoolean(getString(R.string.use_fast_scroll_pref), true);
-            createRecyclerViewScrollListeners(useFastScroll);
+            return Unit.INSTANCE;
+        });
+        getActivity().registerReceiver(scrollReceiver, new IntentFilter(scrollReceiver.getIntentFilter()));
+
+        if (recyclerView != null) {
+            createRecyclerViewScrollListeners();
+        }
+
+        if (threadWatcherSubscription == null && !TextUtils.isEmpty(boardName)) {
+            initPosts();
         }
     }
+
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (!isWatched && MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
-            RefreshScheduler.getInstance().removeThread(boardName, threadId);
+        if (MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
+            RefreshScheduler2.removeThread(boardName, threadId);
+//            RefreshScheduler.getInstance().removeThread(boardName, threadId);
         }
+
+        if (threadListAdapter != null) {
+            threadListAdapter.setOnFilterUpdateCallback(null);
+        }
+
+        RxUtil.safeUnsubscribe(fetchPostSubscription);
+        fetchPostSubscription = null;
+
+        recyclerView = null;
+        layoutManager = null;
+        threadListAdapter = null;
+        loadingLayout = null;
+        messageContainer = null;
+        closeMessageButton = null;
+        messageText = null;
+        swipeRefreshLayout = null;
+        bookmarkMenuItem = null;
+        toolbar = null;
     }
 
     @Override
@@ -1228,41 +1219,16 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             if (toolbar == null) {
                 toolbar = ((MimiActivity) getActivity()).getToolbar();
             }
-            if (isVisibleToUser) {
-
-                if (getActivity() instanceof IToolbarContainer) {
-                    IToolbarContainer activity = (IToolbarContainer) getActivity();
-                    activity.setExpandedToolbar(true, true);
-                }
-
-                if (doThreadRegistryUpdate) {
-                    ThreadRegistry.getInstance().update(threadId, currentThread.getPosts().size(), true, isWatched);
-                    doThreadRegistryUpdate = false;
-                }
-            } else if (!isWatched && !stickyAutoRefresh) {
-                RefreshScheduler.getInstance().removeThread(boardName, threadId);
-            }
-        }
-
-        wasVisibleToUser = isVisibleToUser;
-
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == PostFragment.PICK_IMAGE) {
-            final FragmentManager fm = getChildFragmentManager();
-            final PostFragment fragment = (PostFragment) fm.findFragmentByTag(threadReplyFragmentTag);
-
-            if (fragment != null) {
-                fragment.onActivityResult(requestCode, resultCode, data);
+            if (isVisibleToUser && getActivity() instanceof IToolbarContainer) {
+                IToolbarContainer activity = (IToolbarContainer) getActivity();
+                activity.setExpandedToolbar(true, true);
             }
 
+            if (!isVisibleToUser && !stickyAutoRefresh) {
+                RefreshScheduler2.removeThread(boardName, threadId);
+//                RefreshScheduler.getInstance().removeThread(boardName, threadId);
+            }
         }
-
-        Log.i(LOG_TAG, "Activity result called");
     }
 
     private void scrollListToPosition(RecyclerView recyclerView, int position) {
@@ -1270,110 +1236,131 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             return;
         }
 
-        RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-        if (layoutManager instanceof LinearLayoutManager) {
-            ((LinearLayoutManager) layoutManager).scrollToPositionWithOffset(position, 0);
-        } else if (layoutManager instanceof StaggeredGridLayoutManager) {
-            ((StaggeredGridLayoutManager) layoutManager).scrollToPositionWithOffset(position, 0);
+        try {
+            RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+            final int pos = position >= threadListAdapter.getItemCount() && threadListAdapter.getItemCount() > 0 ? threadListAdapter.getItemCount() - 1 : position;
+            if (layoutManager instanceof LinearLayoutManager) {
+                ((LinearLayoutManager) layoutManager).scrollToPositionWithOffset(pos, 0);
+            } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+                ((StaggeredGridLayoutManager) layoutManager).scrollToPositionWithOffset(pos, 0);
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Could not scroll thread", e);
         }
     }
 
-    @Subscribe
-    public void showRepliesDialog(final ShowRepliesEvent event) {
-        if (event.getThreadId() == threadId) {
+    @Override
+    public void onReplyClicked(@NotNull String boardName, long threadId, final long postId, @NotNull List<String> replies) {
+        if (threadId == -1) {
+            scrollToPost(postId);
+            closeRepliesDialogs();
+        } else if (threadId == this.getThreadId()) {
             Log.i(LOG_TAG, "Showing replies");
             if (getActivity() != null) {
 
                 final Handler handler = new Handler(getActivity().getMainLooper());
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (getActivity() == null) {
-                            return;
-                        }
+                handler.post(() -> {
+                    if (getActivity() == null) {
+                        return;
+                    }
 
-                        final FragmentManager fm = getActivity().getSupportFragmentManager();
-                        final RepliesDialog repliesDialog = new RepliesDialog();
-                        final Bundle args = new Bundle();
+                    final RepliesDialog repliesDialog;
+                    final FragmentManager fm = getChildFragmentManager();
+                    final Fragment frag = fm.findFragmentByTag(RepliesDialog.DIALOG_TAG);
+                    final boolean found;
+                    if (frag != null) {
+                        found = true;
+                        repliesDialog = (RepliesDialog) frag;
+                    } else {
+                        found = false;
+                        repliesDialog = new RepliesDialog();
+                    }
 
-                        final ArrayList<OutsideLink> outsideLinks = new ArrayList<>();
-                        final ArrayList<ChanPost> postList = new ArrayList<>();
-                        for (final String id : event.getReplies()) {
+                    final Bundle args = new Bundle();
 
-                            ChanPost post = new ChanPost();
-                            if (TextUtils.isDigitsOnly(id)) {
-                                int index = -1;
-                                try {
-                                    post.setNo(Integer.valueOf(id));
-                                    index = currentThread.getPosts().indexOf(post);
-                                    post = currentThread.getPosts().get(index);
+                    final ArrayList<OutsideLink> outsideLinks = new ArrayList<>();
+                    final ArrayList<String> postNumbers = new ArrayList<>();
+                    for (final String id : replies) {
 
-                                    if (post != null) {
-                                        postList.add(post);
-                                    }
-                                } catch (ArrayIndexOutOfBoundsException e) {
-                                    Log.e(LOG_TAG, "post id: " + post.getNo());
-                                    Log.e(LOG_TAG, "string id: " + id);
-                                    Log.i(LOG_TAG, "index: " + index);
+                        if (TextUtils.isDigitsOnly(id)) {
+                            int index = -1;
+                            try {
+                                index = MimiUtil.findPostPositionById(Integer.parseInt(id), currentThread.getPosts());
+                                ChanPost post = currentThread.getPosts().get(index);
 
-                                    e.printStackTrace();
-
-                                    Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
+                                if (post != null) {
+                                    postNumbers.add(String.valueOf(post.getNo()));
                                 }
-                            } else {
-                                if (id.contains("/")) {
-                                    final String[] params = id.split("/");
+                            } catch (ArrayIndexOutOfBoundsException e) {
+                                Log.e(LOG_TAG, "post id: " + id);
+                                Log.i(LOG_TAG, "index: " + index);
 
-                                    if (params.length > 1) {
-                                        final String board = params[1];
-                                        final String thread;
-                                        final OutsideLink link = new OutsideLink();
+                                e.printStackTrace();
 
-                                        link.setBoardName(board);
+                                Toast.makeText(getActivity(), R.string.error_occurred, Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            if (id.contains("/")) {
+                                final String[] params = id.split("/");
 
-                                        if (params.length > 2) {
-                                            thread = params[2];
-                                            Log.i(LOG_TAG, "Found board link: board=" + board + ", thread=" + thread);
-                                        } else {
-                                            thread = null;
-                                            Log.i(LOG_TAG, "Found board link: board=" + board);
-                                        }
+                                if (params.length > 1) {
+                                    final String board = params[1];
+                                    final String thread;
+                                    final OutsideLink link = new OutsideLink();
 
-                                        link.setThreadId(thread);
-                                        outsideLinks.add(link);
+                                    link.setBoardName(board);
+
+                                    if (params.length > 2) {
+                                        thread = params[2];
+                                        Log.i(LOG_TAG, "Found board link: board=" + board + ", thread=" + thread);
+                                    } else {
+                                        thread = null;
+                                        Log.i(LOG_TAG, "Found board link: board=" + board);
                                     }
+
+                                    link.setThreadId(thread);
+                                    outsideLinks.add(link);
                                 }
                             }
                         }
+                    }
 
-                        if (postList.size() > 0 || outsideLinks.size() > 0) {
-                            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-                            args.putParcelableArrayList(Extras.EXTRAS_POST_LIST, postList);
-                            args.putParcelableArrayList(Extras.EXTRAS_OUTSIDE_LINK_LIST, outsideLinks);
-                            args.putParcelable(Extras.EXTRAS_SINGLE_THREAD, currentThread);
+                    if (postNumbers.size() > 0 || outsideLinks.size() > 0) {
 
+                        args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                        args.putStringArrayList(Extras.EXTRAS_POST_LIST, postNumbers);
+                        args.putParcelableArrayList(Extras.EXTRAS_OUTSIDE_LINK_LIST, outsideLinks);
+                        args.putLong(Extras.EXTRAS_THREAD_ID, currentThread.getThreadId());
+
+                        if (found) {
+                            ((RepliesDialog) frag).updateReplies(args);
+                        } else {
                             repliesDialog.setArguments(args);
                             repliesDialog.show(fm, RepliesDialog.DIALOG_TAG);
                         }
                     }
+
                 });
 
             }
         }
     }
 
-    @Subscribe
-    public void onReplyClicked(final ReplyClickEvent event) {
-        if (event.getPost() == null) {
-            return;
+    private void closeRepliesDialogs() {
+        for (Fragment fragment : getChildFragmentManager().getFragments()) {
+            if (fragment instanceof RepliesDialog) {
+                ((RepliesDialog) fragment).close();
+            }
         }
+    }
 
+    private void scrollToPost(long postId) {
         try {
             if (getUserVisibleHint() && currentThread != null) {
-                final int index = currentThread.getPosts().indexOf(event.getPost());
+                final long index = MimiUtil.findPostPositionById(postId, currentThread.getPosts());
 
                 if (index >= 0) {
-                    scrollListToPosition(recyclerView, index);
+                    scrollListToPosition(recyclerView, (int) index);
                 }
             }
         } catch (Exception e) {
@@ -1386,15 +1373,44 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
             } else {
                 if (currentThread.getPosts() == null) {
                     Log.e(LOG_TAG, "Thread posts are null");
-                } else if (event == null) {
-                    Log.e(LOG_TAG, "Event object is null");
                 }
             }
 
             Log.e(LOG_TAG, "Caught exception when scrolling to post from reply dialog", e);
         }
-
     }
+
+//    @Subscribe
+//    public void onReplyClicked(final ReplyClickEvent event) {
+//        if (event.getPost() == null) {
+//            return;
+//        }
+//
+//        try {
+//            if (getUserVisibleHint() && currentThread != null) {
+//                final long index = MimiUtil.findPostPositionById(event.getPost().getNo(), currentThread.getPosts());
+//
+//                if (index >= 0) {
+//                    scrollListToPosition(recyclerView, (int) index);
+//                }
+//            }
+//        } catch (Exception e) {
+//            if (getActivity() != null) {
+//                Toast.makeText(getActivity(), R.string.unknown_error, Toast.LENGTH_SHORT).show();
+//            }
+//
+//            if (currentThread == null) {
+//                Log.e(LOG_TAG, "Current thread is null");
+//            } else {
+//                if (currentThread.getPosts() == null) {
+//                    Log.e(LOG_TAG, "Thread posts are null");
+//                }
+//            }
+//
+//            Log.e(LOG_TAG, "Caught exception", e);
+//        }
+//
+//    }
 
     public String getBoardName() {
         return boardName;
@@ -1418,50 +1434,106 @@ public class ThreadDetailFragment extends MimiFragmentBase implements
         return "thread_detail";
     }
 
-    public String getThreadId() {
-        return String.valueOf(threadId);
-    }
-
-    @Override
-    public boolean onMenuItemClick(MenuItem item) {
-        if (getActivity() != null) {
-
-            switch (item.getItemId()) {
-                case R.id.refresh_menu:
-                    refresh(true);
-
-                    return true;
-
-                case R.id.bookmark_menu:
-                    toggleWatch();
-
-                    return true;
-
-                case R.id.share_menu:
-                    Intent sendIntent = new Intent();
-                    sendIntent.setAction(Intent.ACTION_SEND);
-                    sendIntent.putExtra(Intent.EXTRA_TEXT,
-                            MimiUtil.httpOrHttps(getActivity()) + getResources().getString(R.string.board_link) + getResources().getString(R.string.raw_thread_path, getBoardName(), getThreadId()));
-                    sendIntent.setType("text/plain");
-                    startActivity(sendIntent);
-
-                    return true;
-            }
-
-            return false;
-
-        }
-
-        return false;
+    public long getThreadId() {
+        return threadId;
     }
 
     @Override
     public int getTabId() {
-        return threadId;
+        return (int) threadId;
     }
 
     @Override
     public void addContent() {
         showPostFragment();
+    }
+
+    @Override
+    public void goToPost(long postId) {
+        scrollToPost(postId);
+    }
+
+    private class LastReadRunnable implements Runnable {
+
+        public final long threadId;
+        public final String boardName;
+
+        private boolean closed;
+        private boolean watched;
+        private int size;
+        private int pos;
+
+        private LastReadRunnable(long threadId, String boardName) {
+            this.threadId = threadId;
+            this.boardName = boardName;
+        }
+
+        public long getThreadId() {
+            return threadId;
+        }
+
+        public String getBoardName() {
+            return boardName;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public LastReadRunnable setSize(int size) {
+            this.size = size;
+            return this;
+        }
+
+        public LastReadRunnable setPosition(int pos) {
+            this.pos = pos;
+            return this;
+        }
+
+        public boolean isClosed() {
+            return closed;
+        }
+
+        public LastReadRunnable setClosed(boolean closed) {
+            this.closed = closed;
+            return this;
+        }
+
+        public LastReadRunnable setWatched(boolean watched) {
+            this.watched = watched;
+            return this;
+        }
+
+        @Override
+        public void run() {
+            if (getActivity() != null) {
+                if (layoutManager != null) {
+                    int visibleItems = layoutManager.findLastVisibleItemPosition() - layoutManager.findFirstVisibleItemPosition() + 2;
+                    Log.d(LOG_TAG, "Visible items: " + visibleItems);
+                    viewModel.setLastReadPosition(this.pos, visibleItems)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(new SingleObserver<Boolean>() {
+                                @Override
+                                public void onSubscribe(Disposable d) {
+                                    // no op
+                                }
+
+                                @Override
+                                public void onSuccess(@NonNull Boolean success) {
+                                    Log.d(LOG_TAG, "set last read position: position=" + pos + ", unread posts=" + viewModel.unread());
+//                                    BusProvider.getInstance().post(new UpdateHistoryEvent(threadId, boardName, viewModel.unread(), closed, watched));
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    Log.e(LOG_TAG, "Unable to set last read position: position=" + pos + ", unread posts=" + viewModel.unread());
+                                }
+                            });
+
+
+                }
+            }
+        }
     }
 }

@@ -16,199 +16,79 @@
 
 package com.emogoth.android.phone.mimi.adapter;
 
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
+import android.content.Context;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
+import androidx.core.view.MotionEventCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
+import com.emogoth.android.phone.mimi.db.models.History;
+import com.emogoth.android.phone.mimi.util.GlideApp;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
-import com.nhaarman.listviewanimations.util.Swappable;
+;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.disposables.Disposable;
 
-
-public class HistoryAdapter extends BaseAdapter implements Swappable {
-
-    private static final String LOG_TAG = HistoryAdapter.class.getSimpleName();
-    private final LayoutInflater inflater;
-    private final ArrayList<History> historyList;
-    private final FragmentActivity activity;
+public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
+    private static final String LOG_TAG = History.class.getSimpleName();
 
     private int[] unreadCountList;
-
-    private final FragmentManager fm;
-
     private boolean isEditMode = false;
 
     private LinkedList<CharSequence> timeList;
-    private Subscription updateHistoryOrderSubscription;
-    private Subscription fetchPostSubscription;
-    private Subscription removeHistorySubscription;
+    private Disposable updateHistoryOrderSubscription;
+    private Disposable fetchPostSubscription;
+    private Disposable removeHistorySubscription;
 
-    public HistoryAdapter(final FragmentActivity activity, final FragmentManager fm, final List<History> data) {
-        this.activity = activity;
-        this.fm = fm;
-        this.historyList = new ArrayList<>(data);
-        this.inflater = LayoutInflater.from(activity);
+    private final List<History> historyList = new ArrayList<>();
 
-        init();
-    }
+    private HistoryItemClickListener clickListener;
 
-    private void init() {
-        unreadCountList = new int[historyList.size()];
-        for (int i = 0; i < historyList.size(); i++) {
-            final int count = ThreadRegistry.getInstance().getUnreadCount(historyList.get(i).threadId);
-            unreadCountList[i] = count;
-        }
-
-        buildTimeMap();
-    }
-
-    public void setHistory(final List<History> list) {
-        historyList.clear();
-        historyList.addAll(list);
-
-        init();
-    }
-
-    public void addThread(final History thread) {
-        historyList.add(thread);
-        notifyDataSetChanged();
-    }
-
-    public void removeThread(int threadId) {
-        for (History model : historyList) {
-            if (model.threadId == threadId) {
-                historyList.remove(model);
-            }
-        }
-
-        notifyDataSetChanged();
-    }
-
-    private void buildTimeMap() {
-        this.timeList = new LinkedList<>();
-        for (int i = 0; i < historyList.size(); i++) {
-            timeList.add(DateUtils.getRelativeTimeSpanString(
-                    historyList.get(i).lastAccess,
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                    DateUtils.FORMAT_ABBREV_RELATIVE
-            ));
-        }
-    }
-
-    public void setEditMode(final boolean enabled) {
-        isEditMode = enabled;
-        notifyDataSetChanged();
-    }
-
-    public boolean isEditMode() {
-        return isEditMode;
-    }
-
-    public void clearHistory() {
-        if (historyList.size() > 0) {
-
-            RxUtil.safeUnsubscribe(fetchPostSubscription);
-            fetchPostSubscription = HistoryTableConnection.fetchPost(historyList.get(0).boardName, historyList.get(0).threadId)
-                    .subscribe(new Action1<History>() {
-                        @Override
-                        public void call(History history) {
-                            if (history == null) {
-                                return;
-                            }
-
-                            final boolean watched = history.watched;
-                            for (int position = 0; position < historyList.size(); position++) {
-                                final History historyItem = historyList.get(position);
-
-                                RefreshScheduler.getInstance().removeThread(historyItem.boardName, historyItem.threadId);
-
-                                historyList.remove(position);
-                                timeList.remove(position);
-
-                            }
-
-                            ThreadRegistry.getInstance().clear();
-                            HistoryTableConnection.removeAllHistory(watched).subscribe();
-
-                            isEditMode = false;
-                            notifyDataSetChanged();
-                        }
-                    });
-        }
-    }
-
-    public int[] getUnreadCountList() {
-        return unreadCountList;
+    @Override
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.history_item, parent, false);
+        return new ViewHolder(v);
     }
 
     @Override
-    public boolean isEnabled(int position) {
-        return !isEditMode;
-    }
+    public void onBindViewHolder(final ViewHolder viewHolder, final int pos) {
 
-    @Override
-    public int getCount() {
-        return historyList.size();
-    }
-
-    @Override
-    public History getItem(int position) {
-        return historyList.get(position);
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return historyList.get(position).threadId;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
-    }
-
-    @Override
-    public View getView(final int position, View convertView, ViewGroup parent) {
-
+        final int position = viewHolder.getAdapterPosition();
         final History historyItem = historyList.get(position);
-        final ViewHolder viewHolder;
-        if (convertView == null) {
-            convertView = inflater.inflate(R.layout.history_item, parent, false);
+        Context context = viewHolder.text.getContext();
+        viewHolder.text.setText(historyItem.getComment());
 
-            viewHolder = new ViewHolder(convertView);
-            convertView.setTag(viewHolder);
-        } else {
-            viewHolder = (ViewHolder) convertView.getTag();
+        if (clickListener != null) {
+            viewHolder.root.setOnLongClickListener(view -> {
+                clickListener.onItemLongClick(view, position);
+                return true;
+            });
+
+            viewHolder.root.setOnClickListener(view -> clickListener.onItemClick(view, position));
         }
 
-        viewHolder.text.setText(historyList.get(position).comment);
-
-        if (historyItem.watched) {
-            final int count = ThreadRegistry.getInstance().getUnreadCount(historyItem.threadId);
+        if (historyItem.getWatched()) {
+            final int count = historyItem.getUnreadCount();
             unreadCountList[position] = count;
             if (count > 0) {
                 viewHolder.unreadcount.setText(String.valueOf(count));
@@ -221,24 +101,23 @@ public class HistoryAdapter extends BaseAdapter implements Swappable {
         }
 
         viewHolder.image.setVisibility(View.INVISIBLE);
-        if (!TextUtils.isEmpty(historyItem.tim)) {
-            final String url = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.thumb_link) + activity.getString(R.string.thumb_path, historyItem.boardName, historyItem.tim);
+        if (!TextUtils.isEmpty(historyItem.getTim())) {
+            final String url = MimiUtil.https() + context.getString(R.string.thumb_link) + context.getString(R.string.thumb_path, historyItem.getBoardName(), historyItem.getTim());
 
             viewHolder.image.setVisibility(View.VISIBLE);
 
-            Glide.with(activity)
+            GlideApp.with(context)
                     .load(url)
-                    .crossFade()
                     .error(R.drawable.placeholder_image)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .into(viewHolder.image);
         } else {
             viewHolder.image.setVisibility(View.INVISIBLE);
-            Glide.clear(viewHolder.image);
+            GlideApp.with(context).clear(viewHolder.image);
         }
 
-        viewHolder.threadinfo.setText("/" + historyItem.boardName + "/" + historyItem.threadId);
-        viewHolder.opname.setText(historyItem.userName);
+        viewHolder.threadinfo.setText("/" + historyItem.getBoardName() + "/" + historyItem.getThreadId());
+        viewHolder.opname.setText(historyItem.getUserName());
         viewHolder.lastviewed.setText(timeList.get(position));
 
         if (isEditMode) {
@@ -247,65 +126,165 @@ public class HistoryAdapter extends BaseAdapter implements Swappable {
             viewHolder.deletehistory.setVisibility(View.GONE);
         }
 
-        viewHolder.deletehistory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(final View v) {
+        viewHolder.deletehistory.setOnClickListener(v -> {
 
-                RxUtil.safeUnsubscribe(removeHistorySubscription);
-                removeHistorySubscription = HistoryTableConnection.removeHistory(historyItem.boardName, historyItem.threadId)
-                        .doOnNext(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean aBoolean) {
-                                if (historyItem.watched) {
-                                    MimiUtil.getInstance().removeBookmark(historyItem.boardName, historyItem.threadId);
-                                }
+            RxUtil.safeUnsubscribe(removeHistorySubscription);
+            removeHistorySubscription = HistoryTableConnection.removeHistory(historyItem.getBoardName(), historyItem.getThreadId())
+                    .compose(DatabaseUtils.applySingleSchedulers())
+                    .subscribe(success -> {
+                        int currentPosition = viewHolder.getAdapterPosition();
+                        if (success && currentPosition >= 0 && currentPosition < historyList.size()) {
+                            Log.d(LOG_TAG, "Removed history: " + "board name=" + historyItem.getBoardName() + ", thread id=" + historyItem.getThreadId());
+
+                            RefreshScheduler2.removeThread(historyItem.getBoardName(), historyItem.getThreadId());
+//                            RefreshScheduler.getInstance().removeThread(historyItem.getBoardName(), historyItem.getThreadId());
+//                            ThreadRegistry.getInstance().remove(historyItem.threadId);
+                            historyList.remove(currentPosition);
+                            timeList.remove(currentPosition);
+                            if (historyList.size() == 0) {
+                                isEditMode = false;
                             }
-                        })
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean success) {
-                                if (success) {
-                                    Log.d(LOG_TAG, "Removed history: " + "board name=" + historyItem.boardName + ", thread id=" + historyItem.threadId);
+                            startUpdateTimer(historyList);
 
-                                    RefreshScheduler.getInstance().removeThread(historyItem.boardName, historyItem.threadId);
-                                    ThreadRegistry.getInstance().remove(historyItem.threadId);
-                                    historyList.remove(position);
-                                    timeList.remove(position);
-                                    if (historyList.size() == 0) {
-                                        isEditMode = false;
-                                    }
-                                    notifyDataSetChanged();
-
-                                    startUpdateTimer(historyList);
-                                } else {
-                                    Log.e(LOG_TAG, "Error removing history: " + "board name=" + historyItem.boardName + ", thread id=" + historyItem.threadId);
-                                }
-                            }
-                        });
-            }
+                            notifyItemRemoved(currentPosition);
+                        } else {
+                            String errorMsg = "Error removing history: " + "board name=" + historyItem.getBoardName() + ", thread id=" + historyItem.getThreadId() + " ,history list size=" + historyList.size() + ", history item position=" + currentPosition;
+                            Exception e = new IllegalStateException(errorMsg);
+                            Log.e(LOG_TAG, "Something went wrong while removing history", e);
+                        }
+                    }, throwable -> Log.e(LOG_TAG, "Something went wrong while removing history", throwable));
         });
 
-        return viewHolder.root;
+        viewHolder.dragHandle.setOnTouchListener((view, motionEvent) -> {
+            if (clickListener != null) {
+                if (MotionEventCompat.getActionMasked(motionEvent) ==
+                        MotionEvent.ACTION_DOWN) {
+                    clickListener.onItemStartDrag(viewHolder);
+                }
+            }
+
+            return false;
+        });
     }
 
-    @Override
-    public void swapItems(int from, int to) {
-        final History item = historyList.set(from, getItem(to));
-        notifyDataSetChanged();
+    private void init() {
+        unreadCountList = new int[historyList.size()];
+        for (int i = 0; i < historyList.size(); i++) {
+            History history = historyList.get(i);
+            unreadCountList[i] = history.getUnreadCount();
+        }
 
-        historyList.set(to, item);
+        buildTimeMap();
+    }
+
+    private void buildTimeMap() {
+        this.timeList = new LinkedList<>();
+        for (int i = 0; i < historyList.size(); i++) {
+            timeList.add(DateUtils.getRelativeTimeSpanString(
+                    historyList.get(i).getLastAccess(),
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS,
+                    DateUtils.FORMAT_ABBREV_RELATIVE
+            ));
+        }
+    }
+
+    public void setHistory(final List<History> list) {
+        historyList.clear();
+        historyList.addAll(list);
+
+        init();
+
+        notifyDataSetChanged();
+    }
+
+    public void setEditMode(final boolean enabled) {
+        isEditMode = enabled;
+        notifyDataSetChanged();
+    }
+
+    public boolean isEditMode() {
+        return isEditMode;
+    }
+
+    public int[] getUnreadCountList() {
+        return unreadCountList;
+    }
+
+    public void swapItems(int from, int to) {
+        if (from < to) {
+            for (int i = from; i < to; i++) {
+                Collections.swap(historyList, i, i + 1);
+            }
+        } else {
+            for (int i = from; i > to; i--) {
+                Collections.swap(historyList, i, i - 1);
+            }
+        }
+        notifyItemMoved(from, to);
         startUpdateTimer(historyList);
+    }
+
+    public History getItem(int pos) {
+        return historyList.get(pos);
+    }
+
+    public void clearHistory() {
+        if (historyList.size() > 0) {
+
+            RxUtil.safeUnsubscribe(fetchPostSubscription);
+            fetchPostSubscription = HistoryTableConnection.fetchPost(historyList.get(0).getBoardName(), historyList.get(0).getThreadId())
+                    .compose(DatabaseUtils.<History>applySingleSchedulers())
+                    .subscribe(history -> {
+                        if (history.getThreadId() == -1) {
+                            return;
+                        }
+
+                        final boolean watched = history.getWatched();
+                        for (int position = 0; position < historyList.size(); position++) {
+                            final History historyItem = historyList.get(position);
+
+//                            RefreshScheduler.getInstance().removeThread(historyItem.getBoardName(), historyItem.getThreadId());
+
+                            historyList.remove(position);
+                            timeList.remove(position);
+
+                        }
+
+//                        ThreadRegistry.getInstance().clear();
+                        MimiUtil.removeHistory(watched).subscribe();
+
+                        isEditMode = false;
+                        notifyDataSetChanged();
+                    });
+        }
     }
 
     private void startUpdateTimer(List<History> histories) {
         RxUtil.safeUnsubscribe(updateHistoryOrderSubscription);
         updateHistoryOrderSubscription = HistoryTableConnection.updateHistoryOrder(histories)
+                .compose(DatabaseUtils.applySingleSchedulers())
                 .delay(500, TimeUnit.MILLISECONDS)
                 .subscribe();
     }
 
-    public static class ViewHolder {
+    @Override
+    public long getItemId(int position) {
+        return historyList.get(position).getThreadId();
+    }
+
+    @Override
+    public int getItemCount() {
+        return historyList.size();
+    }
+
+    public void setItemClickListener(HistoryItemClickListener listener) {
+        clickListener = listener;
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+
+        public final View root;
         public final ImageView image;
         public final TextView threadinfo;
         public final TextView opname;
@@ -313,17 +292,29 @@ public class HistoryAdapter extends BaseAdapter implements Swappable {
         public final TextView text;
         public final TextView unreadcount;
         public final ImageView deletehistory;
-        public final View root;
+        public final View dragHandle;
 
         public ViewHolder(View root) {
-            image = (ImageView) root.findViewById(R.id.image);
-            threadinfo = (TextView) root.findViewById(R.id.thread_info);
-            opname = (TextView) root.findViewById(R.id.op_name);
-            lastviewed = (TextView) root.findViewById(R.id.last_viewed);
-            text = (TextView) root.findViewById(R.id.text);
-            unreadcount = (TextView) root.findViewById(R.id.unread_count);
-            deletehistory = (ImageView) root.findViewById(R.id.delete_history);
+            super(root);
+
             this.root = root;
+
+            image = root.findViewById(R.id.image);
+            threadinfo = root.findViewById(R.id.thread_info);
+            opname = root.findViewById(R.id.op_name);
+            lastviewed = root.findViewById(R.id.last_viewed);
+            text = root.findViewById(R.id.text);
+            unreadcount = root.findViewById(R.id.unread_count);
+            deletehistory = root.findViewById(R.id.delete_history);
+            dragHandle = root.findViewById(R.id.drag_handle);
         }
+    }
+
+    public interface HistoryItemClickListener {
+        void onItemLongClick(View v, int position);
+
+        void onItemClick(View v, int position);
+
+        void onItemStartDrag(ViewHolder holder);
     }
 }

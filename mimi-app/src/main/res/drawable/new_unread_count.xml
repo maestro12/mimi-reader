@@ -17,6 +17,8 @@
 
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <stroke android:color="#FE2804" android:width="1dp"/>
-    <solid android:color="#FE2804"/>
+    <stroke
+        android:color="#FE2804"
+        android:width="1dp" />
+    <solid android:color="#FE2804" />
 </shape>

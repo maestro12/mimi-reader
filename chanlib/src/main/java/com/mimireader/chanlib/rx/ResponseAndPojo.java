@@ -26,7 +26,7 @@ public class ResponseAndPojo<T> {
 
     public ResponseAndPojo(T value, Response<ResponseBody> response) {
         this.value = value;
-         this.response = response;
+        this.response = response;
     }
 
     public T getValue() {

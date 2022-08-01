@@ -17,7 +17,7 @@
 
 <resources>
 
-    <style name="Theme.Mimi.Light" parent="@style/Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.Mimi.Light" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="actionBarItemBackground">@drawable/selectable_background_thememimilight</item>
         <item name="dropDownListViewStyle">@style/DropDownListView.Mimi.Light</item>
         <item name="actionBarTabStyle">@style/ActionBarTabStyle.Mimi.Light</item>
@@ -27,11 +27,11 @@
         <item name="actionModeSplitBackground">@drawable/cab_background_bottom_thememimilight</item>
         <item name="actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Mimi.Light</item>
         <item name="titleTextStyle">@style/Mimi.ActionBar.Title</item>
-        <item name="logo">@drawable/leaf_logo</item>
+        <item name="logo">@null</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="windowActionBarOverlay">true</item>
 
-        <item name="elevation">0dp</item>
+        <item name="elevation">4dp</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
@@ -40,7 +40,8 @@
         <item name="plainCardBackground">@style/Theme.Mimi.Light.PlainCardBackground</item>
         <item name="cardBackground">@style/Theme.Mimi.Light.CardBackground</item>
         <item name="cardBackgroundSelector">@style/Theme.Mimi.Light.CardBackgroundSelector</item>
-        <item name="gridCardBackgroundSelector">@style/Theme.Mimi.Light.GridCardBackgroundSelector</item>
+        <item name="gridCardBackgroundSelector">@style/Theme.Mimi.Light.GridCardBackgroundSelector
+        </item>
         <item name="postBackground">@style/Theme.Mimi.Light.PostBackground</item>
         <item name="postHeaderBackground">@style/Theme.Mimi.Light.PostHeaderBackground</item>
         <item name="dividerColor">@style/Theme.Mimi.Light.DividerColor</item>
@@ -60,6 +61,7 @@
         <item name="basicButton">@style/Theme.Mimi.Light.BasicButton</item>
         <item name="postSubjectText">@style/Theme.Mimi.Light.PostSubjectText</item>
         <item name="postCommentText">@style/Theme.Mimi.Light.PostCommentText</item>
+        <item name="postFirstCommentText">@style/Theme.Mimi.Light.FirstPostCommentText</item>
         <item name="postHighlight">@style/Theme.Mimi.Light.PostHighlight</item>
         <item name="boardOrderBackground">@style/Theme.Mimi.Light.BoardOrderBackground</item>
         <item name="boardOrderItem">@style/Theme.Mimi.Light.BoardOrderItem</item>
@@ -73,6 +75,8 @@
         <item name="colorPrimaryDark">?attr/mimiPrimaryColorDark</item>
         <item name="colorAccent">?attr/mimiAccentColor</item>
         <item name="scrollerHandleColor">?attr/mimiAccentColor</item>
+
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.MaterialComponents.MaterialAlertDialog</item>
     </style>
 
     <style name="ActionBar.Solid.Mimi.Light" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
@@ -80,11 +84,11 @@
         <item name="backgroundStacked">@drawable/ab_stacked_solid_thememimilight</item>
         <item name="backgroundSplit">@drawable/ab_bottom_solid_thememimilight</item>
         <item name="progressBarStyle">@style/ProgressBar.Mimi.Light</item>
-        <item name="actionButtonStyle">@style/Theme.Mimi.Light.ActionButtonStyle</item>
+        <item name="actionButtonStyle">@style/Theme.Mimi.ActionButtonStyle</item>
         <item name="windowActionBarOverlay">true</item>
         <item name="titleTextStyle">@style/ActionBar.Mimi.TitleTextStyle</item>
         <item name="subtitleTextStyle">@style/ActionBar.Mimi.SubTitleTextStyle</item>
-        <item name="logo">@drawable/leaf_logo</item>
+        <item name="logo">@null</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
 
@@ -100,21 +104,21 @@
     <style name="ActionBarTabStyle.Mimi.Light" parent="@style/Widget.AppCompat.ActionBar.TabView">
         <item name="android:background">@drawable/tab_indicator_ab_thememimilight</item>
     </style>
-	
+
     <style name="DropDownNav.Mimi.Light" parent="@style/Widget.AppCompat.Spinner.DropDown.ActionBar">
         <item name="android:background">@drawable/spinner_background_ab_thememimilight</item>
         <item name="android:popupBackground">@drawable/menu_dropdown_panel_thememimilight</item>
         <item name="android:dropDownSelector">@drawable/selectable_background_thememimilight</item>
     </style>
-    
+
     <style name="ProgressBar.Mimi.Light" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
         <item name="android:progressDrawable">@drawable/progress_horizontal_thememimilight</item>
     </style>
-    
+
     <style name="ActionButton.CloseMode.Mimi.Light" parent="@style/Widget.AppCompat.ActionButton.CloseMode">
         <item name="android:background">@drawable/btn_cab_done_thememimilight</item>
     </style>
-    
+
     <style name="Theme.Mimi.Light.DefaultLayoutBackground" parent="@style/Theme.Mimi.Light">
         <item name="android:background">@color/background_light</item>
     </style>
@@ -137,6 +141,7 @@
 
     <style name="Theme.Mimi.Light.DividerColor">
         <item name="android:background">@color/divider_light</item>
+        <item name="android:color">@color/divider_light</item>
     </style>
 
     <style name="Theme.Mimi.Light.DefaultListViewStyle">
@@ -154,12 +159,6 @@
 
     <style name="Theme.Mimi.Light.RowItemBackground">
         <item name="android:background">@color/row_item_background_light</item>
-    </style>
-
-    <style name="Theme.Mimi.Light.ActionButtonStyle" parent="@style/Widget.AppCompat.ActionButton">
-        <item name="android:minWidth">2dip</item>
-        <item name="android:paddingLeft">2dip</item>
-        <item name="android:paddingRight">2dip</item>
     </style>
 
     <style name="Theme.Mimi.Light.PostHeaderText" parent="@style/Theme.Mimi.Light">
@@ -238,6 +237,10 @@
 
     <style name="Theme.Mimi.Light.PostCommentText" parent="@style/Theme.Mimi.Light">
         <item name="android:textColor">@color/comment_light</item>
+    </style>
+
+    <style name="Theme.Mimi.Light.FirstPostCommentText" parent="@style/Theme.Mimi.Light">
+        <item name="android:textColor">@color/first_comment_light</item>
     </style>
 
     <style name="Theme.Mimi.Light.BoardOrderBackground" parent="@style/Theme.Mimi.Light">

@@ -18,17 +18,23 @@ package com.emogoth.android.phone.mimi.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
@@ -37,31 +43,27 @@ import com.emogoth.android.phone.mimi.activity.PostItemListActivity;
 import com.emogoth.android.phone.mimi.adapter.HistoryAdapter;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.model.History;
-import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
+import com.emogoth.android.phone.mimi.db.models.History;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.interfaces.IToolbarContainer;
 import com.emogoth.android.phone.mimi.model.ThreadInfo;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.nhaarman.listviewanimations.itemmanipulation.DynamicListView;
-import com.nhaarman.listviewanimations.itemmanipulation.dragdrop.TouchViewDraggableManager;
-import com.squareup.otto.Subscribe;
+import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
+import io.reactivex.Flowable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
 
 public class HistoryFragment extends MimiFragmentBase {
     private static final String LOG_TAG = HistoryFragment.class.getSimpleName();
 
-    private DynamicListView listView;
+    private MimiRecyclerView historyRecyclerView;
     private HistoryAdapter historyAdapter;
     private ViewGroup emptyListMessageContainer;
     private TextView emptyListMessage;
@@ -77,8 +79,17 @@ public class HistoryFragment extends MimiFragmentBase {
 
     private boolean isBookmarks = false;
 
-    private Subscription fetchHistorySubscription;
+    private Disposable fetchHistorySubscription;
     private Toolbar toolbar;
+    private ItemTouchHelper recyclerViewTouchHelper;
+    private ItemTouchHelper.Callback touchHelperCallback;
+    private RecyclerView.LayoutManager layoutManager;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setRetainInstance(false);
+    }
 
     public static HistoryFragment newInstance(boolean watched) {
         final Bundle args = new Bundle();
@@ -127,28 +138,27 @@ public class HistoryFragment extends MimiFragmentBase {
         }
 
         toolbar = ((MimiActivity) getActivity()).getToolbar();
-//        toolbar.setTitle(getTitle());
-//        toolbar.setSubtitle(getSubtitle());
 
         if (getActivity() instanceof MimiActivity) {
             final MimiActivity activity = (MimiActivity) getActivity();
-//            activity.getToolbar().setVisibility(View.VISIBLE);
-            activity.getToolbar().setTitle(getTitle());
-            activity.getToolbar().setSubtitle(getSubtitle());
+            activity.getSupportActionBar().setTitle(getTitle());
+            activity.getSupportActionBar().setSubtitle(getSubtitle());
         }
 
-        Log.d(LOG_TAG, "Set toolbar title to " + getTitle());
-        Log.d(LOG_TAG, "Set toolbar subtitle to " + getSubtitle());
+        clearAllContainer = view.findViewById(R.id.clear_all_container);
 
-        clearAllContainer = (LinearLayout) view.findViewById(R.id.clear_all_container);
+        historyRecyclerView = view.findViewById(R.id.history_list);
+        historyRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        layoutManager = new LinearLayoutManager(getActivity());
+        historyAdapter = new HistoryAdapter();
+        historyAdapter.setHasStableIds(true);
 
-        listView = (DynamicListView) view.findViewById(R.id.history_list);
-        listView.enableDragAndDrop();
-
-        listView.setDraggableManager(new TouchViewDraggableManager(R.id.drag_handle));
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        touchHelperCallback = createTouchHelperCallback();
+        recyclerViewTouchHelper = new ItemTouchHelper(createTouchHelperCallback());
+        recyclerViewTouchHelper.attachToRecyclerView(historyRecyclerView);
+        historyAdapter.setItemClickListener(new HistoryAdapter.HistoryItemClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemLongClick(View v, int position) {
                 if (historyAdapter != null) {
                     if (historyAdapter.isEditMode()) {
                         historyAdapter.setEditMode(false);
@@ -158,48 +168,47 @@ public class HistoryFragment extends MimiFragmentBase {
                         clearAllContainer.setVisibility(View.VISIBLE);
                     }
                 }
-
-                return true;
             }
-        });
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(View v, int position) {
                 if (!historyAdapter.isEditMode()) {
                     openThreadInActivity(position);
                 }
             }
-        });
-        emptyListMessageContainer = (ViewGroup) view.findViewById(R.id.empty_list);
-        emptyListMessage = (TextView) view.findViewById(R.id.empty_list_text);
 
-        clearAllButton = (TextView) view.findViewById(R.id.clear_all_button);
-        clearAllButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                if (historyAdapter != null) {
-                    historyAdapter.setEditMode(false);
-                    historyAdapter.clearHistory();
+            public void onItemStartDrag(HistoryAdapter.ViewHolder holder) {
+                recyclerViewTouchHelper.startDrag(holder);
+            }
+        });
+        historyRecyclerView.setLayoutManager(layoutManager);
+        historyRecyclerView.setAdapter(historyAdapter);
 
-                    listView.setVisibility(View.GONE);
-                    emptyListMessageContainer.setVisibility(View.VISIBLE);
-                }
+        emptyListMessageContainer = view.findViewById(R.id.empty_list);
+        emptyListMessage = view.findViewById(R.id.empty_list_text);
+
+        clearAllButton = view.findViewById(R.id.clear_all_button);
+        clearAllButton.setOnClickListener(v -> {
+            if (historyAdapter != null) {
+                historyAdapter.setEditMode(false);
+                historyAdapter.clearHistory();
+
+                historyRecyclerView.setVisibility(View.GONE);
+                emptyListMessageContainer.setVisibility(View.VISIBLE);
+                clearAllContainer.setVisibility(View.GONE);
             }
         });
 
-        closeButton = (TextView) view.findViewById(R.id.remove_history_button);
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        closeButton = view.findViewById(R.id.remove_history_button);
+        closeButton.setOnClickListener(v -> {
 
-                if (historyAdapter != null) {
-                    historyAdapter.setEditMode(false);
-                }
+            if (historyAdapter != null) {
+                historyAdapter.setEditMode(false);
+            }
 
-                if (clearAllContainer != null) {
-                    clearAllContainer.setVisibility(View.GONE);
-                }
+            if (clearAllContainer != null) {
+                clearAllContainer.setVisibility(View.GONE);
             }
         });
 
@@ -215,29 +224,62 @@ public class HistoryFragment extends MimiFragmentBase {
         loadHistory(isBookmarks);
     }
 
+    private ItemTouchHelper.Callback createTouchHelperCallback() {
+        return new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT) {
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return true;
+            }
+
+            @Override
+            public boolean isItemViewSwipeEnabled() {
+                return false;
+            }
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder from, RecyclerView.ViewHolder to) {
+                HistoryAdapter adapter;
+                if (recyclerView.getAdapter() instanceof HistoryAdapter) {
+                    adapter = (HistoryAdapter) recyclerView.getAdapter();
+                    adapter.swapItems(from.getAdapterPosition(), to.getAdapterPosition());
+                    return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int i) {
+
+            }
+        };
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        inflater.inflate(R.menu.history_menu, menu);
+    }
+
     @Override
     public void initMenu() {
         super.initMenu();
 
+        MimiActivity activity = null;
         if (getActivity() instanceof MimiActivity) {
-            toolbar = ((MimiActivity) getActivity()).getToolbar();
+            activity = (MimiActivity) getActivity();
+            toolbar = activity.getToolbar();
         }
 
         if (toolbar != null) {
 
-            Spinner toolbarSpinner = (Spinner) toolbar.findViewById(R.id.board_spinner);
+            Spinner toolbarSpinner = toolbar.findViewById(R.id.board_spinner);
             if (toolbarSpinner != null) {
                 toolbarSpinner.setVisibility(View.GONE);
             }
 
-            toolbar.setTitle(getTitle());
-            toolbar.setSubtitle(null);
-
-            if (toolbar.getMenu() != null) {
-                toolbar.getMenu().clear();
-            }
-
-            toolbar.inflateMenu(R.menu.history_menu);
+            activity.getSupportActionBar().setTitle(getTitle());
+            activity.getSupportActionBar().setSubtitle(null);
         }
     }
 
@@ -257,6 +299,7 @@ public class HistoryFragment extends MimiFragmentBase {
                 activity.setExpandedToolbar(true, true);
             }
         } else {
+            RxUtil.safeUnsubscribe(fetchHistorySubscription);
             if (historyAdapter != null && historyAdapter.isEditMode()) {
                 historyAdapter.setEditMode(false);
                 clearAllContainer.setVisibility(View.GONE);
@@ -267,48 +310,38 @@ public class HistoryFragment extends MimiFragmentBase {
 
     private void loadHistory(boolean watched) {
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
-        fetchHistorySubscription = HistoryTableConnection.fetchHistory(watched)
-                .flatMap(new Func1<List<History>, Observable<List<History>>>() {
-                    @Override
-                    public Observable<List<History>> call(List<History> histories) {
-                        FourChanCommentParser.Builder builder = new FourChanCommentParser.Builder();
-                        builder.setContext(getActivity())
-                                .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
-                                .setReplyColor(MimiUtil.getInstance().getReplyColor())
-                                .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                                .setLinkColor(MimiUtil.getInstance().getLinkColor());
+        fetchHistorySubscription = HistoryTableConnection.observeHistory(watched)
+                .flatMap((Function<List<History>, Flowable<List<History>>>) histories -> {
+                    FourChanCommentParser.Builder builder = new FourChanCommentParser.Builder();
+                    builder.setContext(getActivity())
+                            .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
+                            .setReplyColor(MimiUtil.getInstance().getReplyColor())
+                            .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
+                            .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
-                        for (History history : histories) {
-                            history.comment = builder.setComment(history.text).build().parse();
-                        }
-
-                        return Observable.just(histories);
+                    for (History history : histories) {
+                        history.setComment(builder.setComment(history.getText()).build().parse());
                     }
-                })
-                .compose(DatabaseUtils.<List<History>>applySchedulers())
-                .subscribe(new Action1<List<History>>() {
-                    @Override
-                    public void call(List<History> historyList) {
-                        if (historyList != null && getActivity() != null) {
-                            postList = historyList;
-                            if (historyList.size() > 0) {
-                                if (historyAdapter == null) {
-                                    historyAdapter = new HistoryAdapter(getActivity(), getChildFragmentManager(), historyList);
-                                    listView.setAdapter(historyAdapter);
-                                } else {
-                                    historyAdapter.setHistory(historyList);
-                                    historyAdapter.notifyDataSetChanged();
-                                }
 
-                                listView.setVisibility(View.VISIBLE);
-                                emptyListMessageContainer.setVisibility(View.GONE);
-                            } else {
-                                listView.setVisibility(View.GONE);
-                                emptyListMessageContainer.setVisibility(View.VISIBLE);
+                    return Flowable.just(histories);
+                })
+                .compose(DatabaseUtils.applySchedulers())
+                .subscribe(historyList -> {
+                    if (historyList != null && getActivity() != null) {
+                        postList = historyList;
+                        if (historyList.size() > 0) {
+                            if (historyAdapter != null) {
+                                historyAdapter.setHistory(historyList);
                             }
+
+                            historyRecyclerView.setVisibility(View.VISIBLE);
+                            emptyListMessageContainer.setVisibility(View.GONE);
                         } else {
-                            Log.i(LOG_TAG, "Cursor is null!");
+                            historyRecyclerView.setVisibility(View.GONE);
+                            emptyListMessageContainer.setVisibility(View.VISIBLE);
                         }
+                    } else {
+                        Log.i(LOG_TAG, "Cursor is null!");
                     }
                 });
     }
@@ -332,15 +365,15 @@ public class HistoryFragment extends MimiFragmentBase {
                 args.putInt(Extras.EXTRAS_VIEWING_HISTORY, MimiActivity.VIEWING_HISTORY);
             }
 
-            args.putString(Extras.EXTRAS_BOARD_NAME, postList.get(position).boardName);
-            args.putInt(Extras.EXTRAS_THREAD_ID, postList.get(position).threadId);
+            args.putString(Extras.EXTRAS_BOARD_NAME, postList.get(position).getBoardName());
+            args.putLong(Extras.EXTRAS_THREAD_ID, postList.get(position).getThreadId());
             args.putInt(Extras.EXTRAS_POSITION, position);
             args.putIntArray(Extras.EXTRAS_UNREAD_COUNT, historyAdapter.getUnreadCountList());
 
             final ArrayList<ThreadInfo> threadList = new ArrayList<ThreadInfo>(postList.size());
 
             for (final History post : postList) {
-                final ThreadInfo threadInfo = new ThreadInfo(post.threadId, post.boardName, null, post.watched);
+                final ThreadInfo threadInfo = new ThreadInfo(post.getThreadId(), post.getBoardName(), "", post.getWatched());
                 threadList.add(threadInfo);
             }
 
@@ -358,7 +391,7 @@ public class HistoryFragment extends MimiFragmentBase {
         } else if (getActivity() instanceof MimiActivity) {
             MimiActivity activity = (MimiActivity) getActivity();
             History history = postList.get(position);
-            activity.onPostItemClick(null, null, position, null, history.boardName, history.threadId);
+            activity.onPostItemClick(null, Collections.emptyList(), position, "", history.getBoardName(), history.getThreadId());
         }
 
 //        if(viewingHistory > 0 && getActivity() != null) {
@@ -368,34 +401,12 @@ public class HistoryFragment extends MimiFragmentBase {
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-
-        BusProvider.getInstance().unregister(this);
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-
-        BusProvider.getInstance().register(this);
 
         if (historyAdapter != null) {
             historyAdapter.notifyDataSetChanged();
         }
-    }
-
-    @Subscribe
-    public void onAutoRefresh(final UpdateHistoryEvent event) {
-//        ThreadRegistry.getInstance().update(event.getThread().getThreadId(), event.getThread().getPosts().size());
-//        setBookmarkCount(ThreadRegistry.getInstance().getUnreadCount());
-
-//        if(historyAdapter != null) {
-//            Log.i(LOG_TAG, "Refreshing history list");
-//            historyAdapter.notifyDataSetChanged();
-//        }
-
-        loadHistory(isBookmarks);
     }
 
     @Override

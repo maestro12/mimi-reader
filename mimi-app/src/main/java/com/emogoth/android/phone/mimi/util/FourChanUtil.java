@@ -1,7 +1,7 @@
 package com.emogoth.android.phone.mimi.util;
 
 
-import android.content.Context;
+import android.content.res.Resources;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -13,7 +13,7 @@ import com.emogoth.android.phone.mimi.R;
 public class FourChanUtil {
     private static final String LOG_TAG = FourChanUtil.class.getSimpleName();
 
-    public static Spannable getUserName(final Context context, final String userName, final String capcode) {
+    public static CharSequence getUserName(final Resources res, final String userName, final String capcode) {
         String name = userName;
 
         if (name == null) {
@@ -24,10 +24,10 @@ public class FourChanUtil {
         if (!TextUtils.isEmpty(capcode)) {
             if (capcode.toLowerCase().equals("mod")) {
                 name = name + " ## Mod";
-                color = context.getResources().getColor(R.color.mod_username_color);
+                color = res.getColor(R.color.mod_username_color);
             } else if (capcode.toLowerCase().equals("admin")) {
                 name = name + " ## Admin";
-                color = context.getResources().getColor(R.color.admin_username_color);
+                color = res.getColor(R.color.admin_username_color);
             }
         }
 

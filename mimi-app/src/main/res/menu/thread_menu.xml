@@ -19,13 +19,19 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/reply_menu_item"
-        android:title="@string/reply_menu_item"/>
+        android:title="@string/reply_menu_item" />
     <item
         android:id="@+id/quote_menu_item"
-        android:title="@string/quote_menu_item"/>
+        android:title="@string/quote_menu_item" />
+    <item
+        android:id="@+id/claim_menu_item"
+        android:title="@string/claim_menu_item"/>
+    <item
+        android:id="@+id/unclaim_menu_item"
+        android:title="@string/unclaim_menu_item"/>
     <item
         android:id="@+id/copy_text"
-        android:title="@string/copy_text"/>
+        android:title="@string/copy_text" />
 
     <item
         android:title="@string/open_link_menu_item"
@@ -37,10 +43,9 @@
 
     <item
         android:id="@+id/image_info_menu_item"
-        android:title="@string/image_info"/>
+        android:title="@string/image_info" />
 
     <item
         android:title="@string/report_menu_item"
-        android:id="@+id/report_menu"
-        />
+        android:id="@+id/report_menu" />
 </menu>

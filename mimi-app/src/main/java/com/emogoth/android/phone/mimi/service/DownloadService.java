@@ -18,47 +18,60 @@ package com.emogoth.android.phone.mimi.service;
 
 import android.app.IntentService;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.preference.PreferenceManager;
-import android.provider.MediaStore;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
+import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
+import androidx.documentfile.provider.DocumentFile;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
+import com.emogoth.android.phone.mimi.util.SingleMediaScanner;
+import com.emogoth.android.phone.mimi.viewmodel.ChanDataSource;
 import com.mimireader.chanlib.models.ChanPost;
+import com.mimireader.chanlib.models.ChanThread;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.util.ArrayList;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.SingleObserver;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.BufferedSource;
+import okio.Okio;
 
 
 public class DownloadService extends IntentService {
     public static final String LOG_TAG = DownloadService.class.getSimpleName();
-    public static final int IO_BUFFER_SIZE = 1024;
+    public static final int IO_BUFFER_SIZE = 1024 * 2;
 
     public static final int REGISTRY_ID = 1001;
 
@@ -78,16 +91,15 @@ public class DownloadService extends IntentService {
     public static final String PROGRESS_KEY = "progress";
     public static final String FILTER_KEY = "filter";
     public static final String THREAD_KEY = "threadid";
-    public static final String BOARD_KEY = "board";
     public static final String DATA_KEY = "data";
     public static final String ITEMS_KEY = "items";
     public static final String DOWNLOAD_TYPE_KEY = "downloadtype";
 
     // responses
-    public static String COMMAND_RECEIVED = "command_received";
-    public static String COMMAND_SAVE = "command_save";
-    public static String COMMAND_SAVE_DEVICE = "command_save_device";
-    public static String PERCENT_DOWNLOADED = "percent_downloaded";
+    public static final String COMMAND_RECEIVED = "command_received";
+    public static final String COMMAND_SAVE = "command_save";
+    public static final String COMMAND_SAVE_DEVICE = "command_save_device";
+    public static final String PERCENT_DOWNLOADED = "percent_downloaded";
 
     // Status Constants
     public static final int STATUS_STARTED = 0x1;
@@ -108,7 +120,9 @@ public class DownloadService extends IntentService {
     private static final int KB = 1024;
     private static final int MB = KB * 1024;
 
-    private ArrayList<ChanPost> posts;
+    public static final String DOWNLOADER_CHANNEL_ID = "mimi_file_downloader";
+
+//    private ArrayList<ChanPost> posts;
 
     private int position;
     private int fileSize;
@@ -124,6 +138,8 @@ public class DownloadService extends IntentService {
 
     private ThreadPoolExecutor executor;
     private HashMap<String, Runnable> runnableMap;
+    private SingleMediaScanner mediaScanner;
+    private String downloadDir;
 
     public DownloadService() {
         super("MimiDownloadService");
@@ -152,29 +168,28 @@ public class DownloadService extends IntentService {
 
                 final String fileUrl = serviceData.getString(FILEURL_KEY);
 
-                final Runnable downloadRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        position = serviceData.getInt(POSITION_KEY);
-                        String downloadFileName = serviceData.getString(FILENAME_KEY);
-                        fileSize = serviceData.getInt(FILESIZE_KEY);
+                final Runnable downloadRunnable = () -> {
+                    position = serviceData.getInt(POSITION_KEY);
+                    String downloadFileName = serviceData.getString(FILENAME_KEY);
+                    fileSize = serviceData.getInt(FILESIZE_KEY);
 
+                    downloadDir = serviceData.getString(COMMAND_SAVE);
 
-                        String downloadDir = serviceData.getString(COMMAND_SAVE);
-
-                        final boolean isError = __download(downloadDir, downloadFileName, fileUrl);
-
-                        final Intent returnIntent = new Intent();
-
-                        returnIntent.setAction(intentFilter);
-                        returnIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                        returnIntent.putExtra(POSITION_KEY, position);
-                        returnIntent.putExtra(ERROR_KEY, isError);
-                        returnIntent.putExtra(STATUS_KEY, STATUS_FINISHED); // complete
-                        LocalBroadcastManager.getInstance(app).sendBroadcast(returnIntent);
-
-                        runnableMap.remove(fileUrl);
+                    final boolean isError = downloadFile(downloadDir, downloadFileName, fileUrl);
+                    if (!isError) {
+                        scanFile(new File(downloadDir));
                     }
+
+                    final Intent returnIntent = new Intent();
+
+                    returnIntent.setAction(intentFilter);
+                    returnIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                    returnIntent.putExtra(POSITION_KEY, position);
+                    returnIntent.putExtra(ERROR_KEY, isError);
+                    returnIntent.putExtra(STATUS_KEY, STATUS_FINISHED); // complete
+                    LocalBroadcastManager.getInstance(app).sendBroadcast(returnIntent);
+
+                    runnableMap.remove(fileUrl);
                 };
                 runnableMap.put(fileUrl, downloadRunnable);
                 executor.execute(downloadRunnable);
@@ -183,133 +198,134 @@ public class DownloadService extends IntentService {
                 break;
             case DownloadService.DOWNLOAD_BATCH:
                 serviceData.setClassLoader(ChanPost.class.getClassLoader());
-                final List<ChanPost> batchData;
-                final ArrayList<String> files = new ArrayList<>();
+//                final List<ChanPost> batchData;
+//
+//                if (serviceData.containsKey(DATA_KEY)) {
+//                    batchData = serviceData.getParcelableArrayList(DATA_KEY);
+//                } else {
+//                    batchData = ThreadRegistry.getInstance().getPosts(REGISTRY_ID);
+//                    ThreadRegistry.getInstance().clearPosts(REGISTRY_ID);
+//                }
 
-                if(serviceData.containsKey(DATA_KEY)) {
-                    batchData = serviceData.getParcelableArrayList(DATA_KEY);
-                } else {
-                    batchData = ThreadRegistry.getInstance().getPosts(REGISTRY_ID);
-                    ThreadRegistry.getInstance().clearPosts(REGISTRY_ID);
-                }
+                final long[] postIds = serviceData.getLongArray(Extras.EXTRAS_POST_LIST);
 
-//			final int [] items = serviceData.getIntArray(ITEMS_KEY);
-                final String board = serviceData.getString(BOARD_KEY);
-                final String thread = String.valueOf(serviceData.getInt(THREAD_KEY));
-                final String save_dir = serviceData.getString(COMMAND_SAVE);
+                final String board = serviceData.getString(Extras.EXTRAS_BOARD_NAME);
+                final long threadId = serviceData.getLong(Extras.EXTRAS_THREAD_ID);
+                downloadDir = serviceData.getString(COMMAND_SAVE);
 
-                final File mimi_dir = new File(save_dir);
-                final File board_dir = new File(mimi_dir, board);
-                final File thread_path = new File(board_dir, thread);
-                if (!thread_path.exists()) {
-                    thread_path.mkdirs();
-                }
-
-                final String protocol = MimiUtil.httpOrHttps(app);
+                final String protocol = MimiUtil.https();
                 final String baseUrl = getString(R.string.image_link);
 
-                final String dir = thread_path.getAbsolutePath();
-                final String[] location = new String[batchData.size()];
+                final String[] location = new String[postIds.length];
 
-                final boolean useOriginalFilename = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.use_original_filename_pref), false);
+                final boolean useOriginalFilename = MimiPrefs.userOriginalFilename(this);
 
                 createNotification();
 
-                for (int i = 0; i < batchData.size(); i++) {
-
-                    final ChanPost post = batchData.get(i);
-                    final int index = i;
-                    final String basePath = getString(R.string.full_image_path, board, post.getTim(), post.getExt());
-                    final String url = protocol + baseUrl + basePath;
-
-                    Log.i(LOG_TAG, "Downloading image: url=" + url);
-
-                    final Intent startedIntent = new Intent();
-                    String fileName;
-                    if (useOriginalFilename) {
-                        fileName = post.getFilename() + post.getExt();
-                    } else {
-                        fileName = post.getTim() + post.getExt();
-                    }
-
-                    final File downloadFile = new File(dir, fileName);
-
-                    final float fProgress = (float) index / (float) batchData.size();
-                    final int iProgress = (int) (fProgress * 100.0);
-
-                    boolean isError = false;
-
-                    notificationProgressUpdate(iProgress);
-
-                    if (!TextUtils.isEmpty(intentFilter)) {
-                        startedIntent.setAction(intentFilter); // com.emogoth.android.phone.mimi.donate.intent.action.BatchDownloadResponse
-                        startedIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                        startedIntent.putExtra(THREADID_KEY, batchData.get(index).getNo());
-                        startedIntent.putExtra(POSITION_KEY, index);
-                        startedIntent.putExtra(ERROR_KEY, false);
-                        startedIntent.putExtra(STATUS_KEY, STATUS_STARTED); // complete
-
-                        Log.i(LOG_TAG, "Sent: STATUS_STARTED [" + index + "]");
-                        LocalBroadcastManager.getInstance(app.getApplicationContext()).sendBroadcast(startedIntent);
-                    }
-
-                    if (!downloadFile.exists()) {
-//                    int fileCount = 1;
-//                    File saveFile = downloadFile;
-//                    while (saveFile.exists()) {
-//                        fileName = post.getFilename() + "(" + fileCount + ")" + post.getExt();
-//                        saveFile = new File(dir, fileName);
-//                        fileCount++;
-//                    }
-
-                        fileSize = batchData.get(index).getFsize();
-                        isError = __download(dir, fileName, url);
-
-                        if (!isError) {
-                            files.add(dir + "/" + fileName);
-                        }
-
-                        if (!TextUtils.isEmpty(intentFilter)) {
-                            final Intent finishedIntent = new Intent();
-
-                            finishedIntent.setAction(intentFilter);
-                            finishedIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                            finishedIntent.putExtra(THREADID_KEY, batchData.get(index).getNo());
-                            finishedIntent.putExtra(POSITION_KEY, index);
-                            finishedIntent.putExtra(ERROR_KEY, isError);
-                            finishedIntent.putExtra(STATUS_KEY, STATUS_FINISHED); // complete
-
-                            Log.i(LOG_TAG, "Sent: STATUS_FINISHED[" + index + "]");
-                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(finishedIntent);
-                        }
-                    }
-
-                    location[i] = downloadFile.getAbsolutePath();
-
-                }
-
-                notificationCompleted();
-
-                try {
-                    final File noMediaFile = new File(MimiUtil.getSaveDir(this), ".nomedia");
-                    if (!noMediaFile.exists()) {
-                        final ContentValues values = new ContentValues();
-
-                        values.put(MediaStore.Images.Media.DATA, mimi_dir.getAbsolutePath());
-                        values.put(MediaStore.Images.Media.DATE_MODIFIED, mimi_dir.lastModified());
-                        getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-
-                        MediaScannerConnection.scanFile(app, location, null, new MediaScannerConnection.OnScanCompletedListener() {
+                final ChanDataSource dataSource = new ChanDataSource();
+                dataSource.fetchThread(board, threadId, 0)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(Schedulers.io())
+                        .subscribe(new SingleObserver<ChanThread>() {
                             @Override
-                            public void onScanCompleted(final String path, final Uri uri) {
-                                Log.i(LOG_TAG, "SCAN COMPLETED: " + path);
+                            public void onSubscribe(@NonNull Disposable d) {
+
+                            }
+
+                            @Override
+                            public void onSuccess(@NonNull ChanThread chanThread) {
+                                List<ChanPost> posts = chanThread.getPosts();
+                                for (int i = 0; i < posts.size(); i++) {
+                                    final ChanPost post = posts.get(i);
+                                    final int idPos = MimiUtil.arrayLocation(postIds, post.getNo());
+                                    if (idPos < 0) {
+                                        continue;
+                                    }
+
+                                    final String basePath = getString(R.string.full_image_path, board, post.getTim(), post.getExt());
+                                    final String url = protocol + baseUrl + basePath;
+
+                                    Log.i(LOG_TAG, "Downloading image: url=" + url);
+
+                                    final Intent startedIntent = new Intent();
+                                    String fileName;
+                                    if (useOriginalFilename) {
+                                        fileName = post.getFilename() + post.getExt();
+                                    } else {
+                                        fileName = post.getTim() + post.getExt();
+                                    }
+
+                                    DocumentFile downloadPath = DocumentFile.fromTreeUri(DownloadService.this, Uri.parse(downloadDir));
+
+                                    Uri path;
+                                    try {
+                                        path = MimiUtil.getDocumentFileRealPath(downloadPath);
+                                    } catch (NoSuchMethodException | NoSuchFieldException | InvocationTargetException | IllegalAccessException e) {
+                                        Log.e(LOG_TAG, "Error getting real path from DocumentFile", e);
+                                        return;
+                                    }
+
+                                    if (path == null) {
+                                        notificationCompleted(false);
+                                        return;
+                                    }
+
+                                    final DocumentFile downloadFile = DocumentFile.fromFile(new File(path + "/" + fileName));
+
+                                    final float fProgress = (float) idPos / (float) postIds.length;
+                                    final int iProgress = (int) (fProgress * 100.0);
+
+                                    boolean isError;
+
+                                    notificationProgressUpdate(iProgress);
+
+                                    if (!TextUtils.isEmpty(intentFilter)) {
+                                        startedIntent.setAction(intentFilter); // com.emogoth.android.phone.mimi.donate.intent.action.BatchDownloadResponse
+                                        startedIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                                        startedIntent.putExtra(THREADID_KEY, post.getNo());
+                                        startedIntent.putExtra(POSITION_KEY, i);
+                                        startedIntent.putExtra(ERROR_KEY, false);
+                                        startedIntent.putExtra(STATUS_KEY, STATUS_STARTED); // complete
+
+                                        Log.i(LOG_TAG, "Sent: STATUS_STARTED [" + i + "]");
+                                        LocalBroadcastManager.getInstance(app.getApplicationContext()).sendBroadcast(startedIntent);
+                                    }
+
+                                    if (!downloadFile.exists()) {
+                                        fileSize = post.getFsize();
+                                        isError = downloadFile(downloadDir, fileName, url);
+
+                                        if (isError) {
+                                            Log.w(LOG_TAG, "Error downloading file: " + fileName + " to " + downloadDir, new Exception());
+                                        }
+
+                                        if (!TextUtils.isEmpty(intentFilter)) {
+                                            final Intent finishedIntent = new Intent();
+
+                                            finishedIntent.setAction(intentFilter);
+                                            finishedIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                                            finishedIntent.putExtra(THREADID_KEY, post.getNo());
+                                            finishedIntent.putExtra(POSITION_KEY, i);
+                                            finishedIntent.putExtra(ERROR_KEY, isError);
+                                            finishedIntent.putExtra(STATUS_KEY, STATUS_FINISHED); // complete
+
+                                            Log.i(LOG_TAG, "Sent: STATUS_FINISHED[" + i + "]");
+                                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(finishedIntent);
+                                        }
+                                    }
+
+                                    location[idPos] = downloadDir;
+
+                                }
+
+                                notificationCompleted(true);
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+
                             }
                         });
-                    }
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "Failed to scan media -- Ignoring");
-                }
-
                 break;
             case DOWNLOAD_CANCEL:
 
@@ -319,34 +335,35 @@ public class DownloadService extends IntentService {
 
     }
 
-    private boolean __download(String dir, String filename, String urlStr) {
-
-        boolean isError = false;
-
-        File f = null;
-
-//		URL url;
-        InputStream is;
-//        BufferedInputStream bis;
-
-//        try {
-        if (filename != null) {
-            f = new File(dir, filename);
-
-        } else {
+    private boolean downloadFile(String dir, String filename, String urlStr) {
+        if (TextUtils.isEmpty(filename)) {
             return true;
         }
 
+        String ext = filename.substring(filename.lastIndexOf(".") + 1);
+        DocumentFile documentPath = DocumentFile.fromTreeUri(this, Uri.parse(dir));
+        String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        if (documentPath == null || type == null) {
+            return false;
+        }
+
+        DocumentFile f = documentPath.createFile(type, filename);
+
+        boolean useGzip = !"pdf".equals(ext);
+
         try {
 
-            OkHttpClient httpClient = HttpClientFactory.getInstance().getOkHttpClient();
+            OkHttpClient httpClient = HttpClientFactory.getInstance().getClient();
             Request.Builder requestBuilder = new Request.Builder();
-            Request request = requestBuilder.addHeader("Accept-Encoding", "gzip")
-                    .url(urlStr)
+            requestBuilder.url(urlStr)
                     .tag(urlStr)
-                    .get()
-                    .build();
+                    .get();
 
+            if (useGzip) {
+                requestBuilder.addHeader("Accept-Encoding", "gzip");
+            }
+
+            Request request = requestBuilder.build();
             Response response = httpClient.newCall(request).execute();
 
             if (response.code() != 200) {
@@ -365,80 +382,89 @@ public class DownloadService extends IntentService {
                 return false;
             }
 
-            is = response.body().byteStream();
-
-            Log.i(LOG_TAG, "Image size: " + fileSize + " bytes");
-
-            final FileOutputStream fos = new FileOutputStream(f);
-
-            @SuppressWarnings("unused")
-            byte[] data;
-
-            int i = -1;
+            ResponseBody b = null;
+            BufferedSource source = null;
+            BufferedSink sink = null;
+            Buffer sinkBuffer = null;
             boolean sentBroadcast = false;
-            int count = 1;
 
-            byte[] bytes = new byte[IO_BUFFER_SIZE];
-            while (((i = is.read(bytes)) != -1)) {
-                fos.write(bytes, 0, i);
-
-                bytes = new byte[IO_BUFFER_SIZE];
-
-                final int percent = (int) (((float) (count * IO_BUFFER_SIZE) / (float) fileSize) * 100.0F);
-
-                if (!TextUtils.isEmpty(intentFilter) && fileSize > 0) {
-                    if (percent % 5 == 0) {
-
-                        if (!sentBroadcast) {
-                            final Intent returnIntent = new Intent();
-
-                            returnIntent.setAction(intentFilter);
-                            returnIntent.addCategory(Intent.CATEGORY_DEFAULT);
-                            returnIntent.putExtra(POSITION_KEY, position);
-                            returnIntent.putExtra(ERROR_KEY, false);
-                            returnIntent.putExtra(STATUS_KEY, STATUS_RUNNING); // complete
-                            returnIntent.putExtra(PROGRESS_KEY, percent);
-                            LocalBroadcastManager.getInstance(this.getApplicationContext()).sendBroadcast(returnIntent);
-                        }
-
-                        sentBroadcast = true;
-                    } else {
-                        sentBroadcast = false;
-                    }
-                }
-
-                count++;
-
+            try {
+                b = response.body();
+                source = b.source();
+                sink = Okio.buffer(Okio.sink(getContentResolver().openOutputStream(f.getUri())));
+                sinkBuffer = sink.buffer();
+            } catch (Exception e) {
+                return false;
             }
 
             try {
-                fos.close();
-                is.close();
+                long count = 0L;
+                int i = 0;
+                while (count != -1) {
+                    count = source.read(sinkBuffer, IO_BUFFER_SIZE);
+                    sink.emit();
+
+                    if (!TextUtils.isEmpty(intentFilter) && fileSize > 0) {
+                        final int percent = (int) (((float) (i * IO_BUFFER_SIZE) / (float) fileSize) * 100.0F);
+                        if (percent % 5 == 0) {
+
+                            if (!sentBroadcast) {
+                                final Intent returnIntent = new Intent();
+
+                                returnIntent.setAction(intentFilter);
+                                returnIntent.addCategory(Intent.CATEGORY_DEFAULT);
+                                returnIntent.putExtra(POSITION_KEY, position);
+                                returnIntent.putExtra(ERROR_KEY, false);
+                                returnIntent.putExtra(STATUS_KEY, STATUS_RUNNING); // complete
+                                returnIntent.putExtra(PROGRESS_KEY, percent);
+                                LocalBroadcastManager.getInstance(DownloadService.this).sendBroadcast(returnIntent);
+                            }
+
+                            sentBroadcast = true;
+                        } else {
+                            sentBroadcast = false;
+                        }
+                    }
+
+                    i++;
+                }
             } catch (Exception e) {
-                Log.e(LOG_TAG, "Error closing handle: " + e.getMessage());
-                e.printStackTrace();
+                return false;
+            } finally {
+                try {
+                    sink.flush();
+                    sink.close();
+                    source.close();
+                } catch (Exception e) {
+                    // no op
+                }
             }
 
-            return false;
-
-        } catch (OutOfMemoryError e) {
-//        	data = null;
-            Log.e(LOG_TAG, "Error Downloading Image: " + e.getMessage());
-            return true;
+            if (!filename.equals(f.getName())) {
+                f.renameTo(filename);
+            }
 
         } catch (Exception e) {
-//        	data = null;
-            Log.e(LOG_TAG, "Error Downloading Image: " + e.getMessage());
-            e.printStackTrace();
+            Log.e(LOG_TAG, "Error Downloading Image: ", e);
             return true;
+        }
 
+        return false;
+    }
+
+    private void scanFile(File file) {
+        try {
+            new SingleMediaScanner(MimiApplication.getInstance().getApplicationContext(), file, (s, uri) -> {
+                if (BuildConfig.DEBUG) {
+                    Log.d(LOG_TAG, "Scanned file " + s + " at " + uri);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public void createNotification() {
-
-//    	Context appContext = app.getApplicationContext();
-
         //get the notification manager
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -466,6 +492,15 @@ public class DownloadService extends IntentService {
                 .setAutoCancel(true)
                 .setWhen(when);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelName = getString(R.string.mimi_file_downloader);
+
+            NotificationChannel saveFileChannel = new NotificationChannel(DownloadService.DOWNLOADER_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_LOW);
+
+            notificationCompat.setChannelId(DownloadService.DOWNLOADER_CHANNEL_ID);
+            notificationManager.createNotificationChannel(saveFileChannel);
+        }
+
         notification = notificationCompat.build();
         notification.flags = Notification.FLAG_ONGOING_EVENT;
 
@@ -475,20 +510,29 @@ public class DownloadService extends IntentService {
 
     public void notificationProgressUpdate(int percentageComplete) {
         //build up the new status message
-        final CharSequence contentText = getString(R.string.percent_complete, percentageComplete);
 //        CharSequence contentText = fileName;
 
         // set up the notification
-        notificationCompat.setContentText(contentText);
+        notificationCompat
+                .setContentText(getString(R.string.percent_complete, percentageComplete))
+                .setProgress(100, percentageComplete, false);
 
         //publish it to the status bar
         notification = notificationCompat.build();
         notificationManager.notify(NOTIFICATION_ID, notification);
 
-        Log.i(LOG_TAG, "Notification update: " + contentText);
+        Log.i(LOG_TAG, "Notification update: " + percentageComplete + "%");
     }
 
-    public void notificationCompleted() {
+    public void notificationCompleted(boolean success) {
+
+        if (notificationManager != null) {
+            notificationManager.cancel(NOTIFICATION_ID);
+        }
+
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        scanFile(new File(downloadDir));
 
         Log.i(LOG_TAG, "Notification completed");
 
@@ -499,7 +543,7 @@ public class DownloadService extends IntentService {
 
         //create the content which is shown in the notification pulldown
         final CharSequence contentTitle = getString(R.string.content_title);
-        final CharSequence contentText = getString(R.string.download_complete); //Text of the notification in the pull down
+        final CharSequence contentText = success ? getString(R.string.download_complete_success) : getString(R.string.download_complete_error); //Text of the notification in the pull down
 
         //you have to set a PendingIntent on a notification to tell the system what you want it to do when the notification is selected
         //I don't want to use this here so I'm just creating a blank one
@@ -507,12 +551,22 @@ public class DownloadService extends IntentService {
         final PendingIntent contentIntent = PendingIntent.getActivity(app, 0, notificationIntent, 0);
 
         notificationCompat.setContentIntent(contentIntent)
+//                .setProgress(100, 100, false)
                 .setSmallIcon(R.drawable.ic_notification_photo)
                 .setTicker(tickerText)
                 .setContentTitle(contentTitle)
                 .setContentText(contentText)
                 .setAutoCancel(true)
                 .setWhen(when);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelName = getString(R.string.mimi_file_downloader);
+
+            NotificationChannel saveFileChannel = new NotificationChannel(DownloadService.DOWNLOADER_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_LOW);
+
+            notificationCompat.setChannelId(DownloadService.DOWNLOADER_CHANNEL_ID);
+            notificationManager.createNotificationChannel(saveFileChannel);
+        }
 
         notification = notificationCompat.build();
 //        notification.flags = Notification.FLAG_ONGOING_EVENT;

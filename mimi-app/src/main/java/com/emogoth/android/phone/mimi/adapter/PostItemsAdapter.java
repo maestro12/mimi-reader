@@ -16,20 +16,15 @@
 
 package com.emogoth.android.phone.mimi.adapter;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-import android.support.v7.widget.CardView;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.PopupMenu;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
@@ -39,29 +34,47 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.cardview.widget.CardView;
+import androidx.core.util.Pair;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
+
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.activity.GalleryActivity;
+import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.autorefresh.RefreshScheduler2;
+import com.emogoth.android.phone.mimi.db.CatalogTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
 import com.emogoth.android.phone.mimi.interfaces.GalleryMenuItemClickListener;
-import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
+import com.emogoth.android.phone.mimi.interfaces.PostItemClickListener;
 import com.emogoth.android.phone.mimi.model.HeaderFooterViewHolder;
-import com.emogoth.android.phone.mimi.util.Extras;
+import com.emogoth.android.phone.mimi.util.GlideApp;
+import com.emogoth.android.phone.mimi.util.MimiPrefs;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.RefreshScheduler;
-import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
 import com.emogoth.android.phone.mimi.view.GridItemImageView;
-import com.mimireader.chanlib.ChanConnector;
-import com.mimireader.chanlib.models.ChanCatalog;
+import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.models.ChanPost;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import rx.Subscription;
-import rx.functions.Action1;
+import io.reactivex.SingleObserver;
+import io.reactivex.SingleSource;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
 
 
 public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements Filterable {
@@ -73,28 +86,30 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private static final int VIEW_GRID_ITEM = 2;
     private static final int VIEW_FOOTER = 3;
 
-    private final OnPostItemClickListener clickListener;
-    private final ChanConnector chanConnector;
-    private final boolean secureConnection;
+    private final PostItemClickListener clickListener;
 
-    protected List<ChanPost> postList;
+    private final VectorDrawableCompat pinDrawable;
+    private final VectorDrawableCompat lockDrawable;
+
+    protected List<ChanPost> postList = new ArrayList<>();
 
     protected String boardName;
     protected String boardTitle;
-    protected final FragmentActivity activity;
-    protected int postCount = 0;
-    protected int lastPosition = 0;
-    protected String flagUrl;
-    protected PostFilter postFilter;
-    protected boolean searching;
-    protected LayoutInflater inflater;
+    private int postCount;
+    private String flagUrl;
+    private String trollUrl;
+    private PostFilter postFilter;
     private RecyclerView.LayoutManager layoutManager;
 
-    private List<View> headers = new ArrayList<>();
-    private List<View> footers = new ArrayList<>();
+    private String oneReply;
+    private String oneImage;
+    private String numberReplies;
+    private String numberImages;
 
-    private Subscription historyInfoSubscription;
-    private Subscription fetchPostSubscription;
+    private Boolean imageSpoilersEnabled;
+    private String thumbUrl;
+    private String spoilerUrl;
+    private String customSpoilerUrl;
 
 
     public enum ManagerType {
@@ -114,64 +129,70 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     protected ManagerType managerType = ManagerType.LIST;
 
 
-    public PostItemsAdapter(final FragmentActivity activity, final String boardName, final String boardTitle, final ChanCatalog threads, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
-        this.activity = activity;
+    public PostItemsAdapter(final String boardName, final String boardTitle, final List<ChanPost> postList, final PostItemClickListener clickListener) {
         this.boardName = boardName;
         this.boardTitle = boardTitle;
-        this.postList = new ArrayList<>();
-        this.clickListener = clickListener;
-        this.chanConnector = chanConnector;
-
-        for (int i = 0; i < threads.getPosts().size(); i++) {
-            postList.addAll(threads.getPosts());
-        }
-
+        this.postList.addAll(postList);
         this.postCount = postList.size();
+        this.clickListener = clickListener;
 
-        if (activity != null) {
-            this.secureConnection = MimiUtil.isSecureConnection(activity);
-            setup();
-        } else {
-            this.secureConnection = false;
-        }
+        setup();
+
+        Pair<VectorDrawableCompat, VectorDrawableCompat> drawables = initMetadataDrawables();
+        pinDrawable = drawables.first;
+        lockDrawable = drawables.second;
+
+        final Context appContext = MimiApplication.getInstance().getApplicationContext();
+
+        oneReply = appContext.getString(R.string.one_reply);
+        numberReplies = appContext.getString(R.string.number_replies);
+
+        oneImage = appContext.getString(R.string.one_image);
+        numberImages = appContext.getString(R.string.number_images);
+
+        imageSpoilersEnabled = MimiPrefs.imageSpoilersEnabled(appContext);
+        thumbUrl = MimiUtil.https() + appContext.getString(R.string.thumb_link) + appContext.getString(R.string.thumb_path);
+        spoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.spoiler_path);
+        customSpoilerUrl = MimiUtil.https() + appContext.getString(R.string.spoiler_link) + appContext.getString(R.string.custom_spoiler_path);
     }
 
-    public PostItemsAdapter(final FragmentActivity activity, final String boardName, final String boardTitle, final List<ChanPost> postList, final ChanConnector chanConnector, final OnPostItemClickListener clickListener) {
-        this.activity = activity;
-        this.boardName = boardName;
-        this.boardTitle = boardTitle;
-        this.postList = postList;
-        this.postCount = postList.size();
-        this.clickListener = clickListener;
-        this.chanConnector = chanConnector;
+    private Pair<VectorDrawableCompat, VectorDrawableCompat> initMetadataDrawables() {
+        final Resources.Theme theme = MimiApplication.getInstance().getTheme();
+        final Resources res = MimiApplication.getInstance().getResources();
+        final int drawableColor = MimiUtil.getInstance().getTheme() == MimiUtil.THEME_LIGHT ? R.color.md_grey_800 : R.color.md_green_50;
+        final VectorDrawableCompat pin;
+        final VectorDrawableCompat lock;
 
-        if (activity != null) {
-            this.secureConnection = MimiUtil.isSecureConnection(activity);
-            setup();
-        } else {
-            this.secureConnection = false;
+        pin = VectorDrawableCompat.create(res, R.drawable.ic_pin, theme);
+        lock = VectorDrawableCompat.create(res, R.drawable.ic_lock, theme);
+
+        if (pin != null) {
+            pin.setTint(res.getColor(drawableColor));
         }
+
+        if (lock != null) {
+            lock.setTint(res.getColor(drawableColor));
+        }
+
+        return Pair.create(pin, lock);
     }
 
     private void setup() {
-        inflater = activity.getLayoutInflater();
         if (postList.size() == 0) {
             return;
         }
 
-        this.flagUrl = MimiUtil.httpOrHttps(activity) + activity.getString(R.string.flag_int_link);
+        Resources res = MimiApplication.getInstance().getResources();
+
+        this.flagUrl = MimiUtil.https() + res.getString(R.string.flag_int_link);
+        this.trollUrl = MimiUtil.https() + res.getString(R.string.flag_pol_link);
     }
 
-
+    @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View v;
         switch (viewType) {
-            case VIEW_HEADER:
-                FrameLayout headerFrameLayout = new FrameLayout(parent.getContext());
-                //make sure it fills the space
-                headerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                return new HeaderFooterViewHolder(headerFrameLayout);
             case VIEW_LIST_ITEM:
                 v = LayoutInflater.from(parent.getContext()).inflate(R.layout.catalog_post_list_item, parent, false);
                 return new ViewHolderListItem(v);
@@ -186,6 +207,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 footerFrameLayout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, MimiUtil.dpToPx(60)));
                 return new HeaderFooterViewHolder(footerFrameLayout);
 
+            case VIEW_HEADER:
             default:
                 FrameLayout defaultFrameLayout = new FrameLayout(parent.getContext());
                 //make sure it fills the space
@@ -212,15 +234,7 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         Log.d(LOG_TAG, "Set manager type: value=" + managerType.name());
     }
 
-    public ManagerType getLayoutManagerType() {
-        return managerType;
-    }
-
     public int getGridSpan(int position) {
-        if (isHeader(position) || isFooter(position)) {
-            return getSpan();
-        }
-        position -= headers.size();
         if (layoutManager instanceof GridLayoutManager) {
             return ((GridLayoutManager) layoutManager).getSpanSizeLookup().getSpanSize(position);
         }
@@ -252,334 +266,428 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public int getItemCount() {
         if (postList != null) {
-            return headers.size() + postList.size() + footers.size();
+            return postList.size();
         }
 
         return 0;
     }
 
-    private boolean isHeader(int position) {
-        return (position < headers.size());
-    }
-
-    private boolean isFooter(int position) {
-        return (position >= headers.size() + postList.size());
-    }
-
     @Override
     public int getItemViewType(int position) {
-        if (isHeader(position)) {
-            return VIEW_HEADER;
-        } else if (isFooter(position)) {
-            return VIEW_FOOTER;
-        } else {
-            return managerType.getItemViewType();
-        }
+        return managerType.getItemViewType();
     }
 
     @Override
-    public void onBindViewHolder(final RecyclerView.ViewHolder holder, int pos) {
+    public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder holder, int position) {
+        final ChanPost threadItem = postList.get(position);
+        final long threadId = threadItem.getNo();
+        final boolean sticky = threadItem.isSticky();
+        final HolderAbstractor viewHolder = new HolderAbstractor(holder);
 
-        if (isHeader(pos)) {
-            View v = headers.get(pos);
-            //add our view to a header view and display it
-            prepareHeaderFooter((HeaderFooterViewHolder) holder, v);
-        } else if (isFooter(pos)) {
-            View v = footers.get(pos - postList.size() - headers.size());
-            //add our view to a footer view and display it
-            prepareHeaderFooter((HeaderFooterViewHolder) holder, v);
-        } else {
+        if (clickListener != null) {
+            viewHolder.cardRoot.setOnClickListener(v -> clickListener.onPostItemClick(v, postList, position, boardTitle, boardName, threadId));
+        }
 
-            final int position = pos - headers.size();
-            final ChanPost threadItem = postList.get(position);
-            final int threadId = threadItem.getNo();
-            final HolderAbstractor viewHolder = new HolderAbstractor(holder);
+        if (viewHolder.flagIcon != null) {
+            final String country;
+            final String url;
+            if (threadItem.getCountry() == null) {
+                country = threadItem.getTrollCountry();
+                if (country != null) {
+                    url = trollUrl + country.toLowerCase() + ".gif";
+                } else {
+                    url = null;
+                }
+            } else {
+                country = threadItem.getCountry();
+                if (country != null) {
+                    url = flagUrl + country.toLowerCase() + ".gif";
+                } else {
+                    url = null;
+                }
+            }
+            if (country != null) {
+                viewHolder.flagIcon.setVisibility(View.VISIBLE);
 
-            if (clickListener != null) {
-                viewHolder.cardRoot.setOnClickListener(new View.OnClickListener() {
+                MimiUtil.loadImageWithFallback(viewHolder.flagIcon.getContext(), viewHolder.flagIcon, url, null, null, new RequestListener<Drawable>() {
                     @Override
-                    public void onClick(View v) {
-                        clickListener.onPostItemClick(v, postList, position, boardTitle, boardName, threadId);
-                    }
-                });
-            }
-
-            if (viewHolder.flagIcon != null) {
-                final String country = threadItem.getCountry();
-                if (country != null && !"".equals(country)) {
-                    final String url = flagUrl + country.toLowerCase() + ".gif";
-                    viewHolder.flagIcon.setVisibility(View.VISIBLE);
-
-                    Glide.with(activity)
-                            .load(url)
-                            .crossFade()
-                            .into(viewHolder.flagIcon);
-                } else {
-                    viewHolder.flagIcon.setVisibility(View.GONE);
-                }
-
-            }
-
-            viewHolder.threadNo.setText("" + threadId);
-
-            if (threadItem.getFilename() != null && !threadItem.getFilename().equals("")) {
-                if (managerType == ManagerType.GRID || managerType == ManagerType.STAGGERED_GRID) {
-                    viewHolder.thumbUrl.setAspectRatio(threadItem.getThumbnailWidth(), threadItem.getThumbnailHeight());
-                } else {
-                    viewHolder.thumbUrl.setAspectRatioEnabled(false);
-                }
-                viewHolder.thumbUrl.setVisibility(View.VISIBLE);
-                viewHolder.thumbUrl.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        final Bundle args = new Bundle();
-                        args.putInt(Extras.EXTRAS_GALLERY_TYPE, 1);
-                        args.putInt(Extras.EXTRAS_THREAD_ID, threadId);
-                        args.putInt(Extras.EXTRAS_POSITION, 0);
-                        args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-
-                        final Intent galleryIntent = new Intent(activity, GalleryActivity.class);
-                        galleryIntent.putExtras(args);
-                        galleryIntent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-
-                        activity.startActivity(galleryIntent);
-
-                    }
-                });
-
-                final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim(), secureConnection);
-                Glide.with(activity)
-                        .load(url)
-                        .crossFade()
-                        .into(viewHolder.thumbUrl);
-
-            } else {
-                viewHolder.thumbUrl.setVisibility(View.GONE);
-                Glide.clear(viewHolder.thumbUrl);
-            }
-
-            if (threadItem.getSubject() != null) {
-                viewHolder.subject.setText(threadItem.getSubject());
-                viewHolder.subject.setVisibility(View.VISIBLE);
-            } else {
-                viewHolder.subject.setVisibility(View.GONE);
-            }
-
-            if (viewHolder.name != null) {
-                if (threadItem.getName() != null) {
-                    viewHolder.name.setText(threadItem.getName());
-                    viewHolder.name.setVisibility(View.VISIBLE);
-                } else {
-                    viewHolder.name.setVisibility(View.GONE);
-                }
-            }
-
-            if (viewHolder.userId != null) {
-                if (threadItem.getId() != null) {
-                    viewHolder.userId.setText(threadItem.getId());
-                    viewHolder.userId.setVisibility(View.VISIBLE);
-                } else {
-                    viewHolder.userId.setVisibility(View.GONE);
-                }
-            }
-
-            viewHolder.comment.setText(threadItem.getComment());
-
-            if (managerType == ManagerType.LIST) {
-                viewHolder.replyCount.setText(chanConnector.getRepliesCountText(threadItem.getReplies()));
-                viewHolder.imageCount.setText(chanConnector.getImageCountText(threadItem.getImages()));
-            } else {
-                viewHolder.replyCount.setText(String.valueOf(threadItem.getReplies()));
-                viewHolder.imageCount.setText(String.valueOf(threadItem.getImages()));
-            }
-
-            if (viewHolder.timestamp != null) {
-                viewHolder.timestamp.setText(threadItem.getNow());
-            }
-
-            viewHolder.menuIcon.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View v) {
-                    final PopupMenu menu = new PopupMenu(v.getContext(), v);
-                    menu.inflate(R.menu.catalog_item_menu);
-                    menu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(final MenuItem menuItem) {
-                            if (menuItem.getItemId() == R.id.gallery_menu && activity instanceof GalleryMenuItemClickListener) {
-                                ((GalleryMenuItemClickListener) activity).onGalleryMenuItemClick(boardName, threadId);
-                                return true;
-                            } else if (menuItem.getItemId() == R.id.report_menu) {
-                                final String url = "https://" + activity.getString(R.string.sys_link);
-                                final String path = activity.getString(R.string.report_path, boardName, threadId);
-                                final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
-
-                                activity.startActivity(reportIntent);
-
-                                return true;
-
-                            } else if (menuItem.getItemId() == R.id.copy_link_menu) {
-                                final String url = "https://" + activity.getString(R.string.board_link);
-                                final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
-
-                                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
-                                android.content.ClipData clip = android.content.ClipData.newPlainText("thread link", url + path);
-                                clipboard.setPrimaryClip(clip);
-
-                                Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
-
-                                return true;
-
-                            } else if (menuItem.getItemId() == R.id.open_link_menu) {
-                                final String url = "https://" + activity.getString(R.string.board_link);
-                                final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
-                                final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
-
-                                activity.startActivity(openLinkIntent);
-
-                                return true;
-
-                            }
-
-                            return false;
+                    public boolean onLoadFailed(@Nullable GlideException e, Object o, Target<Drawable> target, boolean b) {
+                        if (viewHolder.flagIcon != null) {
+                            viewHolder.flagIcon.setVisibility(View.GONE);
                         }
-                    });
-                    menu.show();
-                }
-            });
+                        return false;
+                    }
 
-            if (viewHolder.bookmarkButton != null) {
-                if (threadItem.isWatched()) {
-                    viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
-                } else {
-                    viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
-                }
-
-                viewHolder.bookmarkButton.setOnClickListener(new View.OnClickListener() {
                     @Override
-                    public void onClick(View v) {
-                        final boolean watched = threadItem.isWatched();
-                        threadItem.setWatched(!watched);
-
-                        if (watched) {
-                            viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
-                            HistoryTableConnection.removeHistory(boardName, threadId)
-                                    .doOnNext(new Action1<Boolean>() {
-                                        @Override
-                                        public void call(Boolean aBoolean) {
-                                            MimiUtil.getInstance().removeBookmark(boardName, threadId);
-                                        }
-                                    })
-                                    .compose(DatabaseUtils.<Boolean>applySchedulers())
-                                    .subscribe();
-                            RefreshScheduler.getInstance().removeThread(boardName, threadId);
-                            ThreadRegistry.getInstance().remove(threadId);
-                        } else {
-                            viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
-                            RefreshScheduler.getInstance().addThread(boardName, threadId, true);
-                            ThreadRegistry.getInstance().add(boardName, threadId, postList.size(), true);
-                        }
-
-                        RxUtil.safeUnsubscribe(historyInfoSubscription);
-                        historyInfoSubscription = HistoryTableConnection.putHistory(boardName, threadItem, postCount, !watched).subscribe();
+                    public boolean onResourceReady(Drawable drawable, Object o, Target<Drawable> target, DataSource dataSource, boolean b) {
+                        return false;
                     }
                 });
+            } else {
+                viewHolder.flagIcon.setVisibility(View.GONE);
+            }
+
+        }
+
+        if (viewHolder.lockIcon != null) {
+            if (threadItem.isClosed()) {
+                viewHolder.lockIcon.setImageDrawable(lockDrawable);
+                viewHolder.lockIcon.setVisibility(View.VISIBLE);
+            } else {
+                viewHolder.lockIcon.setVisibility(View.GONE);
             }
         }
 
+        if (viewHolder.pinIcon != null) {
+            if (threadItem.isSticky()) {
+                viewHolder.pinIcon.setImageDrawable(pinDrawable);
+                viewHolder.pinIcon.setVisibility(View.VISIBLE);
+            } else {
+                viewHolder.pinIcon.setVisibility(View.GONE);
+            }
+        }
+
+        viewHolder.threadNo.setText("" + threadId);
+
+        if (threadItem.getFilename() != null && !threadItem.getFilename().equals("")) {
+            if (managerType == ManagerType.GRID || managerType == ManagerType.STAGGERED_GRID) {
+                viewHolder.thumbUrl.setAspectRatio(threadItem.getThumbnailWidth(), threadItem.getThumbnailHeight());
+            } else {
+                viewHolder.thumbUrl.setAspectRatioEnabled(false);
+            }
+            viewHolder.thumbUrl.setVisibility(View.VISIBLE);
+            viewHolder.thumbUrl.setOnClickListener(v -> GalleryActivity2.start(v.getContext(), GalleryActivity2.GALLERY_TYPE_PAGER, 0, boardName, threadId, new long[0]));
+
+            final String url;
+            if (!imageSpoilersEnabled) {
+                url = String.format(thumbUrl, boardName, threadItem.getTim());
+            } else if (threadItem.spoiler > 0 && threadItem.getCustomSpoiler() > 0) {
+                url = String.format(customSpoilerUrl, boardName, threadItem.getCustomSpoiler());
+            } else if (threadItem.spoiler > 0) {
+                url = spoilerUrl;
+            } else {
+                url = String.format(thumbUrl, boardName, threadItem.getTim());
+            }
+//            final String url = chanConnector.getThumbUrl(boardName, threadItem.getTim());
+            GlideApp.with(viewHolder.thumbUrl.getContext())
+                    .load(url)
+                    .into(viewHolder.thumbUrl);
+
+        } else {
+            viewHolder.thumbUrl.setVisibility(View.GONE);
+            GlideApp.with(viewHolder.thumbUrl.getContext()).clear(viewHolder.thumbUrl);
+        }
+
+        if (threadItem.getSubject() != null) {
+            viewHolder.subject.setText(threadItem.getSubject());
+            viewHolder.subject.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.subject.setVisibility(View.GONE);
+        }
+
+        if (viewHolder.name != null) {
+            if (threadItem.getName() != null) {
+                viewHolder.name.setText(threadItem.getName());
+                viewHolder.name.setVisibility(View.VISIBLE);
+            } else {
+                viewHolder.name.setVisibility(View.GONE);
+            }
+        }
+
+        if (viewHolder.userId != null) {
+            if (threadItem.getId() != null) {
+                viewHolder.userId.setText(threadItem.getId());
+                viewHolder.userId.setVisibility(View.VISIBLE);
+            } else {
+                viewHolder.userId.setVisibility(View.GONE);
+            }
+        }
+
+        viewHolder.comment.setText(threadItem.getComment());
+
+        if (managerType == ManagerType.LIST) {
+            final String replyCountString;
+            if (threadItem.getReplies() == 1) {
+                replyCountString = oneReply;
+            } else {
+                replyCountString = String.format(numberReplies, threadItem.getReplies());
+            }
+
+            final String imageCountString;
+            if (threadItem.getImages() == 1) {
+                imageCountString = oneImage;
+            } else {
+                imageCountString = String.format(numberImages, threadItem.getImages());
+            }
+            viewHolder.replyCount.setText(replyCountString);
+            viewHolder.imageCount.setText(imageCountString);
+        } else {
+            viewHolder.replyCount.setText(String.valueOf(threadItem.getReplies()));
+            viewHolder.imageCount.setText(String.valueOf(threadItem.getImages()));
+        }
+
+        if (viewHolder.timestamp != null) {
+            viewHolder.timestamp.setText(threadItem.getNow());
+        }
+
+        viewHolder.menuIcon.setOnClickListener(v -> {
+            final Context context = v.getContext();
+            final PopupMenu menu = new PopupMenu(v.getContext(), v);
+            final Activity activity = context instanceof Activity ? (Activity) context : null;
+            menu.inflate(R.menu.catalog_item_menu);
+            menu.setOnMenuItemClickListener(menuItem -> {
+                if (menuItem.getItemId() == R.id.gallery_menu && activity instanceof GalleryMenuItemClickListener) {
+                    ((GalleryMenuItemClickListener) activity).onGalleryMenuItemClick(boardName, threadId);
+                    return true;
+                } else if (menuItem.getItemId() == R.id.hide_thread_menu) {
+                    HiddenThreadTableConnection.hideThread(boardName, threadId, sticky)
+                            .flatMap((Function<Boolean, SingleSource<Boolean>>) aBoolean -> CatalogTableConnection.removeThread(threadId))
+                            .compose(DatabaseUtils.applySingleSchedulers())
+                            .subscribe(new SingleObserver<Boolean>() {
+                                @Override
+                                public void onSubscribe(Disposable d) {
+
+                                }
+
+                                @Override
+                                public void onSuccess(Boolean success) {
+                                    int msgId = R.string.thread_hidden;
+                                    if (!success) {
+                                        msgId = R.string.error_hiding_thread;
+                                    } else {
+                                        for (int i = 0; i < postList.size(); i++) {
+                                            if (postList.get(i).getNo() == threadId) {
+                                                removePost(i);
+                                            }
+                                        }
+
+                                    }
+
+                                    Snackbar.make(viewHolder.cardRoot, msgId, Snackbar.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onError(Throwable e) {
+                                    Log.w(LOG_TAG, "Error hiding thread", e);
+                                }
+                            });
+                } else if (menuItem.getItemId() == R.id.report_menu) {
+                    final String url = "https://" + activity.getString(R.string.sys_link);
+                    final String path = activity.getString(R.string.report_path, boardName, threadId);
+                    final Intent reportIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
+
+                    activity.startActivity(reportIntent);
+
+                    return true;
+
+                } else if (menuItem.getItemId() == R.id.copy_link_menu) {
+                    final String url = "https://" + activity.getString(R.string.board_link);
+                    final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
+
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                    android.content.ClipData clip = android.content.ClipData.newPlainText("thread link", url + path);
+                    clipboard.setPrimaryClip(clip);
+
+                    Toast.makeText(activity, R.string.text_copied_to_clipboard, Toast.LENGTH_SHORT).show();
+
+                    return true;
+
+                } else if (menuItem.getItemId() == R.id.open_link_menu) {
+                    final String url = "https://" + activity.getString(R.string.board_link);
+                    final String path = activity.getString(R.string.raw_thread_path, boardName, threadId);
+                    final Intent openLinkIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url + path));
+
+                    activity.startActivity(openLinkIntent);
+
+                    return true;
+
+                }
+
+                return false;
+            });
+            menu.show();
+        });
+
+        if (viewHolder.bookmarkButton != null) {
+            if (threadItem.isWatched()) {
+                viewHolder.bookmarkButton.setVisibility(View.VISIBLE);
+                viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
+            } else {
+                viewHolder.bookmarkButton.setVisibility(View.INVISIBLE);
+                viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
+            }
+
+            viewHolder.bookmarkButton.setOnClickListener(v -> {
+                final boolean watched = threadItem.isWatched();
+                threadItem.setWatched(!watched);
+
+                if (watched) {
+                    viewHolder.bookmarkButton.setText(R.string.ic_bookmark_unset);
+                    HistoryTableConnection.removeHistory(boardName, threadId)
+                            .compose(DatabaseUtils.applySingleSchedulers())
+                            .subscribe();
+                    RefreshScheduler2.removeThread(boardName, threadId);
+//                    RefreshScheduler.getInstance().removeThread(boardName, threadId);
+                } else {
+                    viewHolder.bookmarkButton.setText(R.string.ic_bookmark_set);
+                    RefreshScheduler2.addThread(boardName, threadId);
+//                    RefreshScheduler.getInstance().addThread(boardName, threadId, true);
+                }
+
+                HistoryTableConnection.setBookmark(boardName, threadId, !watched)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe();
+            });
+        }
+
+
+    }
+
+    protected void removePost(final int pos) {
+        if (postList.size() > pos) {
+            final List<ChanPost> posts = new ArrayList<>(postList);
+            posts.remove(pos);
+            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return postList.size();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return posts.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+
+                    return postList.get(oldItemPosition).getNo() == posts.get(newItemPosition).getNo();
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return postList.get(oldItemPosition).equals(posts.get(newItemPosition));
+                }
+            }, false);
+            postList.remove(pos);
+            result.dispatchUpdatesTo(this);
+        }
     }
 
     public void addPosts(final List<ChanPost> posts) {
-        if (postList != null) {
-            for (final ChanPost post : posts) {
-                if (postList.indexOf(post) < 0) {
-                    postList.add(post);
+        if (postList.size() > 0) {
+            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return postList.size();
                 }
-            }
 
-            postCount = postList.size();
+                @Override
+                public int getNewListSize() {
+                    return posts.size();
+                }
 
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+
+                    return postList.get(oldItemPosition).getNo() == posts.get(newItemPosition).getNo();
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return postList.get(oldItemPosition).equals(posts.get(newItemPosition));
+                }
+            }, false);
+            postList.clear();
+            postList.addAll(posts);
+            result.dispatchUpdatesTo(this);
+        } else {
+            postList.addAll(posts);
             notifyDataSetChanged();
         }
     }
 
     public void clear() {
+        postFilter = null;
         if (postList == null) {
             postList = new ArrayList<>();
+            notifyDataSetChanged();
         } else {
+            final List<ChanPost> posts = new ArrayList<>();
+            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override
+                public int getOldListSize() {
+                    return postList.size();
+                }
+
+                @Override
+                public int getNewListSize() {
+                    return posts.size();
+                }
+
+                @Override
+                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+
+                    return postList.get(oldItemPosition).getNo() == posts.get(newItemPosition).getNo();
+                }
+
+                @Override
+                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                    return postList.get(oldItemPosition).equals(posts.get(newItemPosition));
+                }
+            }, false);
             postList.clear();
+            result.dispatchUpdatesTo(this);
         }
 
-        notifyDataSetChanged();
     }
 
-    //add a header to the adapter
-    public void addHeader(View header) {
-        if (!headers.contains(header)) {
-            headers.add(header);
-            //animate
-            notifyItemInserted(headers.size() - 1);
-        }
-    }
-
-    //remove a header from the adapter
-    public void removeHeader(View header) {
-        if (headers.contains(header)) {
-            //animate
-            notifyItemRemoved(headers.indexOf(header));
-            headers.remove(header);
-        }
-    }
-
-    //add a footer to the adapter
-    public void addFooter(View footer) {
-        if (!footers.contains(footer)) {
-            footers.add(footer);
-            //animate
-            notifyItemInserted(headers.size() + postList.size() + footers.size() - 1);
-        }
-    }
-
-    //remove a footer from the adapter
-    public void removeFooter(View footer) {
-        if (footers.contains(footer)) {
-            //animate
-            notifyItemRemoved(headers.size() + postList.size() + footers.indexOf(footer));
-            footers.remove(footer);
-        }
-    }
-
-    private void prepareHeaderFooter(HeaderFooterViewHolder vh, View view) {
-
-        //if it's a staggered grid, span the whole layout
-        if (managerType == ManagerType.STAGGERED_GRID) {
-            StaggeredGridLayoutManager.LayoutParams layoutParams = new StaggeredGridLayoutManager.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            layoutParams.setFullSpan(true);
-            vh.itemView.setLayoutParams(layoutParams);
-        }
-
-        //if the view already belongs to another layout, remove it
-        if (view.getParent() != null) {
-            ((ViewGroup) view.getParent()).removeView(view);
-        }
-
-        //empty out our FrameLayout and replace with our header/footer
-        vh.base.removeAllViews();
-        vh.base.addView(view);
+    public void destroy() {
+        postList = null;
+        layoutManager = null;
 
     }
 
     public void setPosts(List<ChanPost> posts, String boardName, String boardTitle) {
-        if (posts == null || posts.size() == 0) {
+        if (posts == null) {
             return;
         }
 
-        this.boardName = boardName;
-        this.boardTitle = boardTitle;
-        postList = posts;
+        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return postList.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return posts.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+
+                return postList.get(oldItemPosition).getNo() == posts.get(newItemPosition).getNo();
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return postList.get(oldItemPosition).equals(posts.get(newItemPosition));
+            }
+        }, false);
+
+        if (!TextUtils.isEmpty(boardName)) {
+            this.boardName = boardName;
+        }
+
+        if (!TextUtils.isEmpty(boardTitle)) {
+            this.boardTitle = boardTitle;
+        }
+        postList.clear();
+        postList.addAll(posts);
         postCount = posts.size();
         setup();
-
-        notifyDataSetChanged();
+        result.dispatchUpdatesTo(this);
     }
 
     public List<ChanPost> getPosts() {
@@ -599,26 +707,30 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         View menuIcon;
         ViewGroup postHeader;
         ImageView flagIcon;
+        ImageView lockIcon;
+        ImageView pinIcon;
         TextView bookmarkButton;
         CardView cardRoot;
 
         private ViewHolderListItem(final View root) {
             super(root);
 
-            name = (TextView) root.findViewById(R.id.user_name);
-            threadNo = (TextView) root.findViewById(R.id.thread_id);
-            userId = (TextView) root.findViewById(R.id.user_id);
-            subject = (TextView) root.findViewById(R.id.subject);
-            comment = (TextView) root.findViewById(R.id.comment);
-            thumbUrl = (GridItemImageView) root.findViewById(R.id.header_thumbnail);
-            replyCount = (TextView) root.findViewById(R.id.reply_count);
-            imageCount = (TextView) root.findViewById(R.id.image_count);
-            timestamp = (TextView) root.findViewById(R.id.timestamp);
+            name = root.findViewById(R.id.user_name);
+            threadNo = root.findViewById(R.id.thread_id);
+            userId = root.findViewById(R.id.user_id);
+            subject = root.findViewById(R.id.subject);
+            comment = root.findViewById(R.id.comment);
+            thumbUrl = root.findViewById(R.id.header_thumbnail);
+            replyCount = root.findViewById(R.id.reply_count);
+            imageCount = root.findViewById(R.id.image_count);
+            timestamp = root.findViewById(R.id.timestamp);
             menuIcon = root.findViewById(R.id.post_item_menu);
-            postHeader = (ViewGroup) root.findViewById(R.id.post_header);
-            flagIcon = (ImageView) root.findViewById(R.id.flag_icon);
-            bookmarkButton = (TextView) root.findViewById(R.id.bookmark_button);
-            cardRoot = (CardView) root.findViewById(R.id.post_card);
+            postHeader = root.findViewById(R.id.post_header);
+            flagIcon = root.findViewById(R.id.flag_icon);
+            lockIcon = root.findViewById(R.id.lock_icon);
+            pinIcon = root.findViewById(R.id.pin_icon);
+            bookmarkButton = root.findViewById(R.id.bookmark_button);
+            cardRoot = root.findViewById(R.id.post_card);
         }
     }
 
@@ -635,26 +747,30 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         View menuIcon;
         ViewGroup postHeader;
         ImageView flagIcon;
+        ImageView lockIcon;
+        ImageView pinIcon;
         TextView bookmarkButton;
         CardView cardRoot;
 
         private ViewHolderGridItem(final View root) {
             super(root);
 
-            name = (TextView) root.findViewById(R.id.user_name);
-            threadNo = (TextView) root.findViewById(R.id.thread_id);
-            userId = (TextView) root.findViewById(R.id.user_id);
-            subject = (TextView) root.findViewById(R.id.subject);
-            comment = (TextView) root.findViewById(R.id.comment);
-            thumbUrl = (GridItemImageView) root.findViewById(R.id.header_thumbnail);
-            replyCount = (TextView) root.findViewById(R.id.reply_count);
-            imageCount = (TextView) root.findViewById(R.id.image_count);
-            timestamp = (TextView) root.findViewById(R.id.timestamp);
+            name = root.findViewById(R.id.user_name);
+            threadNo = root.findViewById(R.id.thread_id);
+            userId = root.findViewById(R.id.user_id);
+            subject = root.findViewById(R.id.subject);
+            comment = root.findViewById(R.id.comment);
+            thumbUrl = root.findViewById(R.id.header_thumbnail);
+            replyCount = root.findViewById(R.id.reply_count);
+            imageCount = root.findViewById(R.id.image_count);
+            timestamp = root.findViewById(R.id.timestamp);
             menuIcon = root.findViewById(R.id.post_item_menu);
-            postHeader = (ViewGroup) root.findViewById(R.id.post_header);
-            flagIcon = (ImageView) root.findViewById(R.id.flag_icon);
-            bookmarkButton = (TextView) root.findViewById(R.id.bookmark_button);
-            cardRoot = (CardView) root.findViewById(R.id.post_card);
+            postHeader = root.findViewById(R.id.post_header);
+            flagIcon = root.findViewById(R.id.flag_icon);
+            lockIcon = root.findViewById(R.id.lock_icon);
+            pinIcon = root.findViewById(R.id.pin_icon);
+            bookmarkButton = root.findViewById(R.id.bookmark_button);
+            cardRoot = root.findViewById(R.id.post_card);
         }
     }
 
@@ -671,6 +787,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
         public final View menuIcon;
         public final ViewGroup postHeader;
         public final ImageView flagIcon;
+        public final ImageView lockIcon;
+        public final ImageView pinIcon;
         public final TextView bookmarkButton;
         public final CardView cardRoot;
 
@@ -688,6 +806,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = ((ViewHolderGridItem) item).menuIcon;
                 postHeader = ((ViewHolderGridItem) item).postHeader;
                 flagIcon = ((ViewHolderGridItem) item).flagIcon;
+                lockIcon = ((ViewHolderGridItem) item).lockIcon;
+                pinIcon = ((ViewHolderGridItem) item).pinIcon;
                 bookmarkButton = ((ViewHolderGridItem) item).bookmarkButton;
                 cardRoot = ((ViewHolderGridItem) item).cardRoot;
             } else if (item instanceof ViewHolderListItem) {
@@ -703,6 +823,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = ((ViewHolderListItem) item).menuIcon;
                 postHeader = ((ViewHolderListItem) item).postHeader;
                 flagIcon = ((ViewHolderListItem) item).flagIcon;
+                lockIcon = ((ViewHolderListItem) item).lockIcon;
+                pinIcon = ((ViewHolderListItem) item).pinIcon;
                 bookmarkButton = ((ViewHolderListItem) item).bookmarkButton;
                 cardRoot = ((ViewHolderListItem) item).cardRoot;
             } else {
@@ -718,6 +840,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                 menuIcon = null;
                 postHeader = null;
                 flagIcon = null;
+                lockIcon = null;
+                pinIcon = null;
                 bookmarkButton = null;
                 cardRoot = null;
             }
@@ -736,11 +860,11 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
     private class PostFilter extends Filter {
         private List<ChanPost> posts;
 
-        public PostFilter(List<ChanPost> posts) {
+        PostFilter(List<ChanPost> posts) {
             if (posts == null) {
                 throw new NullPointerException("Cannot pass null post list into constructor");
             }
-            this.posts = posts;
+            this.posts = new ArrayList<>(posts);
         }
 
         @Override
@@ -748,11 +872,10 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
             final FilterResults results = new FilterResults();
 
             if (constraint == null || constraint.length() == 0) {
-                searching = false;
                 results.count = posts.size();
                 results.values = posts;
             } else {
-                final ArrayList<ChanPost> filteredList = new ArrayList<ChanPost>(posts.size());
+                final ArrayList<ChanPost> filteredList = new ArrayList<>(posts.size());
                 for (ChanPost post : posts) {
                     if (((post.getComment() != null) && (post.getComment().toString().toLowerCase().contains(constraint.toString().toLowerCase()))) ||
                             ((post.getSubject() != null) && post.getSubject().toString().toLowerCase().contains(constraint.toString().toLowerCase()))) {
@@ -760,14 +883,8 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
                     }
                 }
 
-                searching = true;
                 results.count = filteredList.size();
                 results.values = filteredList;
-            }
-
-            if (results.values == null) {
-                results.count = 0;
-                results.values = new ArrayList<ChanPost>();
             }
 
             return results;
@@ -775,8 +892,33 @@ public class PostItemsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHold
 
         @Override
         protected void publishResults(final CharSequence constraint, final FilterResults results) {
-            postList = (ArrayList<ChanPost>) results.values;
-            notifyDataSetChanged();
+            List<ChanPost> filteredPosts = (List<ChanPost>) results.values;
+            setPosts(filteredPosts, null, null);
+//            DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+//                @Override
+//                public int getOldListSize() {
+//                    return posts.size();
+//                }
+//
+//                @Override
+//                public int getNewListSize() {
+//                    return filteredPosts.size();
+//                }
+//
+//                @Override
+//                public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+//
+//                    return posts.get(oldItemPosition).getNo() == filteredPosts.get(newItemPosition).getNo();
+//                }
+//
+//                @Override
+//                public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+//                    return posts.get(oldItemPosition).equals(filteredPosts.get(newItemPosition));
+//                }
+//            }, false);
+//            postList.clear();
+//            postList.addAll(filteredPosts);
+//            result.dispatchUpdatesTo(adapter);
         }
     }
 

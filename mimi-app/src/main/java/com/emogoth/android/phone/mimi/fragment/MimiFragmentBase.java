@@ -17,30 +17,28 @@
 package com.emogoth.android.phone.mimi.fragment;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.view.View;
-import android.widget.AbsListView;
 
-import com.emogoth.android.phone.mimi.activity.MimiActivity;
+import androidx.fragment.app.Fragment;
 
+import com.emogoth.android.phone.mimi.app.MimiApplication;
+import com.emogoth.android.phone.mimi.util.Extras;
 
 public abstract class MimiFragmentBase extends Fragment {
     private static final String LOG_TAG = MimiFragmentBase.class.getSimpleName();
     private static final boolean LOG_DEBUG = true;
-    private AbsListView absListView;
-    private MimiActivity activity;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
 
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+        if (getArguments() != null) {
+            Bundle extras = getArguments();
 
-        activity = (MimiActivity) getActivity();
+            boolean hasOptionsMenu = extras.getBoolean(Extras.EXTRAS_OPTIONS_MENU_ENABLED, true);
+            setHasOptionsMenu(hasOptionsMenu);
+        } else {
+            setHasOptionsMenu(true);
+        }
 
     }
 
@@ -56,6 +54,10 @@ public abstract class MimiFragmentBase extends Fragment {
 
     public void initMenu() {
         // empty
+    }
+
+    public int getMenuRes() {
+        return 0;
     }
 
     public boolean showFab() {

@@ -19,158 +19,160 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
- >
+    android:layout_height="wrap_content">
+
     <FrameLayout
         style="?postBackground"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginLeft="1dp"
-        android:layout_marginRight="1dp" >
+        android:layout_marginRight="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical" >
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
             <RelativeLayout
                 android:id="@+id/post_header"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:orientation="horizontal"
-                android:layout_gravity="center"
+                android:layout_height="35dp"
+                android:layout_gravity="center_vertical"
                 android:layout_marginLeft="4dp"
-                android:layout_marginRight="4dp">
+                android:layout_marginRight="4dp"
+                android:orientation="horizontal"
+                android:padding="2dp">
 
-                <ImageView
+                <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/flag_icon"
                     android:layout_width="22dp"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:adjustViewBounds="true"
-                    android:visibility="gone"/>
+                    android:layout_height="15dp"
+                    android:layout_centerVertical="true"
+                    android:scaleType="fitXY"
+                    android:visibility="gone"
+                    tools:src="@drawable/de"
+                    tools:visibility="visible" />
 
                 <TextView
-                    style="?postUserName"
                     android:id="@+id/user_name"
+                    style="?postUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:paddingLeft="8dp"
-                    android:paddingRight="8dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
+                    android:layout_gravity="center_vertical"
                     android:layout_toRightOf="@+id/flag_icon"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="8dp"
+                    android:paddingBottom="4dp"
                     android:textSize="?attr/font_label_xsmall"
-                    tools:text="Anonymous"/>
+                    tools:text="Anonymous" />
 
                 <TextView
-                    style="?postHeaderText"
                     android:id="@+id/user_id"
+                    style="?postHeaderText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="left|center_vertical"
-                    android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
-                    android:singleLine="true"
+                    android:layout_gravity="center_vertical"
+                    android:layout_toRightOf="@+id/user_name"
                     android:ellipsize="end"
+                    android:gravity="left|center_vertical"
+                    android:maxLines="1"
                     android:paddingLeft="8dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="4dp"
-                    android:visibility="gone"
-                    android:layout_toRightOf="@+id/user_name"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="User ID"/>
+                    android:visibility="gone"
+                    tools:text="User ID" />
 
                 <TextView
-                    style="?postHeaderText"
                     android:id="@+id/tripcode"
+                    style="?postHeaderText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="left|center_vertical"
-                    android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
-                    android:singleLine="true"
+                    android:layout_gravity="center_vertical"
+                    android:layout_toRightOf="@+id/user_id"
                     android:ellipsize="end"
+                    android:gravity="left|center_vertical"
+                    android:maxLines="1"
                     android:paddingLeft="8dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="4dp"
-                    android:visibility="gone"
-                    android:layout_toRightOf="@+id/user_id"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="Tripcode"/>
+                    android:visibility="gone"
+                    tools:text="Tripcode" />
 
                 <View
-                    style="?postHeaderDecoration"
                     android:id="@+id/spacer"
+                    style="?postHeaderDecoration"
                     android:layout_width="1px"
-                    android:layout_height="12dp"
+                    android:layout_height="8dp"
                     android:layout_centerVertical="true"
-                    android:layout_toRightOf="@+id/tripcode"/>
+                    android:layout_toRightOf="@+id/tripcode" />
 
                 <TextView
-                    style="?postHeaderText"
                     android:id="@+id/thread_id"
+                    style="?postHeaderText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerHorizontal="true"
-                    android:layout_gravity="center_vertical"
                     android:layout_centerVertical="true"
+                    android:layout_gravity="center_vertical"
+                    android:layout_toRightOf="@+id/spacer"
                     android:paddingLeft="8dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="4dp"
-                    android:textStyle="normal"
-                    android:layout_toRightOf="@+id/spacer"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="123456"/>
+                    android:textStyle="normal"
+                    tools:text="123456" />
 
                 <TextView
-                    style="?postHeaderText"
                     android:id="@+id/timestamp"
+                    style="?postHeaderText"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:layout_gravity="center"
-                    android:paddingLeft="8dp"
-                    android:paddingRight="8dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
-                    android:layout_toLeftOf="@+id/menu_button"
+                    android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="8dp"
+                    android:paddingBottom="4dp"
                     android:textSize="?attr/font_xxsmall"
-                    tools:text="the time"/>
+                    tools:text="the time" />
 
             </RelativeLayout>
 
 
             <LinearLayout
                 android:id="@+id/post_container"
-                android:orientation="horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="horizontal">
 
                 <FrameLayout
                     android:id="@+id/thumbnail_container"
-                    android:layout_gravity="top"
                     android:layout_width="@dimen/thumbnail_image_medium"
                     android:layout_height="@dimen/thumbnail_image_medium"
+                    android:layout_gravity="top"
                     android:focusable="false"
                     android:focusableInTouchMode="false"
                     android:visibility="gone">
 
-                    <ImageView
+                    <androidx.appcompat.widget.AppCompatImageView
                         android:id="@+id/thumbnail"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:adjustViewBounds="true"
-                        android:scaleType="centerCrop"
                         android:paddingLeft="8dp"
+                        android:scaleType="centerCrop"
                         android:visibility="visible" />
 
                     <View
@@ -184,20 +186,19 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
                     android:layout_gravity="top"
-                    >
+                    android:orientation="vertical">
 
                     <TextView
-                        style="?postCommentText"
                         android:id="@+id/comment"
+                        style="?postCommentText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingLeft="8dp"
-                        android:paddingRight="8dp"
                         android:focusable="false"
                         android:focusableInTouchMode="false"
-                        android:textSize="?attr/font_label_small"/>
+                        android:paddingLeft="8dp"
+                        android:paddingRight="8dp"
+                        android:textSize="?attr/font_label_small" />
 
 
                 </LinearLayout>
@@ -205,56 +206,58 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="left|center_vertical">
+
                     <LinearLayout
                         android:id="@+id/replies_row"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:minWidth="50dp"
                         android:layout_gravity="left"
+                        android:background="@drawable/thumbnail_selector"
+                        android:minWidth="50dp"
+                        android:orientation="horizontal"
                         android:paddingLeft="8dp"
-                        android:paddingRight="8dp"
-                        android:background="@drawable/thumbnail_selector">
+                        android:paddingRight="8dp">
 
                         <!--<com.emogoth.android.phone.mimi.view.IconTextView-->
-                            <!--style="?postHeaderText"-->
-                            <!--android:layout_width="wrap_content"-->
-                            <!--android:layout_height="wrap_content"-->
-                            <!--android:gravity="center"-->
-                            <!--android:layout_gravity="center_vertical"-->
-                            <!--android:layout_marginRight="2dp"-->
-                            <!--android:textSize="13sp"-->
-                            <!--android:text="@string/ic_reply"/>-->
+                        <!--style="?postHeaderText"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:gravity="center"-->
+                        <!--android:layout_gravity="center_vertical"-->
+                        <!--android:layout_marginRight="2dp"-->
+                        <!--android:textSize="13sp"-->
+                        <!--android:text="@string/ic_reply"/>-->
 
                         <TextView
-                            style="?postHeaderText"
                             android:id="@+id/replies_number"
+                            style="?postHeaderText"
                             android:layout_width="wrap_content"
-                            android:layout_height="50dp"
-                            android:textStyle="bold"
-                            android:textSize="?attr/font_xsmall"
-                            android:textAllCaps="true"
+                            android:layout_height="48dp"
                             android:gravity="center_vertical"
-                            tools:text="one reply"/>
+                            android:textAllCaps="true"
+                            android:textSize="?attr/font_xsmall"
+                            android:textStyle="bold"
+                            tools:text="one reply" />
 
                     </LinearLayout>
                 </FrameLayout>
 
                 <com.emogoth.android.phone.mimi.view.IconTextView
-                    style="?postCommentText"
                     android:id="@+id/goto_post"
+                    style="?postCommentText"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:text="@string/ic_goto"
-                    android:textSize="18sp"
-                    android:gravity="center"
                     android:layout_gravity="right"
-                    android:background="@drawable/thumbnail_selector"/>
+                    android:background="@drawable/thumbnail_selector"
+                    android:gravity="center"
+                    android:text="@string/ic_goto"
+                    android:textSize="18sp" />
             </FrameLayout>
         </LinearLayout>
     </FrameLayout>

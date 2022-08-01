@@ -21,7 +21,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.support.v4.graphics.drawable.DrawableCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import android.util.AttributeSet;
 import android.widget.ImageView;
 
@@ -93,7 +93,7 @@ public class ColorImageView extends ImageView {
         Drawable drawableBorder = getResources().getDrawable(R.drawable.circle_border);
         drawableBorder = DrawableCompat.wrap(drawableBorder);
         int borderColor = mBorderColor;
-        if(isSelected()){
+        if (isSelected()) {
             borderColor = mBorderColorSelected;
         }
         drawableBorder.mutate().setColorFilter(borderColor, PorterDuff.Mode.SRC_IN);

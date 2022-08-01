@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<map linked="true">
+    <entry key="Geographic Location">0</entry>
+    <entry key="Anarcho-Capitalist">AC</entry>
+    <entry key="Anarchist">AN</entry>
+    <entry key="Black Nationalist">BL</entry>
+    <entry key="Confederate">CF</entry>
+    <entry key="Communist">CM</entry>
+    <entry key="Democrat">DM</entry>
+    <entry key="European">EU</entry>
+    <entry key="Fascist">FC</entry>
+    <entry key="Gadsden">GN</entry>
+    <entry key="Gay">GY</entry>
+    <entry key="Jihadi">JH</entry>
+    <entry key="Kekistani">KN</entry>
+    <entry key="Muslim">MF</entry>
+    <entry key="National Bolshevik">NB</entry>
+    <entry key="Nazi">NZ</entry>
+    <entry key="Hippie">PC</entry>
+    <entry key="Pirate">PR</entry>
+    <entry key="Republican">RE</entry>
+    <entry key="Templar">TM</entry>
+    <entry key="Tree Hugger">TR</entry>
+    <entry key="United Nations">UN</entry>
+    <entry key="White Supremacist">WP</entry>
+</map>

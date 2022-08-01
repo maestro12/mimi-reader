@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:mimi="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/share_menu"
+        android:title="@string/share"
+        android:icon="@drawable/ic_share"
+        mimi:showAsAction="always" />
+
+    <item
+        android:id="@+id/save_folder_menu"
+        android:title="@string/save_to_folder"
+        android:icon="@drawable/ic_sd_storage"
+        mimi:showAsAction="always" />
+
+    <item
+        android:id="@+id/fullscreen_menu"
+        android:title="@string/fullscreen"
+        android:icon="@drawable/ic_fullscreen"
+        mimi:showAsAction="always" />
+</menu>

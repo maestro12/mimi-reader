@@ -16,12 +16,12 @@
 
 package com.emogoth.android.phone.mimi.span;
 
-import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
@@ -30,16 +30,21 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.activity.MimiActivity;
+import com.emogoth.android.phone.mimi.util.MimiUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.novoda.simplechromecustomtabs.SimpleChromeCustomTabs;
+import com.novoda.simplechromecustomtabs.navigation.IntentCustomizer;
+import com.novoda.simplechromecustomtabs.navigation.NavigationFallback;
+import com.novoda.simplechromecustomtabs.navigation.SimpleChromeCustomTabsIntentBuilder;
 
 
 public class LinkSpan extends LongClickableSpan {
 
     private final int linkColor;
     private String link;
-    private Context context;
 
-    public LinkSpan(Context context, String link, int linkColor) {
-        this.context = context;
+    public LinkSpan(String link, int linkColor) {
         this.link = link;
         this.linkColor = linkColor;
     }
@@ -53,29 +58,30 @@ public class LinkSpan extends LongClickableSpan {
 
     @Override
     public void onClick(View v) {
-        openLink();
+        boolean inCustomTab = !MimiUtil.openLinksExternally(v.getContext());
+        openLink(v.getContext(), inCustomTab);
     }
 
     @Override
     public boolean onLongClick(View v) {
-        showChoiceDialog();
+        showChoiceDialog(v.getContext());
         return true;
     }
 
-    private void showChoiceDialog() {
+    private void showChoiceDialog(final Context context) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
-                new AlertDialog.Builder(context)
+                new MaterialAlertDialogBuilder(context)
                         .setTitle(link)
                         .setItems(R.array.link_dialog_list, new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 if (which == 0) {
-                                    openLink();
+                                    openLink(context, false);
                                 } else if (which == 1) {
-                                    shareLink();
+                                    shareLink(context);
                                 } else {
                                     ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                                     clipboardManager.setPrimaryClip(ClipData.newPlainText("url_link", link));
@@ -90,12 +96,39 @@ public class LinkSpan extends LongClickableSpan {
         });
     }
 
-    private void openLink() {
-        Intent browselink = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
-        context.startActivity(browselink);
+    private void openLink(final Context context, boolean inCustomTab) {
+        if (context instanceof MimiActivity && inCustomTab) {
+            final MimiActivity activity = (MimiActivity) context;
+            Uri url = Uri.parse(link);
+            NavigationFallback fallback = new NavigationFallback() {
+                @Override
+                public void onFallbackNavigateTo(Uri uri) {
+                    Intent browselink = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+                    context.startActivity(browselink);
+                }
+            };
+
+            IntentCustomizer customizer = new IntentCustomizer() {
+                @Override
+                public SimpleChromeCustomTabsIntentBuilder onCustomiseIntent(SimpleChromeCustomTabsIntentBuilder simpleChromeCustomTabsIntentBuilder) {
+                    if (activity.getToolbar() != null) {
+                        int color = ((ColorDrawable) activity.getToolbar().getBackground()).getColor();
+                        simpleChromeCustomTabsIntentBuilder.withToolbarColor(color);
+                    }
+                    return simpleChromeCustomTabsIntentBuilder;
+                }
+            };
+
+            SimpleChromeCustomTabs.getInstance().withFallback(fallback)
+                    .withIntentCustomizer(customizer)
+                    .navigateTo(url, activity);
+        } else {
+            Intent browselink = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
+            context.startActivity(browselink);
+        }
     }
 
-    private void shareLink() {
+    private void shareLink(Context context) {
         Intent shareIntent = new Intent();
         shareIntent.setAction(Intent.ACTION_SEND);
         shareIntent.putExtra(Intent.EXTRA_TEXT, link);

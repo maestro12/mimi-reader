@@ -18,17 +18,26 @@
 
 -optimizationpasses 5
 -dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
--dontpreverify
 -verbose
 -optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
-
+-ignorewarnings
 -keepattributes SourceFile,LineNumberTable
 
 -dontwarn javax.**
 -dontwarn java.lang.Object.**
 -dontwarn com.google.auto.value.processor.**
--keep class com.chartboost.sdk.** { *; }
+
+-keepclassmembers enum * {
+	public static **[] values();
+	public static ** valueOf(java.lang.String);
+}
+
+-keep class androidx.appcompat.widget.** { *; }
+
+-keepclassmembers enum * {
+	public static **[] values();
+	public static ** valueOf(java.lang.String);
+}
 
 # keep db models
 # -keep class com.emogoth.android.phone.mimi.db.** { *; }
@@ -43,7 +52,7 @@
 -keepattributes *Annotation*
 
 # Gson specific classes
--keep class sun.misc.Unsafe { *; }
+#-keep class sun.misc.Unsafe { *; }
 -keep class com.google.gson.stream.** { *; }
 
 # Application classes that will be serialized/deserialized over Gson
@@ -54,39 +63,21 @@
 
 -keep class de.nikwen.dynamicshareactionprovider.library.** { *; }
 -keep class com.emogoth.android.phone.mimi.view.** { *; }
--keep class android.support.v7.widget.SearchView { *; }
+-keep class androidx.appcompat.widget.SearchView { *; }
+-dontnote android.**
 
 -keep class * extends java.util.ListResourceBundle {
-    protected Object[][] getContents();
+    protected java.lang.Object[][] getContents();
 }
-
-##---------------Begin: Google Play Services  ----------
--keep public class com.google.android.gms.common.internal.safeparcel.SafeParcelable {
-    public static final *** NULL;
-}
-
--keepnames @com.google.android.gms.common.annotation.KeepName class *
--keepclassmembernames class * {
-    @com.google.android.gms.common.annotation.KeepName *;
-}
-
--keep class com.google.android.gms.common.GooglePlayServicesUtil {*;}
-##---------------End: Google Play Services  ----------
 
 ## JNI
--keep class wseemann.media.** {*;}
+-keep class wseemann.media.** { *; }
 -keepclasseswithmembernames class * {
     native <methods>;
 }
 
 ##----------------- Apache -----------------
 -dontwarn org.apache.**
-
-##----------------- Otto ------------------
--keepclassmembers class ** {
-    @com.squareup.otto.Subscribe public *;
-    @com.squareup.otto.Produce public *;
-}
 
 ##----------------- android-gif-drawable ------------------
 -keep public class pl.droidsonroids.gif.GifIOException{<init>(int);}
@@ -95,86 +86,63 @@
 ##----------------- dynamic listview ------------------
 -dontwarn com.nhaarman.listviewanimations.**
 
-##----- ads -----
--keep class com.google.ads.internal.** {*;}
--keep class com.mopub.mobileads.** {*;}
--keep class com.mopub.nativeads.** {*;}
--keep class com.facebook.ads.** {*;}
--keep class com.amazon.device.ads.** {*;}
--dontwarn com.mopub.mobileads.**
--dontwarn com.mopub.nativeads.**
--keep class com.avocarrot.** {*;}
--dontwarn com.avocarrot.**
-
--keep class com.nuance.nmdp.** {*;}
--keepclassmembers class com.millennialmedia.android.* {
-public *;
-}
--keep class com.millennialmedia.android.**
--dontwarn com.millennialmedia.android.NVASpeechKit*
-
 -dontwarn java.nio.file.**
 -dontwarn org.codehaus.mojo.animal_sniffer.**
 
--keep class android.widget.ScaleImageView
+#-keep class android.widget.ScaleImageView
 
 -keep class android.support.design.widget.** { *; }
 -keep interface android.support.design.widget.** { *; }
 -dontwarn android.support.design.**
 
--keep class android.net.http.** {*;}
--keep class android.util.** {*;}
+-keep class android.net.http.** { *; }
+-keep class android.util.** { *; }
 
 -dontwarn android.net.http.**
 -dontwarn android.util.**
 
--keep public class * extends android.support.v7.preference.Preference
--keep class android.support.v7.preference.** {*;}
-
-## AdColony
--dontwarn com.immersion.**
--dontnote com.immersion.**
-
--dontwarn com.google.android.gms.**
-
-# Tapjoy
-#-keep class com.tapjoy.** { *; }
--dontwarn com.tapjoy.**
--keepattributes JavascriptInterface
--keep class * extends java.util.ListResourceBundle {
-protected Object[][] getContents();
-}
--keep class com.google.android.gms.ads.identifier.** { *; }
+-keep public class * extends androidx.preference.Preference
+-keep class android.support.v7.preference.** { *; }
+-keep class androidx.preference.** { *; }
 
 # Glide
+#-keep class com.bumptech.glide.integration.okhttp.OkHttpGlideModule
 -keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
 -keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$** {
     **[] $VALUES;
     public *;
 }
+-dontnote com.bumptech.glide.**
 
 # Retrofit 2.X
 -dontwarn retrofit2.**
+-dontnote retrofit2.**
 -keep class retrofit2.** { *; }
 
 -keep class com.squareup.okhttp3.** { *; }
 -keep interface com.squareup.okhttp3.** { *; }
+-keep class okhttp3.internal.publicsuffix.PublicSuffixDatabase
 
 -dontwarn okhttp3.**
+-dontnote okhttp3.**
 -dontwarn com.squareup.okhttp3.**
+-dontnote com.squareup.okhttp3.**
 -dontwarn okio.**
+-dontnote okio.**
 -dontwarn rx.**
+-dontnote rx.**
 
 -keepclassmembers class rx.internal.util.unsafe.*ArrayQueue*Field* {
     long producerIndex;
     long consumerIndex;
 }
--keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueProducerNodeRef {
-    rx.internal.util.atomic.LinkedQueueNode producerNode;
-}
--keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueConsumerNodeRef {
-    rx.internal.util.atomic.LinkedQueueNode consumerNode;
-}
+#-keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueProducerNodeRef {
+#    rx.internal.util.atomic.LinkedQueueNode producerNode;
+#}
+#-keepclassmembers class rx.internal.util.unsafe.BaseLinkedQueueConsumerNodeRef {
+#    rx.internal.util.atomic.LinkedQueueNode consumerNode;
+#}
 -dontwarn sun.misc.Unsafe
 
 -keepclasseswithmembers class * {
@@ -191,17 +159,17 @@ protected Object[][] getContents();
 # Here include the POJO's that have you have created for mapping JSON response to POJO for example.
 
 # Stetho
--keep class com.facebook.stetho.** {*;}
+-keep class com.facebook.stetho.** { *; }
+-dontnote com.facebook.stetho.**
 
+-dontwarn com.mimireader.chanlib.**
 -keep class com.mimireader.chanlib.** { *; }
+-keep class com.emogoth.android.phone.mimi.fourchan.** { *; }
 
 # Jsoup
 -keep public class org.jsoup.** {
 public *;
 }
 
-# SqlBrite
--keep class com.squareup.sqlbrite.** { *; }
-
-# Active Android
--keep class com.activeandroid.** { *; }
+# AndroidPdfViewer
+-keep class com.shockwave.*

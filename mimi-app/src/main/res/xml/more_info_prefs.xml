@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!--
   ~ Copyright (c) 2016. Eli Connelly
   ~
@@ -15,56 +14,56 @@
   ~    See the License for the specific language governing permissions and
   ~    limitations under the License.
   -->
-
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        android:key="@string/general_preference_category"
-        android:title="@string/more_info_title">
+        app:key="@string/general_preference_category"
+        app:title="@string/more_info_title">
 
         <!-- About -->
         <!--<Preference-->
-            <!--android:title="@string/more_info_about"-->
-            <!--android:key="@string/about_pref"-->
+        <!--app:title="@string/more_info_about"-->
+        <!--app:key="@string/about_pref"-->
         <!--/>-->
 
         <Preference
-            android:title="@string/feedback"
-            android:key="@string/feedback_pref"
-        />
+            app:iconSpaceReserved="false"
+            app:key="@string/feedback_pref"
+            app:title="@string/feedback" />
 
         <Preference
-            android:title="@string/rate"
-            android:key="@string/rate_pref"
-        />
+            app:iconSpaceReserved="false"
+            app:key="@string/rate_pref"
+            app:title="@string/rate" />
 
         <!-- Website -->
         <Preference
-            android:title="@string/more_info_website"
-            android:key="@string/website_pref"
-            />
+            app:iconSpaceReserved="false"
+            app:key="@string/website_pref"
+            app:title="@string/more_info_website" />
 
         <!-- Privacy Policy -->
         <Preference
-            android:title="@string/more_info_privacy"
-            android:key="@string/privacy_pref"
-            />
+            app:iconSpaceReserved="false"
+            app:key="@string/privacy_pref"
+            app:title="@string/more_info_privacy" />
 
         <!-- Licenses -->
         <Preference
-            android:title="@string/more_info_licences"
-            android:key="@string/licenses_pref"
-            />
+            app:iconSpaceReserved="false"
+            app:key="@string/licenses_pref"
+            app:title="@string/more_info_licences" />
 
         <Preference
-            android:title="@string/more_info_changelog"
-            android:key="@string/changelog_pref"
-            />
+            app:iconSpaceReserved="false"
+            app:key="@string/changelog_pref"
+            app:title="@string/more_info_changelog" />
 
         <!-- Version -->
         <Preference
-            android:title="Mimi Reader"
-            android:key="@string/version_pref"
-            />
+            app:iconSpaceReserved="false"
+            app:key="@string/version_pref"
+            app:title="Mimi Reader" />
     </PreferenceCategory>
 </PreferenceScreen>

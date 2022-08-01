@@ -19,7 +19,7 @@
 <head>
     <title>reCaptcha</title>
 
-  <script type="text/javascript">
+    <script type="text/javascript">
       var verifyCallback = function(response) {
         document.forms["captcha_form"].submit();
       };
@@ -33,15 +33,18 @@
           'theme' : 'dark'
         });
       };
+
     </script>
 
 </head>
 <body>
 <form id="captcha_form" action="file:///android_asset/captcha/post.html" method="get">
     <!--<div class="g-recaptcha" data-sitekey="6Ldp2bsSAAAAAAJ5uyx_lx34lJeEpTLVkP5k04qc;"></div>-->
-  <div id="captcha_container"></div>
+    <div id="captcha_container"></div>
 
 </form>
-<script type="text/javascript" src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
+<script type="text/javascript"
+        src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async
+        defer></script>
 </body>
 </html>

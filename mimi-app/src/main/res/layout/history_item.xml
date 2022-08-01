@@ -32,7 +32,7 @@
         android:layout_gravity="center"
         android:padding="8dp"
         android:textSize="20sp"
-        android:text="@string/ic_drag_handle"/>
+        android:text="@string/ic_drag_handle" />
 
     <FrameLayout
         android:layout_width="wrap_content"
@@ -56,7 +56,7 @@
             android:textColor="@color/history_item_badge_text_color"
             android:gravity="center"
             android:background="@drawable/new_unread_count"
-            android:visibility="gone"/>
+            android:visibility="gone" />
     </FrameLayout>
 
     <LinearLayout
@@ -65,12 +65,14 @@
         android:paddingLeft="2dp"
         android:layout_weight="1"
         android:orientation="vertical">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:paddingBottom="4dp"
             android:paddingRight="2dp">
+
             <TextView
                 style="?postHeaderText"
                 android:id="@+id/thread_info"
@@ -80,7 +82,8 @@
                 android:textSize="12sp"
                 android:textStyle="italic"
                 android:textColor="@color/subtext_color_light"
-                tools:text="/b/233943"/>
+                tools:text="/b/233943" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -88,7 +91,8 @@
                 android:layout_weight="1"
                 android:paddingLeft="3dp"
                 android:paddingRight="3dp"
-                android:text="·"/>
+                android:text="·" />
+
             <TextView
                 android:id="@+id/op_name"
                 android:layout_width="0dp"
@@ -100,7 +104,8 @@
                 android:textColor="@color/subtext_color_light"
                 android:singleLine="true"
                 android:ellipsize="end"
-                tools:text="Tonx Echo Park Wes Anderson"/>
+                tools:text="Tonx Echo Park Wes Anderson" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -108,7 +113,8 @@
                 android:layout_weight="1"
                 android:paddingLeft="3dp"
                 android:paddingRight="3dp"
-                android:text="·"/>
+                android:text="·" />
+
             <TextView
                 android:id="@+id/last_viewed"
                 android:layout_width="wrap_content"
@@ -117,8 +123,9 @@
                 android:textSize="12sp"
                 android:textStyle="italic"
                 android:textColor="@color/subtext_color_light"
-                tools:text="55 minutes ago"/>
+                tools:text="55 minutes ago" />
         </LinearLayout>
+
         <TextView
             android:id="@+id/text"
             android:layout_width="match_parent"
@@ -129,7 +136,7 @@
             android:textColor="@color/sidebar_row_text" />
     </LinearLayout>
 
-    <android.support.v7.widget.AppCompatImageView
+    <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/delete_history"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -138,6 +145,6 @@
         android:layout_gravity="center"
         android:background="@drawable/red_button_background"
         app:srcCompat="@drawable/ic_clear"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
 </LinearLayout>

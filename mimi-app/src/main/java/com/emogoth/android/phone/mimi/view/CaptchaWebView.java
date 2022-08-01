@@ -37,7 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class CaptchaWebView extends WebView {
+public class CaptchaWebView extends MimiWebView {
     private final static String LOG_TAG = CaptchaWebView.class.getSimpleName();
 
     private final Context context;
@@ -107,10 +107,9 @@ public class CaptchaWebView extends WebView {
         final String captchaHtml;
         final StringBuilder sb = new StringBuilder();
 
-        if(theme == MimiUtil.THEME_LIGHT) {
+        if (theme == MimiUtil.THEME_LIGHT) {
             captchaHtml = "captcha/captcha_light.html";
-        }
-        else {
+        } else {
             captchaHtml = "captcha/captcha_dark.html";
         }
 
@@ -169,10 +168,10 @@ public class CaptchaWebView extends WebView {
 
             Log.d(LOG_TAG, "Page load started: url=" + url);
 
-            if(!TextUtils.isEmpty(response)) {
+            if (!TextUtils.isEmpty(response)) {
                 Log.i(LOG_TAG, "Found recaptcha response: " + response);
 
-                if(onRecaptchaResponseCallback != null) {
+                if (onRecaptchaResponseCallback != null) {
                     onRecaptchaResponseCallback.onResponse(response);
                 }
             }
@@ -182,7 +181,7 @@ public class CaptchaWebView extends WebView {
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
 
-            if(onCaptchaViewReadyCallback != null) {
+            if (onCaptchaViewReadyCallback != null) {
                 onCaptchaViewReadyCallback.onCaptchaViewReady();
             }
 

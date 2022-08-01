@@ -19,67 +19,84 @@ package com.emogoth.android.phone.mimi.fragment;
 import android.Manifest;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
+import android.webkit.MimeTypeMap;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatAutoCompleteTextView;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.appcompat.widget.AppCompatTextView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.documentfile.provider.DocumentFile;
+
 import com.emogoth.android.phone.mimi.R;
-import com.emogoth.android.phone.mimi.activity.GalleryActivity;
+import com.emogoth.android.phone.mimi.activity.GalleryActivity2;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
+import com.emogoth.android.phone.mimi.adapter.PostOptionAdapter;
+import com.emogoth.android.phone.mimi.app.MimiApplication;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
+import com.emogoth.android.phone.mimi.db.PostOptionTableConnection;
+import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
 import com.emogoth.android.phone.mimi.dialog.CaptchaDialog;
-import com.emogoth.android.phone.mimi.event.UpdateHistoryEvent;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
 import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
-import com.emogoth.android.phone.mimi.interfaces.OnRecaptchaResponseCallback;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.HttpClientFactory;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
-import com.emogoth.android.phone.mimi.util.PostUtil;
+import com.emogoth.android.phone.mimi.util.ResourceUtils;
 import com.emogoth.android.phone.mimi.util.RxUtil;
+import com.emogoth.android.phone.mimi.view.IconTextView;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.snackbar.Snackbar;
+;
 import com.mimireader.chanlib.ChanConnector;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanPost;
 
+import org.jsoup.Jsoup;
+
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Source;
 import retrofit2.Response;
-import retrofit2.adapter.rxjava.HttpException;
-import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
-import rx.functions.Func1;
 
 
-public class PostFragment extends DialogFragment {
+public class PostFragment extends BottomSheetDialogFragment {
     private static final String LOG_TAG = PostFragment.class.getSimpleName();
 
     private static final String EXTRA_NAME = "name";
@@ -91,26 +108,27 @@ public class PostFragment extends DialogFragment {
     public static final int PICK_IMAGE = 2;
     private static final String CAPTCHA_DIALOG_TAG = "captcha_dialog";
 
-    private int threadId;
+    private long threadId;
+    private int threadSize;
     private String boardName;
     private String postUrl;
     private String boardTitle;
 
     private ViewGroup shrinkFormContainer;
     //    private ViewGroup headerContainer;
-    private EditText commentField;
-    private TextView nameText;
+    private AppCompatEditText commentField;
+    private AppCompatTextView nameText;
 
-    private EditText nameInput;
-    private EditText optionsInput;
-    private EditText subjectInput;
+    private AppCompatAutoCompleteTextView nameInput;
+    private AppCompatEditText optionsInput;
+    private AppCompatEditText subjectInput;
 
     private ViewSwitcher replyFormViewSwitcher;
     private ImageView editUserInfoButton;
-    private TextView doneEditingButton;
+    private AppCompatTextView doneEditingButton;
 
     private String name = "";
-    private String comment = "";
+    private String comment;
     private String email = "";
     private String subject = "";
     private boolean isEditMode = false;
@@ -118,36 +136,39 @@ public class PostFragment extends DialogFragment {
     public String captchaChallenge = null;
     public String captchaVerification;
     private ImageView attachedImage;
-    private String imagePath;
     private PostListener postListener;
-    private boolean isLightTheme = false;
     private boolean isNewPost = false;
     private boolean captchaRequired = true;
-    private TextView clearImage;
+    private IconTextView clearImage;
     private ViewGroup attachedImageContainer;
-    private TextView attachImageButton;
-    private TextView sageButton;
+    private AppCompatTextView attachImageButton;
+    private AppCompatTextView sageButton;
     private boolean formCleared = false;
     private View sendButton;
     private View cancelButton;
+    private AppCompatSpinner flagSelector;
+    private AppCompatCheckBox spoilerSelection;
 
-    private Subscription boardInfoSubscription;
+    private PostOptionAdapter adapter;
 
-    @NonNull
+    private Disposable fetchPostOptionsSubscription;
+    private Disposable fetchPostSubscription;
+    private Disposable boardInfoSubscription;
+    private Disposable addPostSubscription;
+
+    private String selectedFlag = null;
+    private String spoilerValue = null;
+
+    private String imagePath;
+    private Uri imageUri;
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final Dialog d = super.onCreateDialog(savedInstanceState);
-        d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
-        d.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        return d;
+        return super.onCreateDialog(savedInstanceState);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        if (MimiUtil.getInstance().getThemeResourceId() == R.style.Theme_Mimi_Light) {
-            isLightTheme = true;
-        }
-
         if (savedInstanceState != null) {
             if (!formCleared) {
                 extractExtras(savedInstanceState);
@@ -158,162 +179,154 @@ public class PostFragment extends DialogFragment {
             extractExtras(getArguments());
         }
 
+        if (MimiUtil.getInstance().isLoggedIn()) {
+            disableCaptcha();
+        } else {
+            enableCaptcha();
+        }
+
         final View v = inflater.inflate(R.layout.reply_form_layout, container, false);
         sendButton = v.findViewById(R.id.submit_button);
         cancelButton = v.findViewById(R.id.cancel_button);
+        flagSelector = v.findViewById(R.id.flag_selector);
+        if ("pol".equals(boardName)) {
+            flagSelector.setVisibility(View.VISIBLE);
+            final Map<String, String> flagMap = ResourceUtils.getHashMapResource(getActivity(), R.xml.flags);
+            final List<String> flagKeys = new ArrayList<>(flagMap.keySet());
+
+            selectedFlag = "0";
+            flagSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                    String key = flagKeys.get(i);
+                    selectedFlag = flagMap.get(key);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+                    selectedFlag = "0";
+                }
+            });
+
+            ArrayAdapter<String> flagAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_dropdown_item, flagKeys);
+            flagSelector.setAdapter(flagAdapter);
+        }
+
+        spoilerSelection = v.findViewById(R.id.spoiler_selection);
+        if ("a".equals(boardName) || "lit".equals(boardName)) {
+            spoilerSelection.setVisibility(View.VISIBLE);
+            spoilerSelection.setOnCheckedChangeListener((compoundButton, checked) -> spoilerValue = checked ? "on" : null);
+        }
+
         return v;
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendPost();
-            }
-        });
+        sendButton.setOnClickListener(v -> sendPost());
 
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cancelPost();
-            }
-        });
+        cancelButton.setOnClickListener(v -> cancelPost());
 
-        nameText = (TextView) view.findViewById(R.id.edit_user_info);
-        nameText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                replyFormViewSwitcher.setDisplayedChild(1);
-            }
-        });
+        nameText = view.findViewById(R.id.edit_user_info);
+        nameText.setOnClickListener(v -> replyFormViewSwitcher.setDisplayedChild(1));
         if (!TextUtils.isEmpty(name)) {
             nameText.setText(name);
         } else {
             nameText.setText("Anonymous");
         }
 
-        nameInput = (EditText) view.findViewById(R.id.name_input);
+        nameInput = view.findViewById(R.id.name_input);
         if (!TextUtils.isEmpty(name)) {
             nameInput.setText(name);
         }
+        nameInput.setThreshold(1);
 
-        optionsInput = (EditText) view.findViewById(R.id.options_input);
+        optionsInput = view.findViewById(R.id.options_input);
+
         if (!TextUtils.isEmpty(email)) {
             optionsInput.setText(email);
         }
 
-        sageButton = (TextView) view.findViewById(R.id.sage_info);
-        sageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (optionsInput != null) {
-                    optionsInput.setText("sage");
-                }
+        sageButton = view.findViewById(R.id.sage_info);
+        sageButton.setOnClickListener(v -> {
+            if (optionsInput != null) {
+                optionsInput.setText("sage");
             }
         });
 
-        subjectInput = (EditText) view.findViewById(R.id.subject_input);
+        subjectInput = view.findViewById(R.id.subject_input);
         if (!TextUtils.isEmpty(subject)) {
             subjectInput.setText(subject);
         }
 
-        replyFormViewSwitcher = (ViewSwitcher) view.findViewById(R.id.reply_form_switcher);
+        replyFormViewSwitcher = view.findViewById(R.id.reply_form_switcher);
         replyFormViewSwitcher.setInAnimation(getActivity(), R.anim.abc_fade_in);
         replyFormViewSwitcher.setOutAnimation(getActivity(), R.anim.abc_fade_out);
-        replyFormViewSwitcher.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.i(LOG_TAG, "form clicked");
+        replyFormViewSwitcher.setOnClickListener(v -> Log.i(LOG_TAG, "form clicked"));
+
+        doneEditingButton = view.findViewById(R.id.done_info);
+        doneEditingButton.setOnClickListener(v -> {
+            if (!TextUtils.isEmpty(nameInput.getText().toString())) {
+                nameText.setText(nameInput.getText().toString());
+            } else {
+                nameText.setText("Anonymous");
             }
+
+            setEmail(optionsInput.getText().toString());
+            setName(nameInput.getText().toString());
+            setSubject(subjectInput.getText().toString());
+
+            replyFormViewSwitcher.setDisplayedChild(0);
         });
 
-        doneEditingButton = (TextView) view.findViewById(R.id.done_info);
-        doneEditingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!TextUtils.isEmpty(nameInput.getText().toString())) {
-                    nameText.setText(nameInput.getText().toString());
-                } else {
-                    nameText.setText("Anonymous");
-                }
-
-                setEmail(optionsInput.getText().toString());
-                setName(nameInput.getText().toString());
-                setSubject(subjectInput.getText().toString());
-
-                replyFormViewSwitcher.setDisplayedChild(0);
+        commentField = view.findViewById(R.id.comment_input);
+        commentField.setOnFocusChangeListener((v, hasFocus) -> commentField.post(() -> {
+            if (getActivity() != null && hasFocus) {
+                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(commentField, InputMethodManager.SHOW_IMPLICIT);
             }
-        });
+        }));
 
-
-        commentField = (EditText) view.findViewById(R.id.comment_input);
-        commentField.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                commentField.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (getActivity() != null) {
-                            InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-                            imm.showSoftInput(commentField, InputMethodManager.SHOW_IMPLICIT);
-                        }
-                    }
-                });
-            }
-        });
         commentField.requestFocus();
 
         if (!TextUtils.isEmpty(comment)) {
             commentField.setText(comment);
-            commentField.requestFocus();
             commentField.setSelection(comment.length());
         }
 
-        attachedImage = (ImageView) view.findViewById(R.id.attached_image);
+        attachedImage = view.findViewById(R.id.attached_image);
 
-        clearImage = (TextView) view.findViewById(R.id.clear_image);
-        clearImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                clearAttachedImage();
-            }
+        clearImage = view.findViewById(R.id.clear_image);
+        clearImage.setOnClickListener(v -> {
+            clearAttachedImage();
+            cleanUpTempImage();
         });
 
-        attachedImageContainer = (ViewGroup) view.findViewById(R.id.image_container);
+        attachedImageContainer = view.findViewById(R.id.image_container);
         attachedImageContainer.setVisibility(View.GONE);
 
-        attachImageButton = (TextView) view.findViewById(R.id.attach_image_button);
-        attachImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        attachImageButton = view.findViewById(R.id.attach_image_button);
+        attachImageButton.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(getActivity(),
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
 
-                if (ContextCompat.checkSelfPermission(getActivity(),
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-
-                    // Should we show an explanation?
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                        Snackbar.make(v, R.string.app_needs_your_permission_to_attach, Snackbar.LENGTH_LONG).show();
-                    } else {
-                        ActivityCompat.requestPermissions(getActivity(),
-                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                GalleryActivity.PERMISSIONS_REQUEST_EXTERNAL_STORAGE);
-                    }
+                // Should we show an explanation?
+                if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    Snackbar.make(v, R.string.app_needs_your_permission_to_attach, Snackbar.LENGTH_LONG).show();
                 } else {
-                    pickImage();
+                    ActivityCompat.requestPermissions(getActivity(),
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            GalleryActivity2.PERMISSIONS_REQUEST_EXTERNAL_STORAGE);
                 }
+            } else {
+                pickImage();
             }
         });
 
-        if (MimiUtil.getInstance().isLoggedIn()) {
-            disableCaptcha();
-        } else {
-            enableCaptcha();
-        }
     }
 
     private void pickImage() {
@@ -321,10 +334,13 @@ public class PostFragment extends DialogFragment {
         intent.setType("*/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            String[] mimetypes = {"image/*", "video/*"};
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimetypes);
+        }
+
         if (getActivity() != null && getActivity() instanceof MimiActivity) {
-//                    getParentFragment().startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
-            ((MimiActivity) getActivity()).setResultFragment(getParentFragment());
-            getActivity().startActivityForResult(Intent.createChooser(intent, getString(R.string.select_picture)), PICK_IMAGE);
+            startActivityForResult(Intent.createChooser(intent, getString(R.string.select_picture)), PICK_IMAGE);
         }
     }
 
@@ -333,32 +349,40 @@ public class PostFragment extends DialogFragment {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
-    public void clearAttachedImage() {
+    private void clearAttachedImage() {
+        imagePath = null;
         attachedImageContainer.setVisibility(View.GONE);
         attachImageButton.setVisibility(View.VISIBLE);
     }
 
-    public void disableCaptcha() {
+    private void disableCaptcha() {
         captchaRequired = false;
     }
 
-    public void enableCaptcha() {
+    private void enableCaptcha() {
         captchaRequired = true;
     }
 
-    public void processResponse(Response<ResponseBody> response) {
-        String html;
+    private void processResponse(Response<ResponseBody> response) {
+        String html = null;
+
         try {
-            if (response.errorBody() != null) {
-                html = response.errorBody().string();
-            } else {
+            if (response == null) {
+                html = MimiApplication.getInstance().getString(R.string.empty_response_error);
+                if (postListener != null) {
+                    postListener.onError(new Exception(html));
+                }
+                return;
+            } else if (response.isSuccessful()) {
                 html = response.body().string();
+            } else {
+                html = response.errorBody().string();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             if (postListener != null) {
                 postListener.onError(e);
             }
-            e.printStackTrace();
+            Log.e(LOG_TAG, "Error processing response", e);
 
             return;
         }
@@ -370,13 +394,12 @@ public class PostFragment extends DialogFragment {
             final int spanIndex = html.indexOf("</span", i);
             final int msgEndIndex = (spanIndex < brIndex) ? spanIndex : brIndex - 1;
 
-            final String errorMsg = html.substring(msgStartIndex, msgEndIndex);
+            final String errorMsg = Jsoup.parse(html.substring(msgStartIndex, msgEndIndex)).text();
 
             Log.i(LOG_TAG, errorMsg);
 
             if (postListener != null) {
-                final HttpException exception = new HttpException(response);
-                postListener.onError(new Exception(errorMsg, exception));
+                postListener.onError(new Exception(errorMsg));
             }
         } else {
             String postId = null;
@@ -402,7 +425,7 @@ public class PostFragment extends DialogFragment {
                         .setQuoteColor(MimiUtil.getInstance().getQuoteColor())
                         .setReplyColor(MimiUtil.getInstance().getReplyColor())
                         .setHighlightColor(MimiUtil.getInstance().getHighlightColor())
-                        .setLinkColor(MimiUtil.getInstance().getLinkColor());;
+                        .setLinkColor(MimiUtil.getInstance().getLinkColor());
 
                 firstPost.setName(name);
                 firstPost.setTim(Calendar.getInstance(Locale.getDefault()).getTime().toString());
@@ -411,60 +434,98 @@ public class PostFragment extends DialogFragment {
                 firstPost.setEmail(getEmail());
                 firstPost.setSub(getSubject());
                 firstPost.setSubject(getSubject());
-                firstPost.setNo(Integer.valueOf(postId));
+                firstPost.setNo(Integer.parseInt(postId));
                 firstPost.setFilename(fileName);
                 firstPost.setExt(fileExt);
 
-                HistoryTableConnection.putHistory(boardName, firstPost, 1, true).subscribe();
+                HistoryTableConnection.putHistory(boardName, threadId, firstPost, 1)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .doOnSuccess(aBoolean -> Log.e(LOG_TAG, "Post returned with success=" + aBoolean))
+                        .doOnError(throwable -> {
+                            Log.e(LOG_TAG, "Error posting", throwable);
+                        })
+                        .subscribe();
             }
-
-            final UpdateHistoryEvent event = new UpdateHistoryEvent();
-            event.setBoardName(boardName);
-            event.setThreadId(threadId);
-            BusProvider.getInstance().post(event);
 
             BoardTableConnection.incrementPostCount(boardName).subscribe();
 
-            clearForm();
+            String option = getName();
+            if (!TextUtils.isEmpty(option)) {
+                PostOptionTableConnection.putPostOption(option)
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe();
+            }
+
+            savePost(postId, true);
 
             if (postListener != null) {
                 postListener.onSuccess(postId);
             }
+            cleanUpTempImage();
+            clearForm();
         }
     }
 
-    public void post() {
-
-        final ChanConnector chanConnector = new FourChanConnector.Builder()
-                .setEndpoint(FourChanConnector.getDefaultEndpoint(MimiUtil.isSecureConnection(getActivity())))
-                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
-                .setClient(HttpClientFactory.getInstance().getOkHttpClient())
-                .build();
-
-        if (captchaRequired && captchaChallenge == null) {
-            final Exception e = new Exception("Could not authorize with reCaptcha");
-            if (postListener != null) {
-                postListener.onError(e);
-            }
-
-            return;
-        }
-
-        final Action1<Response<ResponseBody>> success = new Action1<Response<ResponseBody>>() {
-            @Override
-            public void call(Response<ResponseBody> responseBodyResponse) {
-                processResponse(responseBodyResponse);
-            }
-        };
-
-        final Action1<Throwable> fail = new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                if (postListener != null) {
-                    postListener.onError(throwable);
+    public void cleanUpTempImage() {
+        try {
+            if (!TextUtils.isEmpty(imagePath)) {
+                File imageFile = new File(imagePath);
+                if (imageFile.exists()) {
+                    Log.d(LOG_TAG, "Deleting temporary image file [" + imagePath + "]");
+                    imageFile.delete();
                 }
             }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Could not clean up posted image after submission", e);
+        }
+    }
+
+    private void savePost(final String postId, final boolean watch) {
+        if (postId == null) {
+            Exception e = new Exception("Post ID is null");
+            Log.e(LOG_TAG, "Cannot convert null post ID to an integer", e);
+            return;
+        }
+        final int id = Integer.parseInt(postId);
+//        RxUtil.safeUnsubscribe(fetchPostSubscription);
+//        fetchPostSubscription = HistoryTableConnection.fetchPost(boardName, threadId)
+//                .compose(DatabaseUtils.applySchedulers())
+//                .subscribe(history -> {
+//                    if (history.threadId == -1) {
+//                        ThreadRegistry.getInstance().add(boardName, threadId, id, threadSize + 1, watch);
+//                    }
+//                });
+
+        RxUtil.safeUnsubscribe(addPostSubscription);
+        addPostSubscription = UserPostTableConnection.addPost(boardName, threadId, id)
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(success -> {
+                    if (success) {
+                        Log.d(LOG_TAG, "Added post to database: board=" + boardName + ", thread=" + threadId + ", post=" + postId);
+                    } else {
+                        Log.e(LOG_TAG, "Error Adding post to database: board=" + boardName + ", thread=" + threadId + ", post=" + postId);
+                    }
+                });
+    }
+
+    private Consumer<Response<ResponseBody>> onPostComplete() {
+        return this::processResponse;
+    }
+
+    private Consumer<Throwable> onPostFail() {
+        return throwable -> {
+            if (postListener != null) {
+                postListener.onError(throwable);
+            }
         };
+    }
+
+    public void post() {
+        final ChanConnector chanConnector = new FourChanConnector.Builder()
+                .setEndpoint(FourChanConnector.getDefaultEndpoint())
+                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
+                .setClient(HttpClientFactory.getInstance().getClient())
+                .build();
 
         final File imageLocation;
         if (TextUtils.isEmpty(imagePath)) {
@@ -475,49 +536,67 @@ public class PostFragment extends DialogFragment {
 
         RxUtil.safeUnsubscribe(boardInfoSubscription);
         boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                .map(new Func1<ChanBoard, Map<String, Object>>() {
-                    @Override
-                    public Map<String, Object> call(ChanBoard chanBoard) {
-                        final Map<String, Object> params = new HashMap<>();
+                .observeOn(Schedulers.io())
+                .onErrorReturn(throwable -> {
+                    Log.e(LOG_TAG, "Error fetching board info for " + boardName, throwable);
+                    return new ChanBoard();
+                })
+//                .flatMap((Function<ChanBoard, SingleSource<File>>) chanBoard -> {
+//                    return Single.just(copyDocumentFileLocally(imageUri));
+//                })
+                .map(chanBoard -> {
+                    final Map<String, Object> params = new HashMap<>();
+                    if (!TextUtils.isEmpty(name)) {
                         params.put("name", name);
+                    }
+
+                    if (!TextUtils.isEmpty(email)) {
                         params.put("email", email);
-                        params.put("subject", subject);
-                        params.put("com", comment);
-                        params.put("MAX_FILE_SIZE", chanBoard.getMaxFilesize());
-                        params.put("pwd", "password");
-                        params.put("mode", "regist");
-
-                        if (threadId > 0) {
-                            params.put("resto", String.valueOf(threadId));
-                        }
-
-                        if (captchaRequired) {
-                            params.put("g-recaptcha-response", captchaChallenge);
-                        }
-
-                        if (imageLocation != null) {
-                            params.put("upfile", imageLocation);
-                        }
-                        return params;
                     }
-                })
-                .flatMap(new Func1<Map<String, Object>, Observable<Response<ResponseBody>>>() {
-                    @Override
-                    public Observable<Response<ResponseBody>> call(Map<String, Object> params) {
-                        return chanConnector.post(boardName, params);
+
+                    if (!TextUtils.isEmpty(subject)) {
+                        params.put("sub", subject);
                     }
+
+                    params.put("com", comment);
+                    params.put("pwd", "password");
+                    params.put("mode", "regist");
+
+                    if (selectedFlag != null) {
+                        params.put("flag", selectedFlag);
+                    }
+
+                    if (spoilerValue != null) {
+                        params.put("spoiler", spoilerValue);
+                    }
+
+                    if (!isNewPost) {
+                        params.put("resto", String.valueOf(threadId));
+                    }
+
+                    if (captchaRequired) {
+                        params.put("g-recaptcha-response", captchaChallenge);
+                    }
+
+                    if (imageLocation != null) {
+                        params.put("upfile", imageLocation);
+                    }
+                    return params;
                 })
-                .compose(DatabaseUtils.<Response<ResponseBody>>applySchedulers())
-                .subscribe(success, fail);
+                .flatMap(params -> chanConnector.post(boardName, params))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(onPostComplete(), onPostFail());
     }
 
-    public void saveFormData() {
+    private void saveFormData() {
         comment = commentField.getText().toString();
         subject = subjectInput.getText().toString();
         email = optionsInput.getText().toString();
+        name = nameInput.getText().toString();
     }
 
-    public void clearForm() {
+    private void clearForm() {
         formCleared = true;
         nameInput.setText(null);
         commentField.setText(null);
@@ -528,7 +607,6 @@ public class PostFragment extends DialogFragment {
         comment = null;
         subject = null;
         email = null;
-        imagePath = null;
 
         clearAttachedImage();
     }
@@ -546,13 +624,34 @@ public class PostFragment extends DialogFragment {
             enableCaptcha();
         }
 
+        fetchPostOptionsSubscription = PostOptionTableConnection.fetchPostOptions()
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(postOptions -> {
+                    if (getActivity() == null) {
+                        return;
+                    }
+
+                    if (postOptions != null) {
+                        adapter = new PostOptionAdapter(getActivity(), R.layout.post_option_item, postOptions);
+                        nameInput.setAdapter(adapter);
+                    }
+                }, throwable -> Log.e(LOG_TAG, "Error fetching post options", throwable));
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        RxUtil.safeUnsubscribe(fetchPostOptionsSubscription);
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putInt(Extras.EXTRAS_THREAD_ID, threadId);
+        outState.putLong(Extras.EXTRAS_THREAD_ID, threadId);
         outState.putString(Extras.EXTRAS_BOARD_NAME, boardName);
         outState.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+        outState.putInt(Extras.EXTRAS_THREAD_SIZE, threadSize);
 
         outState.putString(Extras.EXTRAS_POST_COMMENT, comment);
         outState.putString(EXTRA_SUBJECT, subject);
@@ -565,9 +664,29 @@ public class PostFragment extends DialogFragment {
         super.onSaveInstanceState(outState);
     }
 
+    public Bundle saveState() {
+        saveFormData();
+
+        Bundle state = new Bundle();
+        state.putLong(Extras.EXTRAS_THREAD_ID, threadId);
+        state.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+        state.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+        state.putInt(Extras.EXTRAS_THREAD_SIZE, threadSize);
+
+        state.putString(Extras.EXTRAS_POST_COMMENT, comment);
+        state.putString(EXTRA_SUBJECT, subject);
+        state.putString(EXTRA_EMAIL, email);
+        state.putString(EXTRA_NAME, name);
+        state.putString(EXTRA_FILE, imagePath);
+
+        state.putBoolean(Extras.EXTRAS_POST_NEW, isNewPost);
+
+        return state;
+    }
+
     private void extractExtras(final Bundle bundle) {
         if (bundle.containsKey(Extras.EXTRAS_THREAD_ID)) {
-            threadId = bundle.getInt(Extras.EXTRAS_THREAD_ID);
+            threadId = bundle.getLong(Extras.EXTRAS_THREAD_ID);
         } else {
             isNewPost = true;
         }
@@ -578,41 +697,75 @@ public class PostFragment extends DialogFragment {
                 postUrl = "https://" + url + "/" + boardName + "/post";
             }
         }
-        if (bundle.containsKey(Extras.EXTRAS_BOARD_TITLE)) {
-            boardTitle = bundle.getString(Extras.EXTRAS_BOARD_TITLE);
+
+        boardTitle = bundle.getString(Extras.EXTRAS_BOARD_TITLE, null);
+        threadSize = bundle.getInt(Extras.EXTRAS_THREAD_SIZE, 0);
+
+        this.comment = bundle.getString(Extras.EXTRAS_POST_COMMENT, "");
+
+        if (bundle.containsKey(Extras.EXTRAS_POST_REPLY)) {
+            String replyText = bundle.getString(Extras.EXTRAS_POST_REPLY);
+            if (!TextUtils.isEmpty(replyText)) {
+                if (!TextUtils.isEmpty(this.comment)) {
+                    this.comment = this.comment + "\n\n";
+                }
+                this.comment = this.comment + replyText;
+            }
         }
-        if (bundle.containsKey(Extras.EXTRAS_POST_COMMENT)) {
-            comment = bundle.getString(Extras.EXTRAS_POST_COMMENT);
-        }
-        if (bundle.containsKey(EXTRA_SUBJECT)) {
-            subject = bundle.getString(EXTRA_SUBJECT);
-        }
-        if (bundle.containsKey(EXTRA_EMAIL)) {
-            email = bundle.getString(EXTRA_EMAIL);
-        }
-        if (bundle.containsKey(EXTRA_NAME)) {
-            name = bundle.getString(EXTRA_NAME);
-        }
-        if (bundle.containsKey(Extras.EXTRAS_POST_NEW)) {
-            isNewPost = bundle.getBoolean(Extras.EXTRAS_POST_NEW);
-        }
-        if (bundle.containsKey(EXTRA_FILE)) {
-            imagePath = bundle.getString(EXTRA_FILE);
-        }
+
+        subject = bundle.getString(EXTRA_SUBJECT, null);
+        email = bundle.getString(EXTRA_EMAIL, null);
+        name = bundle.getString(EXTRA_NAME, null);
+        isNewPost = bundle.getBoolean(Extras.EXTRAS_POST_NEW, false);
+        imagePath = bundle.getString(EXTRA_FILE, null);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == PICK_IMAGE && data != null) {
-            final Uri imageUri = data.getData();
-            imagePath = PostUtil.getPath(getActivity(), imageUri);
+            imageUri = data.getData();
 
-            if (attachedImage != null && imagePath != null) {
+            try {
+                copyDocumentFileLocally(imageUri);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            if (attachedImage != null) {
                 attachedImage.setImageURI(imageUri);
                 attachedImageContainer.setVisibility(View.VISIBLE);
                 attachImageButton.setVisibility(View.GONE);
             }
         }
+    }
+
+    private File copyDocumentFileLocally(Uri imageUri) throws Exception {
+        File localFile = null;
+        if (getActivity() != null && imageUri != null) {
+            final DocumentFile f = DocumentFile.fromSingleUri(getActivity(), imageUri);
+
+            long count = 0;
+            String fileName = f.getName();
+            if (fileName == null) {
+                MimeTypeMap mtm = MimeTypeMap.getSingleton();
+                fileName = "unknown." + mtm.getExtensionFromMimeType(f.getType());
+            }
+            File uploadDir = new File(getActivity().getCacheDir(), "/upload");
+            uploadDir.mkdirs();
+
+            localFile = new File(uploadDir, fileName);
+            BufferedSink sink = Okio.buffer(Okio.sink(localFile));
+            Buffer sinkBuffer = sink.buffer();
+            Source source = Okio.source(getActivity().getContentResolver().openInputStream(f.getUri()));
+            while (count != -1) {
+                count = source.read(sinkBuffer, 1024L);
+                sink.emit();
+            }
+
+            imagePath = localFile.getAbsolutePath();
+        }
+
+        return localFile;
     }
 
     private void enableEditMode(final boolean enabled) {
@@ -643,25 +796,11 @@ public class PostFragment extends DialogFragment {
         if (TextUtils.isEmpty(comment) && commentField != null) {
             comment = commentField.getText().toString();
         }
-        return commentField.getText().toString();
+        return comment;
     }
 
     public void setComment(String comment) {
         this.comment = comment;
-
-        if (commentField != null) {
-            String originalComment = commentField.getText().toString();
-            if (!TextUtils.isEmpty(originalComment)) {
-                originalComment = originalComment + "\n\n";
-                commentField.setText(originalComment + comment);
-            } else {
-                commentField.setText(comment);
-            }
-
-//            commentField.setText(comment);
-            commentField.requestFocus();
-            commentField.setSelection(comment.length());
-        }
     }
 
     public String getEmail() {
@@ -689,11 +828,14 @@ public class PostFragment extends DialogFragment {
     }
 
     private void cancelPost() {
+        cleanUpTempImage();
         clearForm();
+
         if (postListener != null) {
             postListener.onCanceled();
         } else if (getActivity() != null) {
-            getActivity().onBackPressed();
+            //getActivity().onBackPressed();
+            dismiss();
         }
     }
 
@@ -707,36 +849,44 @@ public class PostFragment extends DialogFragment {
 
         if (captchaRequired) {
             final CaptchaDialog dialog = new CaptchaDialog();
-            dialog.setOnRecaptchaResponseCallback(new OnRecaptchaResponseCallback() {
-                @Override
-                public void onResponse(String response) {
+            dialog.setOnRecaptchaResponseCallback(response -> {
+                if (getActivity() != null) {
                     dialog.dismiss();
-                    dismiss();
-
-                    captchaChallenge = response;
-
-                    if (getActivity() != null) {
-                        if (postListener != null) {
-                            postListener.onStartPost();
-                        }
-
-                        post();
-                    }
                 }
+                captchaChallenge = response;
+                startPostCall();
             });
 
             dialog.show(getActivity().getSupportFragmentManager(), CAPTCHA_DIALOG_TAG);
         } else {
-            if (getActivity() != null) {
-                if (postListener != null) {
-                    postListener.onStartPost();
-                }
-                post();
-            }
+            startPostCall();
         }
     }
 
+    private void startPostCall() {
+        if (getActivity() == null) {
+            return;
+        }
+        dismiss();
+
+        if (postListener != null) {
+            postListener.onStartPost();
+        }
+
+        post();
+    }
+
+    @Override
+    public void onDismiss(DialogInterface dialog) {
+        if (postListener != null) {
+            postListener.onDismiss();
+        }
+        super.onDismiss(dialog);
+    }
+
     public interface PostListener {
+        void onDismiss();
+
         void onCanceled();
 
         void onStartPost();

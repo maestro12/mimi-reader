@@ -17,91 +17,71 @@
 package com.emogoth.android.phone.mimi.model;
 
 
+import com.emogoth.android.phone.mimi.db.models.History;
+import com.emogoth.android.phone.mimi.db.models.UserPost;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class ThreadRegistryModel {
-    private int threadId;
-    private String boardName;
-    private int threadSize;
-    private int unreadCount = 0;
-    private int lastReadPosition = 0;
-    private boolean bookmarked = false;
-    private boolean active;
-    private List<Integer> userPosts;
+    private final  long threadId;
+    private final String boardName;
+    private final int threadSize;
+    private final int lastReadPosition;
+    private final int unreadCount;
+    private final boolean bookmarked;
+    private final boolean active;
+    private final List<Long> userPosts = new ArrayList<>();
 
+    public ThreadRegistryModel(History history, List<UserPost> userPosts) {
+        threadId = history.getThreadId();
+        boardName = history.getBoardName();
+        threadSize = history.getThreadSize();
+        lastReadPosition = history.getLastReadPosition();
+        unreadCount = history.getUnreadCount();
+        bookmarked = history.getWatched();
+        active = true;
 
-    public int getThreadId() {
-        return threadId;
+        if (userPosts != null) {
+            for (UserPost userPost : userPosts) {
+                if (userPost.getBoardName().equals(history.getBoardName()) && userPost.getThreadId() == history.getThreadId()) {
+                    this.userPosts.add(userPost.getPostId());
+                }
+            }
+        }
+
     }
 
-    public void setThreadId(int threadId) {
-        this.threadId = threadId;
+
+    public long getThreadId() {
+        return threadId;
     }
 
     public String getBoardName() {
         return boardName;
     }
 
-    public void setBoardName(String boardName) {
-        this.boardName = boardName;
-    }
-
     public int getThreadSize() {
         return threadSize;
     }
 
-    public void setThreadSize(int threadSize) {
-        this.threadSize = threadSize;
-    }
-
     public int getUnreadCount() {
-        return unreadCount;
-    }
-
-    public void setUnreadCount(int unreadCount) {
-        this.unreadCount = unreadCount;
+        return threadSize - 1 - lastReadPosition;
     }
 
     public boolean isBookmarked() {
         return bookmarked;
     }
 
-    public void setBookmarked(boolean bookmarked) {
-        this.bookmarked = bookmarked;
-    }
-
     public int getLastReadPosition() {
         return lastReadPosition;
     }
 
-    public void setLastReadPosition(int lastReadPosition) {
-        this.lastReadPosition = lastReadPosition;
-
-        if (this.threadSize > this.lastReadPosition) {
-            this.unreadCount = threadSize - this.lastReadPosition;
-        } else {
-            this.unreadCount = 0;
-        }
-    }
-
-    public List<Integer> getUserPosts() {
-        if (userPosts == null) {
-            userPosts = new ArrayList<>();
-        }
-
+    public List<Long> getUserPosts() {
         return userPosts;
-    }
-
-    public void setUserPosts(List<Integer> userPosts) {
-        this.userPosts = userPosts;
     }
 
     public boolean isActive() {
         return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
     }
 }

@@ -16,8 +16,9 @@
   -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -30,8 +31,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingLeft="8dp"
-            android:textSize="?attr/font_medium"
-            android:text="@string/file_name"/>
+            android:text="@string/file_name"
+            android:textSize="?attr/font_medium" />
 
         <TextView
             android:id="@+id/file_name"
@@ -40,7 +41,7 @@
             android:layout_weight="1"
             android:gravity="right"
             android:paddingRight="8dp"
-            android:textSize="?attr/font_small"/>
+            android:textSize="?attr/font_small" />
 
     </LinearLayout>
 
@@ -54,8 +55,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingLeft="8dp"
-            android:textSize="?attr/font_medium"
-            android:text="@string/dimensions"/>
+            android:text="@string/dimensions"
+            android:textSize="?attr/font_medium" />
 
         <TextView
             android:id="@+id/dimensions"
@@ -64,7 +65,7 @@
             android:layout_weight="1"
             android:gravity="right"
             android:paddingRight="8dp"
-            android:textSize="?attr/font_small"/>
+            android:textSize="?attr/font_small" />
 
     </LinearLayout>
 
@@ -78,30 +79,40 @@
             android:layout_width="0dp"
             android:layout_height="55dp"
             android:layout_weight="1"
-            android:textSize="?attr/font_medium"
+            android:background="@drawable/thumbnail_selector"
             android:gravity="center"
             android:text="IQDB"
-            android:background="@drawable/thumbnail_selector"/>
+            android:textSize="?attr/font_medium" />
 
         <TextView
             android:id="@+id/google_button"
             android:layout_width="0dp"
             android:layout_height="55dp"
             android:layout_weight="1"
-            android:textSize="?attr/font_medium"
+            android:background="@drawable/thumbnail_selector"
             android:gravity="center"
             android:text="Google"
-            android:background="@drawable/thumbnail_selector"/>
+            android:textSize="?attr/font_medium" />
 
         <TextView
             android:id="@+id/saucenao_button"
             android:layout_width="0dp"
             android:layout_height="55dp"
             android:layout_weight="1"
-            android:textSize="?attr/font_medium"
+            android:background="@drawable/thumbnail_selector"
             android:gravity="center"
             android:text="Saucenao"
-            android:background="@drawable/thumbnail_selector"/>
+            android:textSize="?attr/font_medium" />
+
+        <TextView
+            android:id="@+id/yandex_button"
+            android:layout_width="0dp"
+            android:layout_height="55dp"
+            android:layout_weight="1"
+            android:background="@drawable/thumbnail_selector"
+            android:gravity="center"
+            android:text="Yandex"
+            android:textSize="?attr/font_medium"/>
 
     </LinearLayout>
 

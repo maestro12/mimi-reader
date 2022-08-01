@@ -1,11 +1,7 @@
 .DS_Store
 .git.bak/
-.idea/workspace.xml
-.idea/uiDesigner.xml
 .idea/
-.idea
 .gradle/
-.gradle
 captures/
 build/
 ant_build/
@@ -21,6 +17,7 @@ target/
 **/*.iml
 **/BuildConfig.java
 keystore.properties
-*.keystore
+release.keystore
 YouTubeAndroidPlayerApi.jar
-
+*.apk
+output.json

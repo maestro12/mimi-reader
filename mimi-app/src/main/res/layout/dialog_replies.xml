@@ -15,57 +15,62 @@
   ~    limitations under the License.
   -->
 
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="center"
-    android:layout_marginTop="25dp"
-    android:layout_marginBottom="25dp"
     android:layout_marginLeft="12dp"
+    android:layout_marginTop="25dp"
     android:layout_marginRight="12dp"
+    android:layout_marginBottom="25dp"
+    android:orientation="vertical"
     app:cardBackgroundColor="?attr/cardViewBackground">
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="100dp"
         android:orientation="vertical">
-        <android.support.v7.widget.Toolbar
-            android:theme="?toolbarBackground"
+
+        <androidx.appcompat.widget.Toolbar
             android:id="@+id/reply_dialog_toolbar"
             android:layout_width="match_parent"
-            android:layout_height="40dp">
+            android:layout_height="40dp"
+            android:theme="?toolbarBackground">
+
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical|left"
                     android:gravity="center"
+                    android:text="@string/replies"
+                    android:textAllCaps="true"
                     android:textColor="@color/comment_dark"
                     android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textAllCaps="true"
-                    android:text="@string/replies"/>
+                    android:textStyle="bold" />
+
                 <com.emogoth.android.phone.mimi.view.IconTextView
                     android:id="@+id/close_button"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_gravity="right"
                     android:gravity="center"
-                    android:textSize="28sp"
+                    android:text="@string/ic_close"
                     android:textColor="@color/comment_dark"
-                    android:text="@string/ic_close"/>
+                    android:textSize="28sp" />
             </FrameLayout>
-        </android.support.v7.widget.Toolbar>
-        <ListView
-            android:id="@+id/replies_list"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"/>
+        </androidx.appcompat.widget.Toolbar>
+
+        <FrameLayout
+            android:id="@+id/replies_dialog_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
     </LinearLayout>
 
-</FrameLayout>
+</androidx.cardview.widget.CardView>

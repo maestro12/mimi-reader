@@ -34,6 +34,6 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:padding="2dp"
-        android:singleLine="true"/>
+        android:singleLine="true" />
 
 </FrameLayout>

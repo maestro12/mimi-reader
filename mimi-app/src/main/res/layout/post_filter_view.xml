@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.gridlayout.widget.GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        app:columnCount="10"
+        app:layout_gravity="center_horizontal">
+
+        <androidx.legacy.widget.Space
+            android:layout_height="10dp"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="2" />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/active_board"
+            android:layout_margin="8dp"
+            android:spinnerMode="dropdown"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/filter_name"
+            style="@style/Widget.AppCompat.EditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:ems="10"
+            android:hint="@string/filter_name"
+            android:inputType="text|textFilter"
+            android:maxLines="1"
+            android:selectAllOnFocus="false"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.legacy.widget.Space
+            android:layout_height="10dp"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/filter_text"
+            style="@style/Widget.AppCompat.EditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:ems="10"
+            android:hint="@string/text_to_filter"
+            android:inputType="text|textFilter"
+            android:maxLines="1"
+            android:selectAllOnFocus="false"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.legacy.widget.Space
+            android:layout_height="20dp"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.appcompat.widget.AppCompatCheckBox
+            android:id="@+id/highlight_checkbox"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/regex"
+            android:visibility="gone"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.legacy.widget.Space
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            app:layout_columnSpan="10"
+            app:layout_rowSpan="1" />
+
+        <androidx.legacy.widget.Space
+            android:layout_width="20dp"
+            android:layout_height="10dp"
+            app:layout_columnSpan="1"
+            app:layout_rowSpan="1" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/save_button"
+            android:layout_margin="4dp"
+            android:text="@string/save"
+            app:layout_columnSpan="3"
+            app:layout_rowSpan="1" />
+
+        <Button
+            android:id="@+id/edit_button"
+            android:layout_margin="4dp"
+            android:text="@string/edit"
+            app:layout_columnSpan="3"
+            app:layout_rowSpan="1" />
+
+        <Button
+            android:id="@+id/cancel_button"
+            android:layout_margin="4dp"
+            android:text="@string/cancel"
+            app:layout_columnSpan="3"
+            app:layout_rowSpan="1" />
+
+    </androidx.gridlayout.widget.GridLayout>
+
+</merge>

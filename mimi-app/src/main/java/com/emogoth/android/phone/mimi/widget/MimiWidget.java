@@ -20,6 +20,7 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.widget.RemoteViews;
+
 import com.emogoth.android.phone.mimi.R;
 
 /**
@@ -32,7 +33,7 @@ public class MimiWidget extends AppWidgetProvider {
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         // There may be multiple widgets active, so update all of them
         final int N = appWidgetIds.length;
-        for (int i=0; i<N; i++) {
+        for (int i = 0; i < N; i++) {
             updateAppWidget(context, appWidgetManager, appWidgetIds[i]);
         }
     }
@@ -41,7 +42,7 @@ public class MimiWidget extends AppWidgetProvider {
     public void onDeleted(Context context, int[] appWidgetIds) {
         // When the user deletes the widget, delete the preference associated with it.
         final int N = appWidgetIds.length;
-        for (int i=0; i<N; i++) {
+        for (int i = 0; i < N; i++) {
             MimiWidgetConfigureActivity.deleteTitlePref(context, appWidgetIds[i]);
         }
     }
@@ -57,7 +58,7 @@ public class MimiWidget extends AppWidgetProvider {
     }
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
-            int appWidgetId) {
+                                int appWidgetId) {
 
         CharSequence widgetText = MimiWidgetConfigureActivity.loadTitlePref(context, appWidgetId);
         // Construct the RemoteViews object

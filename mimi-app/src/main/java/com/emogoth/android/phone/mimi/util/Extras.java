@@ -28,6 +28,7 @@ public class Extras {
     public final static String EXTRAS_THREAD_ID = NAMESPACE + "thread_id";
     public final static String EXTRAS_SINGLE_THREAD = NAMESPACE + "single_thread";
     public final static String EXTRAS_THREAD_LIST = NAMESPACE + "thread_list";
+    public final static String EXTRAS_THREAD_SIZE = NAMESPACE + "thread_size";
     public final static String EXTRAS_POST_LIST = NAMESPACE + "post_list";
     public final static String EXTRAS_POST_ID = NAMESPACE + "post_id";
     public final static String EXTRAS_POSITION = NAMESPACE + "position";
@@ -35,6 +36,7 @@ public class Extras {
     public final static String EXTRAS_TWOPANE = NAMESPACE + "twopane";
     public static final String EXTRAS_OUTSIDE_LINK_LIST = NAMESPACE + "outside_link_list";
     public static final String EXTRAS_THREAD_FIRST_POST = NAMESPACE + "thread_first_post";
+    public static final String EXTRAS_FULL_SCREEN = NAMESPACE + "full_screen";
 
     public static final String EXTRAS_LIST_TYPE = NAMESPACE + "list_type";
 
@@ -47,6 +49,7 @@ public class Extras {
     public static final String EXTRAS_POST_TIM = NAMESPACE + "time";
     public static final String EXTRAS_POST_FILENAME_EXT = NAMESPACE + "file_ext";
     public static final String EXTRAS_POST_COMMENT = NAMESPACE + "comment";
+    public static final String EXTRAS_POST_REPLY = NAMESPACE + "post_reply";
     public static final String EXTRAS_POST_NEW = NAMESPACE + "new_post";
 
     public static final String EXTRAS_FILE_PATH = NAMESPACE + "file_path";
@@ -77,4 +80,10 @@ public class Extras {
     public static final String OPEN_PAGE = NAMESPACE + "open_page";
 
     public static final String EXTRAS_STICKY_AUTO_REFRESH = NAMESPACE + "auto_refresh_thread";
+
+    public static final String EXTRAS_OPTIONS_MENU_ENABLED = NAMESPACE + "options_menu_enabled";
+
+    public static final String EXTRAS_SCROLL_POSITION = NAMESPACE + "scroll_position";
+
+    public static final String EXTRAS_POST_STATE = NAMESPACE + "post_state";
 }

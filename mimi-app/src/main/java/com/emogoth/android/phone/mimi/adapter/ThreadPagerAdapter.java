@@ -17,9 +17,10 @@
 package com.emogoth.android.phone.mimi.adapter;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentStatePagerAdapter;
+import android.util.Log;
 
 import com.emogoth.android.phone.mimi.fragment.MimiFragmentBase;
 import com.emogoth.android.phone.mimi.fragment.ThreadDetailFragment;
@@ -51,24 +52,24 @@ public class ThreadPagerAdapter extends FragmentStatePagerAdapter {
     }
 
     @Override
-    public Fragment getItem(final int i) {
+    public Fragment getItem(final int position) {
         final MimiFragmentBase fragment = new ThreadDetailFragment();
         final Bundle args = new Bundle();
-        if (i < threadList.size()) {
+        if (position < threadList.size()) {
 
-            args.putString(Extras.EXTRAS_BOARD_NAME, threadList.get(i).boardName);
-            args.putString(Extras.EXTRAS_BOARD_TITLE, threadList.get(i).boardTitle);
-            args.putInt(Extras.EXTRAS_THREAD_ID, threadList.get(i).threadId);
-            args.putInt(Extras.LOADER_ID, i % 3);
+                args.putString(Extras.EXTRAS_BOARD_NAME, threadList.get(position).getBoardName());
+                args.putString(Extras.EXTRAS_BOARD_TITLE, threadList.get(position).getBoardTitle());
+                args.putLong(Extras.EXTRAS_THREAD_ID, threadList.get(position).getThreadId());
+                args.putInt(Extras.LOADER_ID, position % 3);
 
-            if (unreadCountList != null) {
-                args.putInt(Extras.EXTRAS_UNREAD_COUNT, unreadCountList[i]);
-            }
+                if (unreadCountList != null) {
+                    args.putInt(Extras.EXTRAS_UNREAD_COUNT, unreadCountList[position]);
+                }
 
-            if (i == postPosition && initialPost != null) {
-                args.putParcelable(Extras.EXTRAS_THREAD_FIRST_POST, initialPost);
-                initialPost = null;
-            }
+                if (position == postPosition && initialPost != null) {
+                    args.putParcelable(Extras.EXTRAS_THREAD_FIRST_POST, initialPost);
+                    initialPost = null;
+                }
 
         }
 

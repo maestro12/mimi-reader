@@ -16,6 +16,7 @@
   -->
 
 <resources>
+
     <style name="Theme.Mimi.Dark.Toolbar.Default" parent="Theme.Mimi.Dark">
         <item name="mimiPrimaryColor">@color/toolbar_background_dark</item>
         <item name="mimiPrimaryColorDark">@color/toolbar_highlight_primary_dark</item>

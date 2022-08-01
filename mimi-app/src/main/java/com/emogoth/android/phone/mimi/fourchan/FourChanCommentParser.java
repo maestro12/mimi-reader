@@ -17,12 +17,13 @@
 package com.emogoth.android.phone.mimi.fourchan;
 
 import android.content.Context;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+
+import androidx.core.content.res.ResourcesCompat;
 
 import com.emogoth.android.phone.mimi.R;
 import com.emogoth.android.phone.mimi.span.CodeSpan;
@@ -46,7 +47,7 @@ import java.util.regex.Matcher;
 public final class FourChanCommentParser extends CommentParser {
     private static final String LOG_TAG = FourChanCommentParser.class.getSimpleName();
 
-    protected FourChanCommentParser(List<String> replies, List<Integer> userPostIds, List<Integer> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, int threadId, int replyColor, int highlightedReplyColor, int quoteColor, int linkColor, boolean demoMode) {
+    private FourChanCommentParser(List<String> replies, List<Long> userPostIds, List<Long> highlightedPosts, Context context, CharSequence comment, String boardName, String opTag, String youTag, long threadId, int replyColor, int highlightedReplyColor, int quoteColor, int linkColor, boolean demoMode) {
         super(replies,
                 userPostIds,
                 highlightedPosts,
@@ -67,19 +68,19 @@ public final class FourChanCommentParser extends CommentParser {
 
         public CommentParser build() {
             if (replyColor == -1) {
-                replyColor = context.getResources().getColor(R.color.reply);
+                replyColor = ResourcesCompat.getColor(context.getResources(), R.color.reply, context.getTheme());
             }
 
             if (highlightColor == -1) {
-                highlightColor = context.getResources().getColor(R.color.reply_highlight);
+                highlightColor = ResourcesCompat.getColor(context.getResources(), R.color.reply_highlight, context.getTheme());
             }
 
             if (quoteColor == -1) {
-                quoteColor = context.getResources().getColor(R.color.quote);
+                quoteColor = ResourcesCompat.getColor(context.getResources(), R.color.quote, context.getTheme());
             }
 
             if (linkColor == -1) {
-                linkColor = context.getResources().getColor(R.color.link);
+                linkColor = ResourcesCompat.getColor(context.getResources(), R.color.link, context.getTheme());
             }
 
             return new FourChanCommentParser(
@@ -100,7 +101,7 @@ public final class FourChanCommentParser extends CommentParser {
         }
     }
 
-    public Spannable parse() {
+    public CharSequence parse() {
         String rawPost = comment == null ? "" : comment.toString().replaceAll("<br>", "br2nl");
         Document document = Jsoup.parse(rawPost);
         document.outputSettings(new Document.OutputSettings().prettyPrint(true));
@@ -116,15 +117,8 @@ public final class FourChanCommentParser extends CommentParser {
         postWithoutHtml = postWithoutHtml.replace(">>" + threadId, ">>" + threadId + opTag);
 
         if (userPostIds != null) {
-            for (Integer userPostId : userPostIds) {
+            for (Long userPostId : userPostIds) {
                 final String id = userPostId.toString();
-                if (postWithoutHtml.contains(id)) {
-                    Log.d(LOG_TAG, "Found user post: id=" + id);
-
-                    if (postWithoutHtml.contains(">>" + id)) {
-                        Log.d(LOG_TAG, "Found >>" + id);
-                    }
-                }
                 postWithoutHtml = postWithoutHtml.replace(">>" + id, ">>" + id + youTag);
             }
         }
@@ -143,7 +137,7 @@ public final class FourChanCommentParser extends CommentParser {
         String spoilerEnd = "</s>";
 
         // Use this string to search in the spannable variable and set the span to whatever is appropriate
-        String stringToSpan = null;
+        String stringToSpan;
 
         // These are compared to determine what the cursor is currently on
         int quotePos;
@@ -189,12 +183,12 @@ public final class FourChanCommentParser extends CommentParser {
                         if (item.contains("youtube.com") || item.contains("youtu.be")) {
                             final String youtubeId = getYouTubeIdFromUrl(item);
                             if (!TextUtils.isEmpty(youtubeId)) {
-                                span.setSpan(new YoutubeLinkSpan(context, youtubeId, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                span.setSpan(new YoutubeLinkSpan(youtubeId, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             } else {
-                                span.setSpan(new LinkSpan(context, item, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                span.setSpan(new LinkSpan(item, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             }
                         } else {
-                            span.setSpan(new LinkSpan(context, item, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            span.setSpan(new LinkSpan(item, linkColor), urlStart, urlEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     } else if (item.startsWith(">>>")) {
                         if (replies != null && item.length() > 3) {
@@ -220,7 +214,7 @@ public final class FourChanCommentParser extends CommentParser {
         rawPost = rawPost.replace(">>" + threadId, ">>" + threadId + opTag);
 
         if (userPostIds != null) {
-            for (final Integer userPostId : userPostIds) {
+            for (final Long userPostId : userPostIds) {
                 rawPost = rawPost.replace(">>" + userPostId, ">>" + userPostId + youTag);
             }
         }
@@ -304,7 +298,7 @@ public final class FourChanCommentParser extends CommentParser {
 
                         final String s = stringToSpan.substring(2).split(" ")[0];
                         if (StringUtils.isNumericSpace(s)) {
-                            final int id = Integer.valueOf(s);
+                            final long id = Long.valueOf(s);
                             final boolean highlight = (userPostIds != null && userPostIds.contains(id))
                                     || (highlightedPosts != null && highlightedPosts.contains(id) && (demoMode || replies.size() > 1));
 
@@ -315,9 +309,9 @@ public final class FourChanCommentParser extends CommentParser {
                                 textColor = replyColor;
                             }
 
-                            span.setSpan(new ReplySpan(context, boardName, threadId, replies, textColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            span.setSpan(new ReplySpan(boardName, threadId, replies, textColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         } else {
-                            span.setSpan(new ReplySpan(context, boardName, threadId, replies, replyColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            span.setSpan(new ReplySpan(boardName, threadId, replies, replyColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
 
                     } else {
@@ -357,24 +351,28 @@ public final class FourChanCommentParser extends CommentParser {
             }
 
             if (spoilerPos >= 0) {
-                spoilerCursor = spoilerPos + spoilerToken.length();
+                try {
+                    spoilerCursor = spoilerPos + spoilerToken.length();
 
-                start = spoilerCursor;
-                end = rawPost.indexOf(spoilerEnd, start);
+                    start = spoilerCursor;
+                    end = rawPost.indexOf(spoilerEnd, start);
 
-                codeCursor = end;
-                strlen = end - start;
-                stringToSpan = rawPost.substring(start, end);
-                start = postWithoutHtml.indexOf(stringToSpan);
+                    codeCursor = end;
+                    strlen = end - start;
+                    stringToSpan = rawPost.substring(start, end);
+                    start = postWithoutHtml.indexOf(stringToSpan);
 
-                while (start >= 0) {
-                    end = start + strlen;
-                    if (end > span.length()) {
-                        end = span.length();
+                    while (start >= 0) {
+                        end = start + strlen;
+                        if (end > span.length()) {
+                            end = span.length();
+                        }
+
+                        span.setSpan(new SpoilerSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        start = postWithoutHtml.indexOf(stringToSpan, start + stringToSpan.length());
                     }
-
-                    span.setSpan(new SpoilerSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    start = postWithoutHtml.indexOf(stringToSpan, start + stringToSpan.length());
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Caught error while parsing spoiler text", e);
                 }
             }
 
@@ -387,7 +385,7 @@ public final class FourChanCommentParser extends CommentParser {
         return span;
     }
 
-    public static String getYouTubeIdFromUrl(String url) {
+    private static String getYouTubeIdFromUrl(String url) {
         String vId = null;
         Matcher matcher = YOUTUBE_PATTERN.matcher(url);
         if (matcher.matches()) {

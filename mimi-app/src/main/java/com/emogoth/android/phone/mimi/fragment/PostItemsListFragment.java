@@ -16,86 +16,89 @@
 
 package com.emogoth.android.phone.mimi.fragment;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
-import android.support.v7.widget.Toolbar;
+import android.os.Parcelable;
 import android.text.Html;
-import android.text.Spannable;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SearchView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.MenuItemCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.emogoth.android.phone.mimi.BuildConfig;
 import com.emogoth.android.phone.mimi.R;
+import com.emogoth.android.phone.mimi.activity.EditFiltersActivity;
 import com.emogoth.android.phone.mimi.activity.MimiActivity;
-import com.emogoth.android.phone.mimi.activity.PostItemListActivity;
 import com.emogoth.android.phone.mimi.adapter.BoardDropDownAdapter;
 import com.emogoth.android.phone.mimi.adapter.PostItemsAdapter;
 import com.emogoth.android.phone.mimi.db.BoardTableConnection;
+import com.emogoth.android.phone.mimi.db.CatalogTableConnection;
 import com.emogoth.android.phone.mimi.db.DatabaseUtils;
+import com.emogoth.android.phone.mimi.db.FilterTableConnection;
+import com.emogoth.android.phone.mimi.db.HiddenThreadTableConnection;
 import com.emogoth.android.phone.mimi.db.HistoryTableConnection;
-import com.emogoth.android.phone.mimi.db.UserPostTableConnection;
-import com.emogoth.android.phone.mimi.db.model.Board;
-import com.emogoth.android.phone.mimi.db.model.History;
-import com.emogoth.android.phone.mimi.event.FABVisibilityEvent;
+import com.emogoth.android.phone.mimi.db.models.Filter;
+import com.emogoth.android.phone.mimi.db.models.HiddenThread;
+import com.emogoth.android.phone.mimi.db.models.History;
 import com.emogoth.android.phone.mimi.fourchan.FourChanCommentParser;
-import com.emogoth.android.phone.mimi.fourchan.FourChanConnector;
-import com.emogoth.android.phone.mimi.interfaces.BoardItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.ContentInterface;
-import com.emogoth.android.phone.mimi.interfaces.EndlessRecyclerOnScrollListener;
-import com.emogoth.android.phone.mimi.interfaces.OnPostItemClickListener;
+import com.emogoth.android.phone.mimi.interfaces.PostItemClickListener;
 import com.emogoth.android.phone.mimi.interfaces.TabInterface;
-import com.emogoth.android.phone.mimi.util.BusProvider;
 import com.emogoth.android.phone.mimi.util.Extras;
 import com.emogoth.android.phone.mimi.util.FourChanUtil;
 import com.emogoth.android.phone.mimi.util.LayoutType;
 import com.emogoth.android.phone.mimi.util.MimiUtil;
 import com.emogoth.android.phone.mimi.util.RxUtil;
-import com.emogoth.android.phone.mimi.util.ThreadRegistry;
-import com.emogoth.android.phone.mimi.widget.MimiRecyclerView;
-import com.mimireader.chanlib.ChanConnector;
+import com.emogoth.android.phone.mimi.view.FilterDialog;
+import com.emogoth.android.phone.mimi.view.FilterView;
+import com.emogoth.android.phone.mimi.viewmodel.CatalogViewModel;
+import com.google.android.material.snackbar.Snackbar;
 import com.mimireader.chanlib.models.ChanBoard;
 import com.mimireader.chanlib.models.ChanCatalog;
 import com.mimireader.chanlib.models.ChanPost;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import autovalue.shaded.com.google.common.common.collect.Lists;
-import rx.Observable;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.functions.Func2;
-import rx.schedulers.Schedulers;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Function3;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class PostItemsListFragment extends MimiFragmentBase implements
         Spinner.OnItemSelectedListener,
-        Toolbar.OnMenuItemClickListener,
         TabInterface,
         ContentInterface {
 
@@ -118,100 +121,56 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     private static final int SORT_TYPE_REPLY_COUNT = 3;
 
     public static final int TAB_ID = 101;
+    private static final String LIST_VIEW_STATE = "post_list_state";
 
-    private int mActivatedPosition = ListView.INVALID_POSITION;
-    private boolean activateOnItemClick;
-
-    private MimiRecyclerView listView;
-    private List<ChanBoard> boards;
+    private RecyclerView listView;
 
     private String boardName;
     private String boardTitle;
 
     private PostItemsAdapter postItemsAdapter;
 
-    private boolean isFirstRun;
-
-    private BoardItemClickListener boardItemClickListener;
-    private CatalogItemClickListener postItemClickListener;
     private View loadingLayout;
     private View errorContainer;
-    private View headerContainer;
     private TextView errorText;
 
-    private int totalPages;
     private int currentPage = 1;
-    private boolean twoPane;
-    private boolean rotated = false;
     private int currentPositionY = 0;
 
-    private boolean useCatalog;
-
-    private boolean animating = false;
-
-    private MenuItem bookmarkCountMenu;
-    private int newPostCount = 0;
-
-    private boolean isSearching;
-    private MenuItem searchMenu;
     private SearchView searchView;
-    private View listFooter;
-    private int viewSwitcherChild;
     private PostFragment postFragment;
     private ArrayList<ChanPost> postList = new ArrayList<>();
-    private boolean useFastScroll;
     private int sortType;
     private boolean invertSort;
     private TextView errorRefreshButton;
     private SwipeRefreshLayout listRefreshLayout;
 
     private PostItemsAdapter.ManagerType adapterType;
-    private View footerLoading;
 
-    private int retryCount = 0;
     private Spinner toolbarSpinner;
     private Toolbar toolbar;
-    private AdapterView.OnItemClickListener listItemClickListener;
-    private OnPostItemClickListener clickListener;
-    private ChanConnector chanConnector;
-    private EndlessRecyclerOnScrollListener scrollListener;
+    private PostItemClickListener clickListener;
 
-    private Subscription pageSubscription;
-    private Subscription catalogSubscription;
-    private Subscription boardInfoSubscription;
-    private Subscription pagedResponseSubscription;
-    private Subscription fetchBoardsSubscription;
-    private Subscription fetchHistorySubscription;
-    private Subscription lastAccessSubscription;
+    private Disposable catalogSubscription;
+    private Disposable fetchBoardsSubscription;
+    private Disposable fetchHistorySubscription;
+    private Disposable lastAccessSubscription;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    private Bundle postState;
+    private boolean createNewPostFragment;
+    private Disposable fetchBoardsDisposable;
 
-        setHasOptionsMenu(true);
-        setRetainInstance(false);
-    }
+    private CatalogViewModel viewModel;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
-        isFirstRun = true;
         final View v = inflater.inflate(R.layout.fragment_catalog_list, container, false);
 
-        listRefreshLayout = (SwipeRefreshLayout) v.findViewById(R.id.list_refresh_layout);
-        listView = (MimiRecyclerView) v.findViewById(R.id.catalog_list);
-        errorText = (TextView) v.findViewById(R.id.error_text);
-        errorRefreshButton = (TextView) v.findViewById(R.id.refresh_on_error_button);
+        listRefreshLayout = v.findViewById(R.id.list_refresh_layout);
+        listView = v.findViewById(R.id.catalog_list);
+        errorText = v.findViewById(R.id.error_text);
+        errorRefreshButton = v.findViewById(R.id.refresh_on_error_button);
 
-        listFooter = inflater.inflate(R.layout.list_footer, container, false);
-        footerLoading = listFooter.findViewById(R.id.progressBar);
-        footerLoading.setVisibility(View.INVISIBLE);
-
-        if (MimiUtil.getLayoutType(getActivity()) == LayoutType.TABBED) {
-            headerContainer = inflater.inflate(R.layout.header_layout_catalog, container, false);
-        } else {
-            headerContainer = inflater.inflate(R.layout.header_layout_catalog_tall, container, false);
-        }
         return v;
     }
 
@@ -219,20 +178,17 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        final boolean isHttps = MimiUtil.isSecureConnection(getActivity());
-        chanConnector = new FourChanConnector.Builder()
-                .setCacheDirectory(MimiUtil.getInstance().getCacheDir())
-                .setEndpoint(FourChanConnector.getDefaultEndpoint(isHttps))
-                .setPostEndpoint(FourChanConnector.getDefaultPostEndpoint())
-                .build();
-
+        boolean forceRefresh = false;
         if (savedInstanceState == null) {
             extractExtras(getArguments());
             RxUtil.safeUnsubscribe(lastAccessSubscription);
             lastAccessSubscription = BoardTableConnection.updateLastAccess(boardName)
-                    .compose(DatabaseUtils.<Boolean>applySchedulers())
+                    .compose(DatabaseUtils.applySingleSchedulers())
                     .subscribe();
         } else {
+            String boardNameFromSavedInstance = savedInstanceState.getString(Extras.EXTRAS_BOARD_NAME, "");
+            String boardNameFromArguments = getArguments().getString(Extras.EXTRAS_BOARD_NAME, null);
+            forceRefresh = !boardNameFromSavedInstance.equals(boardNameFromArguments);
             if (savedInstanceState.containsKey(Extras.EXTRAS_BOARD_NAME)
                     && getArguments() != null
                     && getArguments().containsKey(Extras.EXTRAS_BOARD_NAME)
@@ -242,13 +198,23 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 extractExtras(getArguments());
                 RxUtil.safeUnsubscribe(lastAccessSubscription);
                 lastAccessSubscription = BoardTableConnection.updateLastAccess(boardName)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
+                        .compose(DatabaseUtils.applySingleSchedulers())
                         .subscribe();
             }
         }
 
+        ViewModelProvider.Factory factory = new ViewModelProvider.Factory() {
+            @NonNull
+            @Override
+            public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+                return (T) new CatalogViewModel();
+            }
+        };
+        viewModel = ViewModelProviders
+                .of(this, factory)
+                .get(CatalogViewModel.class);
+
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        useFastScroll = preferences.getBoolean(getString(R.string.use_fast_scroll_pref), false);
         sortType = preferences.getInt(SORT_PREF_STRING, SORT_TYPE_DEFAULT);
         invertSort = preferences.getBoolean(INVERT_SORT_PREF_STRING, false);
 
@@ -256,138 +222,66 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         getActivity().getTheme().resolveAttribute(R.attr.actionBarSize, typedValue, true);
         int pixels = getResources().getDimensionPixelSize(typedValue.resourceId);
 
-        listItemClickListener = new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (getActivity() instanceof PostItemListActivity && postItemsAdapter != null) {
-                    final PostItemListActivity mimiActivity = (PostItemListActivity) getActivity();
-                    final int pos = position - 1;
-                    final List<ChanPost> posts = postItemsAdapter.getPosts();
-
-                    if (pos >= 0) {
-                        mimiActivity.openThread(posts, pos, boardName, boardTitle);
-                    }
-                }
-            }
-        };
-
-        if (getActivity() instanceof OnPostItemClickListener) {
-            clickListener = (OnPostItemClickListener) getActivity();
+        if (getActivity() instanceof PostItemClickListener) {
+            clickListener = (PostItemClickListener) getActivity();
         }
 
-        listRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                listRefreshLayout.setRefreshing(true);
-                refreshBoard(false);
-            }
+        listRefreshLayout.setOnRefreshListener(() -> {
+            listRefreshLayout.setRefreshing(true);
+            refreshBoard(false);
         });
 
         listRefreshLayout.setProgressViewOffset(false, pixels, pixels + 170);
-        if (currentPositionY > 0) {
-            listView.post(new Runnable() {
-                @Override
-                public void run() {
-                    listView.scrollTo(0, currentPositionY);
-                }
-            });
-
-        }
 
         final boolean isGrid = preferences.getBoolean(CATALOG_PREF_STRING, false);
+        RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
         if (isGrid) {
-            RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
             if (layoutManager instanceof LinearLayoutManager || layoutManager == null) {
                 layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
                 ((StaggeredGridLayoutManager) layoutManager).setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
+                layoutManager.setItemPrefetchEnabled(false);
                 listView.setLayoutManager(layoutManager);
             }
             adapterType = PostItemsAdapter.ManagerType.STAGGERED_GRID;
         } else {
-            RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
             if (layoutManager instanceof StaggeredGridLayoutManager || layoutManager == null) {
-                layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+                layoutManager = new LinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
                 listView.setLayoutManager(layoutManager);
             }
             adapterType = PostItemsAdapter.ManagerType.LIST;
             listRefreshLayout.setVisibility(View.VISIBLE);
         }
 
+        initAdapter(false);
+
         loadingLayout = view.findViewById(R.id.loading_layout);
         errorContainer = view.findViewById(R.id.error_container);
 
-        errorRefreshButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                refreshBoard(true);
-            }
-        });
+        errorRefreshButton.setOnClickListener(v -> refreshBoard(true));
 
-        if (postList.size() == 0) {
-            if (adapterType == PostItemsAdapter.ManagerType.GRID || adapterType == PostItemsAdapter.ManagerType.STAGGERED_GRID) {
-                useCatalog = true;
-            } else {
-                useCatalog = preferences.getBoolean(getString(R.string.use_catalog_pref), true);
-            }
+        if (savedInstanceState == null || forceRefresh) {
+            CatalogTableConnection.clear()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe();
 
-            if (useCatalog) {
-                fetchCatalog();
 
-                Log.i(LOG_TAG, "Fetching catalog");
-                showLoadingLayout();
-            } else {
+            fetchCatalog(true);
 
-                RxUtil.safeUnsubscribe(boardInfoSubscription);
-                boardInfoSubscription = BoardTableConnection.fetchBoard(boardName)
-                        .compose(DatabaseUtils.<ChanBoard>applySchedulers())
-                        .subscribe(new Action1<ChanBoard>() {
-                            @Override
-                            public void call(ChanBoard chanBoard) {
-                                if (chanBoard != null) {
-                                    totalPages = chanBoard.getPages();
-                                }
+            Log.i(LOG_TAG, "Fetching catalog");
+            showLoadingLayout();
 
-                                if (totalPages == 0) {
-                                    totalPages = 15;
-                                }
 
-                                Log.i(LOG_TAG, "Fetching page: " + currentPage);
-                                fetchPage(currentPage);
-
-                                showLoadingLayout();
-                            }
-                        });
-
-            }
         } else {
-            showContent();
-
-            if (postItemsAdapter == null) {
-                postItemsAdapter = new PostItemsAdapter(getActivity(), boardName, boardTitle, postList, chanConnector, clickListener);
-                postItemsAdapter.setLayoutManager(listView.getLayoutManager());
-                listView.setAdapter(postItemsAdapter);
-
-                postItemsAdapter.addHeader(headerContainer);
-                postItemsAdapter.addFooter(listFooter);
-            }
-        }
-
-        if (getScrollListener(listView) != null) {
-            listView.addOnScrollListener(getScrollListener(listView));
+            Parcelable listState = savedInstanceState.getParcelable(LIST_VIEW_STATE);
+            fetchFromDb(listState);
         }
 
         if (getUserVisibleHint()) {
             initMenu();
+        } else if (toolbarSpinner != null) {
+            toolbarSpinner.setOnItemSelectedListener(null);
         }
-
-        // Restore the previously serialized activated item position.
-        if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(STATE_ACTIVATED_POSITION)) {
-                setActivatedPosition(savedInstanceState.getInt(STATE_ACTIVATED_POSITION));
-            }
-
-        }
-
     }
 
     private void switchToList() {
@@ -402,8 +296,10 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         postItemsAdapter = null;
         RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
         if (layoutManager instanceof StaggeredGridLayoutManager || layoutManager == null) {
-            layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+            layoutManager = new LinearLayoutManager(getActivity(), RecyclerView.VERTICAL, false);
             listView.setLayoutManager(layoutManager);
+
+            initAdapter(true);
 
             refreshBoard(true);
         }
@@ -423,26 +319,43 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
             layoutManager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
             ((StaggeredGridLayoutManager) layoutManager).setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
+            layoutManager.setItemPrefetchEnabled(false);
             listView.setLayoutManager(layoutManager);
+
+            initAdapter(true);
 
             refreshBoard(true);
         }
     }
 
-    private EndlessRecyclerOnScrollListener getScrollListener(RecyclerView recyclerView) {
-        if (scrollListener == null && !useCatalog) {
-            scrollListener = new EndlessRecyclerOnScrollListener(recyclerView.getLayoutManager()) {
-                @Override
-                public void onLoadMore(int currentPage) {
-                    fetchPage(currentPage);
-                }
-            };
+    private void initAdapter(boolean force) {
+        if (BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "Initializing adapter");
         }
 
-        return scrollListener;
+        if (postItemsAdapter == null || force) {
+            postItemsAdapter = new PostItemsAdapter(boardName, boardTitle, postList, clickListener);
+            postItemsAdapter.setLayoutManager(listView.getLayoutManager());
+            listView.setAdapter(postItemsAdapter);
+
+            if (currentPositionY > 0) {
+                RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
+                if (layoutManager instanceof LinearLayoutManager) {
+                    listView.post(() -> layoutManager.scrollToPosition(currentPositionY));
+                } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+                    listView.post(() -> layoutManager.scrollToPosition(currentPositionY));
+                }
+//                listView.post(() -> listView.scrollTo(0, currentPositionY));
+            }
+        }
     }
 
-    private void catalogResponse(final ChanCatalog catalog) {
+    private void catalogResponse(final ChanCatalog catalog, @Nullable final Parcelable listState, final boolean refreshing) {
+        if (catalog == null) {
+            Log.e(LOG_TAG, "Error loading catalog response", new IllegalStateException("Error loading catalog response"));
+            return;
+        }
+
         if (getActivity() != null) {
             listRefreshLayout.setRefreshing(false);
 
@@ -452,38 +365,31 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
                     RxUtil.safeUnsubscribe(fetchHistorySubscription);
                     fetchHistorySubscription = HistoryTableConnection.fetchHistory()
-                            .compose(DatabaseUtils.<List<History>>applySchedulers())
-                            .subscribe(new Action1<List<History>>() {
-                                @Override
-                                public void call(List<History> histories) {
-                                    List<ChanPost> posts = catalog.getPosts();
-                                    for (History history : histories) {
-                                        for (ChanPost post : posts) {
-                                            if (post.getNo() == history.threadId) {
-                                                post.setWatched(history.watched);
-                                            }
+                            .compose(DatabaseUtils.applySingleSchedulers())
+                            .subscribe(histories -> {
+                                List<ChanPost> posts = catalog.getPosts();
+                                for (History history : histories) {
+                                    for (ChanPost post : posts) {
+                                        if (post.getNo() == history.getThreadId()) {
+                                            post.setWatched(history.getWatched());
                                         }
                                     }
-
-                                    postList.addAll(posts);
-
-                                    if (postItemsAdapter == null) {
-                                        postItemsAdapter = new PostItemsAdapter(getActivity(), boardName, boardTitle, postList, chanConnector, clickListener);
-                                        postItemsAdapter.setLayoutManager(listView.getLayoutManager());
-
-                                        postItemsAdapter.addHeader(headerContainer);
-                                        postItemsAdapter.addFooter(listFooter);
-
-                                        listView.setAdapter(postItemsAdapter);
-
-                                    } else {
-                                        postItemsAdapter.setLayoutManager(listView.getLayoutManager());
-                                        postItemsAdapter.setPosts(postList, boardName, boardTitle);
-                                    }
-
-                                    scrollListToTop(listView);
-                                    showContent();
                                 }
+
+                                if (BuildConfig.DEBUG) {
+                                    Log.d(LOG_TAG, "Setting items to the adapter");
+                                }
+
+                                postList.addAll(posts);
+                                postItemsAdapter.setPosts(postList, boardName, boardTitle);
+
+                                if (refreshing) {
+                                    scrollListToTop(listView);
+                                } else if (listState != null) {
+                                    listView.getLayoutManager().onRestoreInstanceState(listState);
+                                }
+
+                                showContent();
                             });
 
 
@@ -496,88 +402,8 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         }
     }
 
-    private void pagedResponse(ChanCatalog catalog) {
-        retryCount = 0;
-
-        if (catalog == null || catalog.getPosts() == null || getActivity() == null) {
-            return;
-        }
-
-        listRefreshLayout.setRefreshing(false);
-
-        RxUtil.safeUnsubscribe(pagedResponseSubscription);
-        pagedResponseSubscription = Observable.just(catalog.getPosts())
-                .subscribeOn(Schedulers.newThread())
-                .zipWith(HistoryTableConnection.fetchHistory(), new Func2<List<ChanPost>, List<History>, List<ChanPost>>() {
-                    @Override
-                    public List<ChanPost> call(List<ChanPost> chanPosts, List<History> histories) {
-                        for (History history : histories) {
-                            for (ChanPost post : chanPosts) {
-                                if (post.getNo() == history.threadId) {
-                                    post.setWatched(history.watched);
-                                }
-                            }
-                        }
-                        return chanPosts;
-                    }
-                })
-                .map(new Func1<List<ChanPost>, List<ChanPost>>() {
-                    @Override
-                    public List<ChanPost> call(List<ChanPost> chanPosts) {
-
-                        final LinkedHashSet<ChanPost> postSet = new LinkedHashSet<>(postList);
-                        for (ChanPost post : chanPosts) {
-                            postSet.add(post);
-                        }
-
-                        return new ArrayList<>(postSet);
-                    }
-                })
-                .unsubscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .compose(DatabaseUtils.<List<ChanPost>>applySchedulers())
-                .subscribe(new Action1<List<ChanPost>>() {
-                    @Override
-                    public void call(List<ChanPost> chanPosts) {
-                        postList.clear();
-                        postList.addAll(chanPosts);
-
-                        if (postItemsAdapter == null) {
-                            postItemsAdapter = new PostItemsAdapter(getActivity(), boardName, boardTitle, postList, chanConnector, clickListener);
-                            postItemsAdapter.setLayoutManager(listView.getLayoutManager());
-
-                            listView.setAdapter(postItemsAdapter);
-
-                            postItemsAdapter.addHeader(headerContainer);
-                            postItemsAdapter.addFooter(listFooter);
-
-                            scrollListToTop(listView);
-                        } else {
-                            postItemsAdapter.addPosts(postList);
-
-                            if (currentPage == 1) {
-                                scrollListToTop(listView);
-                            }
-
-                        }
-
-                        if (twoPane && currentPage == 1) {
-                            postItemClickListener.onPostItemClick(postItemsAdapter.getPosts(), 0, boardName, boardTitle);
-                        }
-
-                        showContent();
-
-                    }
-                });
-    }
-
     private void scrollListToTop(final RecyclerView recyclerView) {
-        recyclerView.post(new Runnable() {
-            @Override
-            public void run() {
-                recyclerView.scrollToPosition(0);
-            }
-        });
+        recyclerView.post(() -> recyclerView.scrollToPosition(0));
     }
 
     @Override
@@ -603,41 +429,18 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             return;
         }
 
+        CatalogTableConnection.clear()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe();
+
         if (showLoading) {
             showLoadingLayout();
         }
 
-        if (getScrollListener(listView) != null) {
-            getScrollListener(listView).reset();
-        }
-
         currentPage = 1;
-        if (postList != null) {
-            postList.clear();
 
-            if (postItemsAdapter != null) {
-                postItemsAdapter.clear();
-            }
-        }
-
-        if (adapterType == PostItemsAdapter.ManagerType.GRID || adapterType == PostItemsAdapter.ManagerType.STAGGERED_GRID) {
-            useCatalog = true;
-        } else {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-            useCatalog = preferences.getBoolean(getString(R.string.use_catalog_pref), true);
-        }
-
-        if (useCatalog) {
-            fetchCatalog();
-        } else {
-            fetchPage(currentPage);
-        }
-
-    }
-
-    public void setUnreadCount(final int count) {
-        newPostCount = count;
-        getActivity().supportInvalidateOptionsMenu();
+        fetchCatalog(true);
     }
 
     private void extractExtras(final Bundle bundle) {
@@ -647,24 +450,12 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         if (bundle.containsKey(Extras.EXTRAS_BOARD_TITLE)) {
             boardTitle = bundle.getString(Extras.EXTRAS_BOARD_TITLE);
         }
-        if (bundle.containsKey(Extras.EXTRAS_TWOPANE)) {
-            twoPane = bundle.getBoolean(Extras.EXTRAS_TWOPANE);
-        }
         if (bundle.containsKey(Extras.EXTRAS_PAGE)) {
             currentPage = bundle.getInt(Extras.EXTRAS_PAGE);
-        }
-        if (bundle.containsKey(STATE_ACTIVATED_POSITION)) {
-            mActivatedPosition = bundle.getInt(STATE_ACTIVATED_POSITION);
         }
         if (bundle.containsKey(Extras.EXTRAS_POSITION)) {
             currentPositionY = bundle.getInt(Extras.EXTRAS_POSITION);
             Log.i(LOG_TAG, "scroll position=" + currentPositionY);
-        }
-        if (bundle.containsKey(Extras.EXTRAS_CATALOG)) {
-            useCatalog = bundle.getBoolean(Extras.EXTRAS_CATALOG);
-        }
-        if (bundle.containsKey("rotated")) {
-            rotated = bundle.getBoolean("rotated");
         }
         if (bundle.containsKey(Extras.EXTRAS_POST_LIST)) {
             bundle.setClassLoader(ChanPost.class.getClassLoader());
@@ -689,19 +480,16 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             for (int i = 0; i < posts.size(); i++) {
 
                 if (posts.get(i).getCom() != null) {
-                    final List<Integer> userPosts = ThreadRegistry.getInstance().getUserPosts(boardName, posts.get(i).getResto());
                     parserBuilder.setComment(posts.get(i).getCom())
                             .setThreadId(posts.get(i).getResto())
-                            .setReplies(posts.get(i).getRepliesTo())
-                            .setUserPostIds(userPosts);
+                            .setReplies(posts.get(i).getRepliesTo());
 
                     posts.get(i).setComment(parserBuilder.build().parse());
                 }
 
                 if (posts.get(i).getName() != null) {
-                    final Spannable nameSpan = FourChanUtil.getUserName(getActivity(), posts.get(i).getName(), posts.get(i).getCapcode());
-                    posts.get(i)
-                            .setDisplayedName(nameSpan);
+                    final CharSequence nameSpan = FourChanUtil.getUserName(getResources(), posts.get(i).getName(), posts.get(i).getCapcode());
+                    posts.get(i).setDisplayedName(nameSpan);
                 }
 
                 if (posts.get(i).getSub() != null) {
@@ -714,116 +502,137 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         return catalog;
     }
 
-    private void fetchPage(final int page) {
-
-        if (getScrollListener(listView) != null) {
-            getScrollListener(listView).lock();
-        }
-
-        if (page <= totalPages) {
-
-            final Handler handler = new Handler();
-
-            currentPage = page;
-
-            RxUtil.safeUnsubscribe(pageSubscription);
-            pageSubscription = chanConnector.fetchPage(getActivity(), page, boardName, boardTitle)
-                    .map(new Func1<ChanCatalog, ChanCatalog>() {
-                        @Override
-                        public ChanCatalog call(ChanCatalog catalog) {
-                            if (catalog != null) {
-                                return processCatalog(catalog);
-                            }
-
-                            return null;
-                        }
-                    })
-                    .compose(DatabaseUtils.<ChanCatalog>applySchedulers())
-                    .subscribe(new Action1<ChanCatalog>() {
-                        @Override
-                        public void call(ChanCatalog catalog) {
-
-                            if (catalog != null) {
-                                pagedResponse(catalog);
-                                Log.e(LOG_TAG, "Loading page: number=" + page);
-                            }
-
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (getScrollListener(listView) != null) {
-                                        getScrollListener(listView).unlock();
-                                    }
-                                }
-                            }, 100);
-                        }
-                    }, new Action1<Throwable>() {
-                        @Override
-                        public void call(Throwable throwable) {
-                            Log.e(LOG_TAG, "Error fetching page: number=" + page, throwable);
-                            if (getScrollListener(listView) != null) {
-                                getScrollListener(listView).unlock();
-                            }
-                            showError(getString(R.string.error_loading_board));
-
-                            if (getUserVisibleHint()) {
-                                BusProvider.getInstance().post(new FABVisibilityEvent(false));
-                            }
-                        }
-                    });
-        } else {
-            Log.i(LOG_TAG, "Reached the last page: " + totalPages);
-            showContent();
-
-            if (getScrollListener(listView) != null) {
-                getScrollListener(listView).unlock();
-            }
-        }
-
-    }
-
-    private void fetchCatalog() {
+    private void fetchFromDb(final Parcelable listState) {
         RxUtil.safeUnsubscribe(catalogSubscription);
-        catalogSubscription = chanConnector.fetchCatalog(getActivity(), boardName, boardTitle)
-                .flatMap(sortPosts())
-                .map(new Func1<ChanCatalog, ChanCatalog>() {
-                    @Override
-                    public ChanCatalog call(ChanCatalog catalog) {
-                        if (catalog != null) {
-                            return processCatalog(catalog);
-                        }
+        catalogSubscription = CatalogTableConnection.fetchPosts()
+                .map(CatalogTableConnection.convertDbPostsToChanPosts())
+                .flatMap((Function<List<ChanPost>, Single<ChanCatalog>>) posts -> {
+                    ChanCatalog catalog = new ChanCatalog();
+                    catalog.setBoardName(boardName);
+                    catalog.setPosts(posts == null ? new ArrayList<>() : posts);
 
-                        return null;
+                    final FragmentManager fm = getChildFragmentManager();
+                    postFragment = (PostFragment) fm.findFragmentByTag(POST_FRAGMENT_TAG);
+                    if (postFragment != null) {
+                        postFragment.setPostListener(createPostCompleteListener());
                     }
+
+                    return Single.just(catalog);
                 })
-                .compose(DatabaseUtils.<ChanCatalog>applySchedulers())
-                .subscribe(new Action1<ChanCatalog>() {
-                    @Override
-                    public void call(ChanCatalog catalog) {
-                        if (catalog != null) {
-                            catalogResponse(catalog);
-                        }
+                .flatMap(sortPosts())
+                .map(chanCatalog -> processCatalog(chanCatalog))
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(chanCatalog -> {
+                    if (chanCatalog.getPosts().size() > 0) {
+                        catalogResponse(chanCatalog, listState, false);
+                    } else {
+                        refreshBoard(true);
                     }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        showError(getString(R.string.error_loading_board));
-                        Log.e(LOG_TAG, "Error fetching catalog", throwable);
-                    }
+                }, throwable -> {
+                    Log.w(LOG_TAG, "Error fetching boards from the database", throwable);
+                    showError(throwable.getLocalizedMessage());
                 });
     }
 
-    private Func1<ChanCatalog, Observable<ChanCatalog>> sortPosts() {
-        return new Func1<ChanCatalog, Observable<ChanCatalog>>() {
-            @Override
-            public Observable<ChanCatalog> call(ChanCatalog chanCatalog) {
-                if (chanCatalog != null) {
-                    List<ChanPost> posts = chanCatalog.getPosts();
-                    chanCatalog.setPosts(sortPosts(posts, sortType, invertSort));
+    private void fetchCatalog(final boolean refreshing) {
+        RxUtil.safeUnsubscribe(catalogSubscription);
+        Log.w(LOG_TAG, viewModel == null ? "Viewmodel is null" : "Viewmodel is not null");
+        catalogSubscription = Single.zip(
+                viewModel.fetchCatalog(boardName),
+                HiddenThreadTableConnection.fetchHiddenThreads(boardName),
+                FilterTableConnection.fetchFiltersByBoard(boardName),
+                hideThreads())
+                .map(catalog -> {
+                    if (catalog != null) {
+                        Log.d(LOG_TAG, "Processing catalog");
+                        return processCatalog(catalog);
+                    }
+                    Log.d(LOG_TAG, "No catalog to process");
+                    return new ChanCatalog();
+                })
+                .map(chanCatalog -> {
+                    Log.d(LOG_TAG, "Putting catalog into database");
+                    CatalogTableConnection.putPosts(chanCatalog).subscribe();
+                    return chanCatalog;
+                })
+                .flatMap(sortPosts())
+                .compose(DatabaseUtils.applySingleSchedulers())
+                .subscribe(catalog -> {
+                    Log.d(LOG_TAG, "Finished fetching catalog");
+                    if (catalog.getPosts().size() > 0) {
+                        catalogResponse(catalog, null, refreshing);
+                    } else {
+                        throw new Exception("Catalog response is empty");
+                    }
+                }, throwable -> {
+                    showError(getString(R.string.error_loading_board));
+                    Log.e(LOG_TAG, "Error fetching catalog", throwable);
+                });
+    }
+
+    private Function3<ChanCatalog, List<HiddenThread>, List<Filter>, ChanCatalog> hideThreads() {
+        return (chanCatalog, hiddenThreads, filters) -> {
+            if (chanCatalog != null) {
+                List<ChanPost> posts = new ArrayList<>();
+                for (ChanPost post : chanCatalog.getPosts()) {
+                    boolean found = false;
+                    for (HiddenThread hiddenThread : hiddenThreads) {
+                        if (hiddenThread.getThreadId() == post.getNo()) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (filters != null && filters.size() > 0 && !found) {
+                        for (Filter filter : filters) {
+                            if (found) {
+                                break;
+                            }
+
+                            Pattern filterPattern = Pattern.compile(filter.getFilter(), Pattern.CASE_INSENSITIVE);
+
+                            Matcher matcher;
+                            if (post.getCom() != null) {
+                                matcher = filterPattern.matcher(post.getCom());
+                                found = matcher.find();
+                            }
+
+                            if (post.getSub() != null && !found) {
+                                matcher = filterPattern.matcher(post.getSub());
+                                found = matcher.find();
+                            }
+
+                            if (post.getName() != null && !found) {
+                                matcher = filterPattern.matcher(post.getName());
+                                found = matcher.find();
+                            }
+                        }
+                    }
+
+                    if (!found) {
+                        posts.add(post);
+                    }
                 }
 
-                return Observable.just(chanCatalog);
+                chanCatalog.setPosts(posts);
+
             }
+            return chanCatalog;
+        };
+    }
+
+    private Function<ChanCatalog, Flowable<ChanCatalog>> hidePosts() {
+        return chanCatalog -> null;
+    }
+
+    private Function<ChanCatalog, Single<ChanCatalog>> sortPosts() {
+        return chanCatalog -> {
+            if (chanCatalog != null) {
+                List<ChanPost> posts = chanCatalog.getPosts();
+                chanCatalog.setPosts(sortPosts(posts, sortType, invertSort));
+            }
+
+            return Single.just(chanCatalog);
         };
     }
 
@@ -842,7 +651,7 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         }
 
         if (invert) {
-            return Lists.reverse(updatedPostList);
+            Collections.reverse(updatedPostList);
         }
 
         return updatedPostList;
@@ -859,9 +668,18 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     }
 
     private void showContent() {
+
         if (getActivity() == null) {
+            if (BuildConfig.DEBUG) {
+                Log.d(LOG_TAG, "Not showing content because activity is null");
+            }
             return;
         }
+
+        if (BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "Showing content");
+        }
+
         listRefreshLayout.setRefreshing(false);
         listRefreshLayout.setVisibility(View.VISIBLE);
 
@@ -876,6 +694,10 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     }
 
     private void showError(final String msg) {
+        if (getActivity() == null) {
+            return;
+        }
+
         if (loadingLayout != null) {
             loadingLayout.setVisibility(View.GONE);
         }
@@ -890,126 +712,175 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     }
 
     @Override
+    public int getMenuRes() {
+        return R.menu.post_list;
+    }
+
+    @Override
     public void initMenu() {
         super.initMenu();
 
         setupActionBar(true);
+        if (getActivity() != null) {
+            getActivity().invalidateOptionsMenu();
+        }
     }
 
     private void setupActionBar(final boolean fullSetup) {
         if (getActivity() != null && ((MimiActivity) getActivity()).getToolbar() != null) {
-            toolbar = ((MimiActivity) getActivity()).getToolbar();
+            MimiActivity activity = (MimiActivity) getActivity();
+            toolbar = activity.getToolbar();
             toolbar.getMenu().clear();
-            toolbar.setSubtitle(null);
-            toolbar.inflateMenu(R.menu.post_list);
-            toolbar.setOnMenuItemClickListener(this);
+            activity.getSupportActionBar().setSubtitle(null);
 
             if (toolbarSpinner == null) {
                 toolbarSpinner = (Spinner) toolbar.findViewById(R.id.board_spinner);
                 toolbarSpinner.setOnItemSelectedListener(this);
 
-                if (boards != null) {
-                    int boardPos = -1;
-                    for (int i = 0; i < boards.size(); i++) {
-                        if (boards.get(i).getName().equals(boardName)) {
-                            boardPos = i;
-                        }
-                    }
+                if (toolbarSpinner != null) {
+                    RxUtil.safeUnsubscribe(fetchBoardsDisposable);
+                    fetchBoardsDisposable = BoardTableConnection.fetchBoards(MimiUtil.getBoardOrder())
+                            .compose(DatabaseUtils.applySingleSchedulers())
+                            .subscribe(boards -> {
+                                if (boards != null) {
+                                    int boardPos = -1;
+                                    for (int i = 0; i < boards.size(); i++) {
+                                        if (boards.get(i).getName().equals(boardName)) {
+                                            boardPos = i;
+                                        }
+                                    }
 
-                    isFirstRun = true;
-                    toolbarSpinner.setSelection(boardPos);
+                                    if (toolbarSpinner != null) {
+                                        toolbarSpinner.setSelection(boardPos);
+                                    }
+                                }
+                            }, throwable -> Log.e(LOG_TAG, "Error fetching boards"));
+
                 }
             }
 
             if (toolbarSpinner != null && MimiUtil.getLayoutType(getActivity()) != LayoutType.TABBED) {
-                toolbar.setTitle(null);
+                activity.getSupportActionBar().setTitle(null);
                 toolbarSpinner.setVisibility(View.VISIBLE);
             } else {
-                toolbar.setTitle(boardTitle);
+                activity.getSupportActionBar().setTitle(boardTitle);
 
                 if (toolbarSpinner != null) {
                     toolbarSpinner.setVisibility(View.GONE);
                 }
             }
 
-            toolbar.setSubtitle(null);
+            activity.getSupportActionBar().setSubtitle(null);
 
-            final MenuItem searchItem = toolbar.getMenu().findItem(R.id.search_menu);
-            setupSearchMenu(searchItem);
+            if (fullSetup) {
+                final int boardOrder = MimiUtil.getBoardOrder();
 
-            final MenuItem catalogItem = toolbar.getMenu().findItem(R.id.catalog_menu);
-            final MenuItem listItem = toolbar.getMenu().findItem(R.id.list_menu);
-            setupListType(catalogItem, listItem);
+                RxUtil.safeUnsubscribe(fetchBoardsSubscription);
+                fetchBoardsSubscription = BoardTableConnection.fetchBoards(boardOrder)
+                        .flatMap((Function<List<com.emogoth.android.phone.mimi.db.models.Board>, Single<List<ChanBoard>>>) boards -> Single.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards)))
+                        .compose(DatabaseUtils.applySingleSchedulers())
+                        .subscribe(this::initSpinner);
+            }
+        }
+    }
 
-            final MenuItem invertSortItem = toolbar.getMenu().findItem(R.id.invert_sort_menu);
-            invertSortItem.setChecked(invertSort);
-            invertSortItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    if (getActivity() == null) {
-                        return false;
-                    }
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
 
-                    invertSort = !invertSort;
-                    invertSortItem.setChecked(invertSort);
+        inflater.inflate(getMenuRes(), menu);
 
-                    PreferenceManager.getDefaultSharedPreferences(getActivity())
-                            .edit()
-                            .putBoolean(INVERT_SORT_PREF_STRING, invertSort)
-                            .apply();
+        final MenuItem catalogItem = menu.findItem(R.id.catalog_menu);
+        final MenuItem listItem = menu.findItem(R.id.list_menu);
+        setupListType(catalogItem, listItem);
 
-                    if (postItemsAdapter != null) {
-                        postList = new ArrayList<>(Lists.reverse(postItemsAdapter.getPosts()));
-                        postItemsAdapter.setPosts(postList, boardName, boardTitle);
-                        listView.smoothScrollToPosition(0);
-                    }
+        final MenuItem invertSortItem = menu.findItem(R.id.invert_sort_menu);
+        invertSortItem.setChecked(invertSort);
+
+        final MenuItem searchItem = menu.findItem(R.id.search_menu);
+        setupSearchMenu(searchItem);
+
+        final MenuItem sortMenu = menu.findItem(R.id.sort_menu);
+        final MenuItem[] sortMenuItems = new MenuItem[4];
+        sortMenuItems[SORT_TYPE_DEFAULT] = menu.findItem(R.id.sort_default);
+        sortMenuItems[SORT_TYPE_THREAD_ID] = menu.findItem(R.id.sort_time);
+        sortMenuItems[SORT_TYPE_IMAGE_COUNT] = menu.findItem(R.id.sort_image_count);
+        sortMenuItems[SORT_TYPE_REPLY_COUNT] = menu.findItem(R.id.sort_reply_count);
+
+        setupSortType(sortMenuItems);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+
+            case R.id.refresh_menu:
+                refreshBoard(true);
+                break;
+
+            case R.id.catalog_menu:
+                if (!item.isChecked()) {
+                    item.setChecked(true);
+                    switchToGrid();
+                }
+                break;
+            case R.id.list_menu:
+                if (!item.isChecked()) {
+                    item.setChecked(true);
+                    switchToList();
+                }
+                break;
+            case R.id.invert_sort_menu:
+                if (getActivity() == null) {
+                    return false;
+                }
+
+                invertSort = !invertSort;
+                item.setChecked(invertSort);
+
+                PreferenceManager.getDefaultSharedPreferences(getActivity())
+                        .edit()
+                        .putBoolean(INVERT_SORT_PREF_STRING, invertSort)
+                        .apply();
+
+                if (postItemsAdapter != null) {
+                    postList = new ArrayList<>(postItemsAdapter.getPosts());
+                    Collections.reverse(postList);
+                    postItemsAdapter.setPosts(postList, boardName, boardTitle);
+                    listView.smoothScrollToPosition(0);
+                }
+                break;
+            case R.id.filter_menu:
+                if (getActivity() != null) {
+                    FilterDialog dialog = new FilterDialog(getContext(), boardName, null, new FilterView.ButtonClickListener() {
+                        @Override
+                        public void onSaveClicked(View v) {
+                            Log.d(LOG_TAG, "OK clicked");
+                        }
+
+                        @Override
+                        public void onEditClicked(View v) {
+                            Log.d(LOG_TAG, "Edit clicked");
+                            EditFiltersActivity.start(getActivity(), boardName);
+                        }
+
+                        @Override
+                        public void onCancelClicked(View v) {
+                            Log.d(LOG_TAG, "Cancel clicked");
+                        }
+                    });
+
+                    dialog.show();
+                    dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
                     return true;
                 }
-            });
-
-            final MenuItem sortMenu = toolbar.getMenu().findItem(R.id.sort_menu);
-            final MenuItem[] sortMenuItems = new MenuItem[4];
-            sortMenuItems[SORT_TYPE_DEFAULT] = toolbar.getMenu().findItem(R.id.sort_default);
-            sortMenuItems[SORT_TYPE_THREAD_ID] = toolbar.getMenu().findItem(R.id.sort_time);
-            sortMenuItems[SORT_TYPE_IMAGE_COUNT] = toolbar.getMenu().findItem(R.id.sort_image_count);
-            sortMenuItems[SORT_TYPE_REPLY_COUNT] = toolbar.getMenu().findItem(R.id.sort_reply_count);
-
-            if (useCatalog) {
-                setupSortType(sortMenuItems);
-            } else {
-                sortMenu.setVisible(false);
-                invertSortItem.setVisible(false);
-            }
-
-            if (fullSetup) {
-                if (boards == null) {
-                    final boolean showAllBoards = PreferenceManager
-                            .getDefaultSharedPreferences(getActivity())
-                            .getBoolean(getString(R.string.show_all_boards), false);
-                    final int boardOrder = MimiUtil.getBoardOrder(getActivity());
-
-                    RxUtil.safeUnsubscribe(fetchBoardsSubscription);
-                    fetchBoardsSubscription = BoardTableConnection.fetchBoards(boardOrder)
-                            .flatMap(new Func1<List<Board>, Observable<List<ChanBoard>>>() {
-                                @Override
-                                public Observable<List<ChanBoard>> call(List<Board> boards) {
-                                    return Observable.just(BoardTableConnection.convertBoardDbModelsToChanBoards(boards));
-                                }
-                            })
-                            .compose(DatabaseUtils.<List<ChanBoard>>applySchedulers())
-                            .subscribe(new Action1<List<ChanBoard>>() {
-                                @Override
-                                public void call(List<ChanBoard> chanBoards) {
-                                    boards = chanBoards;
-                                    initSpinner();
-                                }
-                            });
-                } else {
-                    initSpinner();
-                }
-            }
+                break;
+            default:
+                break;
         }
+
+        return true;
     }
 
     private void setupSortType(final MenuItem[] sortItems) {
@@ -1019,33 +890,30 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         sortItems[sortType].setChecked(true);
         for (int i = 0; i < sortItems.length; i++) {
             final int type = i;
-            sortItems[i].setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    if (getActivity() != null && type != sortType) {
-                        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                        sortType = type;
+            sortItems[i].setOnMenuItemClickListener(item -> {
+                if (getActivity() != null && type != sortType) {
+                    final SharedPreferences preferences1 = PreferenceManager.getDefaultSharedPreferences(getActivity());
+                    sortType = type;
 
-                        preferences.edit().putInt(SORT_PREF_STRING, sortType).apply();
-                        item.setChecked(true);
+                    preferences1.edit().putInt(SORT_PREF_STRING, sortType).apply();
+                    item.setChecked(true);
 
-                        if (sortType != SORT_TYPE_DEFAULT) {
-                            if (postItemsAdapter != null) {
-                                postItemsAdapter.setPosts(sortPosts(postItemsAdapter.getPosts(), sortType, invertSort), boardName, boardTitle);
-                                listView.smoothScrollToPosition(0);
-                            }
-                        } else {
-                            showLoadingLayout();
-                            fetchCatalog();
+                    if (sortType != SORT_TYPE_DEFAULT) {
+                        if (postItemsAdapter != null) {
+                            postItemsAdapter.setPosts(sortPosts(postItemsAdapter.getPosts(), sortType, invertSort), boardName, boardTitle);
+                            listView.smoothScrollToPosition(0);
                         }
+                    } else {
+                        showLoadingLayout();
+                        fetchCatalog(true);
                     }
-                    return true;
                 }
+                return true;
             });
         }
     }
 
-    private void initSpinner() {
+    private void initSpinner(List<ChanBoard> boards) {
         if (toolbarSpinner.getAdapter() == null) {
             int boardPos = -1;
             for (int i = 0; i < boards.size(); i++) {
@@ -1072,11 +940,9 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 @Override
                 public boolean onQueryTextSubmit(String s) {
                     if (TextUtils.isEmpty(s)) {
-                        isSearching = false;
                         listRefreshLayout.setEnabled(true);
 
                     } else {
-                        isSearching = true;
                         listRefreshLayout.setEnabled(false);
                     }
 
@@ -1090,10 +956,8 @@ public class PostItemsListFragment extends MimiFragmentBase implements
                 @Override
                 public boolean onQueryTextChange(String s) {
                     if (TextUtils.isEmpty(s)) {
-                        isSearching = false;
                         listRefreshLayout.setEnabled(true);
                     } else {
-                        isSearching = true;
                         listRefreshLayout.setEnabled(false);
                     }
 
@@ -1116,39 +980,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         } else {
             listItem.setChecked(true);
         }
-
-        catalogItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                if (!item.isChecked()) {
-                    item.setChecked(true);
-                    switchToGrid();
-                }
-                return true;
-            }
-        });
-
-        listItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                if (!item.isChecked()) {
-                    item.setChecked(true);
-                    switchToList();
-                }
-                return true;
-            }
-        });
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-
-        if (context instanceof BoardItemClickListener) {
-            boardItemClickListener = (BoardItemClickListener) context;
-        } else {
-            throw new IllegalStateException("Activity must inherit BoardItemClickListener");
-        }
     }
 
     @Override
@@ -1156,67 +987,84 @@ public class PostItemsListFragment extends MimiFragmentBase implements
         super.onPause();
 
         RxUtil.safeUnsubscribe(catalogSubscription);
-        RxUtil.safeUnsubscribe(pageSubscription);
-        RxUtil.safeUnsubscribe(boardInfoSubscription);
-        RxUtil.safeUnsubscribe(pagedResponseSubscription);
         RxUtil.safeUnsubscribe(fetchBoardsSubscription);
         RxUtil.safeUnsubscribe(fetchHistorySubscription);
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onDestroy() {
+        super.onDestroy();
+
+        if (postItemsAdapter != null) {
+            postItemsAdapter.destroy();
+            postItemsAdapter = null;
+        }
+
+        if (toolbarSpinner != null) {
+            toolbarSpinner = null;
+        }
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (mActivatedPosition != ListView.INVALID_POSITION) {
-            // Serialize and persist the activated item position.
-            outState.putInt(STATE_ACTIVATED_POSITION, mActivatedPosition);
-        }
 
         if (listView != null) {
-            outState.putInt(Extras.EXTRAS_POSITION, listView.getScrollY());
+            RecyclerView.LayoutManager layoutManager = listView.getLayoutManager();
+            final int position;
+            if (layoutManager instanceof LinearLayoutManager) {
+                position = ((LinearLayoutManager) layoutManager).findFirstCompletelyVisibleItemPosition();
+            } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+                int [] pos = null;
+                ((StaggeredGridLayoutManager) layoutManager).findFirstCompletelyVisibleItemPositions(pos);
+                position = 0;
+            } else {
+                position = 0;
+
+            }
+            outState.putInt(Extras.EXTRAS_POSITION, position);
+
+            if (listView.getLayoutManager() != null) {
+                outState.putParcelable(LIST_VIEW_STATE, listView.getLayoutManager().onSaveInstanceState());
+            }
         }
         outState.putString(Extras.EXTRAS_BOARD_NAME, boardName);
         outState.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
         outState.putInt(Extras.EXTRAS_PAGE, currentPage);
-        outState.putParcelableArrayList(Extras.EXTRAS_POST_LIST, postList);
-        outState.putBoolean(Extras.EXTRAS_CATALOG, useCatalog);
 
         outState.putBoolean("rotated", true);
     }
 
-    /**
-     * Turns on activate-on-click mode. When this mode is on, list items will be
-     * given the 'activated' state when touched.
-     */
-    public void setActivateOnItemClick(final boolean activateOnItemClick) {
-        // When setting CHOICE_MODE_SINGLE, ListView will automatically
-        // give items the 'activated' state when touched.
-
-        this.activateOnItemClick = activateOnItemClick;
-
-    }
-
     private void showPostForm() {
-        listView.smoothScrollBy(0, 0);
+        if (getActivity() == null || !isAdded()) {
+            return;
+        }
 
-        final FragmentManager fm = getChildFragmentManager();
-        postFragment = (PostFragment) fm.findFragmentByTag(POST_FRAGMENT_TAG);
-        if (postFragment == null) {
-            final Bundle args = new Bundle();
-            args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
-            args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
-            args.putBoolean(Extras.EXTRAS_POST_NEW, true);
+        try {
+
+            listView.smoothScrollBy(0, 0);
+
+            final FragmentManager fm = getChildFragmentManager();
+            final Bundle args;
+            if (postState == null || createNewPostFragment) {
+                createNewPostFragment = false;
+
+                args = new Bundle();
+                args.putString(Extras.EXTRAS_BOARD_NAME, boardName);
+                args.putString(Extras.EXTRAS_BOARD_TITLE, boardTitle);
+                args.putBoolean(Extras.EXTRAS_POST_NEW, true);
+            } else {
+                args = new Bundle(postState);
+            }
 
             postFragment = new PostFragment();
             postFragment.setPostListener(createPostCompleteListener());
             postFragment.setArguments(args);
-        }
 
-        postFragment.show(fm, POST_FRAGMENT_TAG);
+            postFragment.show(fm, POST_FRAGMENT_TAG);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Caught error while showing post form", e);
+        }
     }
 
     private PostFragment.PostListener createPostCompleteListener() {
@@ -1231,39 +1079,13 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
             @Override
             public void onSuccess(final String postId) {
-                Log.i(LOG_TAG, "Post ID: " + postId);
-                showPostStatus(getString(R.string.success));
-
-                final int id = Integer.valueOf(postId);
-
-//                RefreshScheduler.getInstance().addThread(boardName, id);
-                ThreadRegistry.getInstance().add(boardName, id, 1, true);
-
-                ThreadRegistry.getInstance().addUserPost(boardName, id, id);
-                UserPostTableConnection.addPost(boardName, id, id)
-                        .compose(DatabaseUtils.<Boolean>applySchedulers())
-                        .subscribe(new Action1<Boolean>() {
-                            @Override
-                            public void call(Boolean success) {
-                                if (success) {
-                                    Log.d(LOG_TAG, "Added post to database: board=" + boardName + ", thread=" + id + ", post=" + postId);
-                                } else {
-                                    Log.e(LOG_TAG, "Error Adding post to database: board=" + boardName + ", thread=" + id + ", post=" + postId);
-                                }
-                            }
-                        });
-
-                postFragment = null;
-
-                final Handler handler = new Handler();
-                final Runnable statusRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        showReplyText();
-                    }
-                };
-
-                handler.postDelayed(statusRunnable, 200);
+                try {
+                    Log.i(LOG_TAG, "Post ID: " + postId);
+                    showPostStatus(getString(R.string.success));
+                    postFragment = null;
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Error creating a new post", e);
+                }
 
             }
 
@@ -1274,12 +1096,21 @@ public class PostItemsListFragment extends MimiFragmentBase implements
             }
 
             @Override
+            public void onDismiss() {
+                if (postFragment != null) {
+                    postState = postFragment.saveState();
+                }
+            }
+
+            @Override
             public void onCanceled() {
                 final FragmentTransaction fm = getChildFragmentManager().beginTransaction();
                 if (postFragment != null) {
                     postFragment.dismiss();
                     fm.remove(postFragment).commit();
                     postFragment = null;
+
+                    createNewPostFragment = true;
                 }
             }
         };
@@ -1292,22 +1123,6 @@ public class PostItemsListFragment extends MimiFragmentBase implements
     private void showPostStatus(final String status) {
         Snackbar.make(listRefreshLayout, status, Snackbar.LENGTH_SHORT).show();
 
-    }
-
-    public void showReplyText() {
-
-    }
-
-    private void setActivatedPosition(int position) {
-        mActivatedPosition = position;
-    }
-
-    public void setBoards(final List<ChanBoard> boards) {
-        this.boards = boards;
-    }
-
-    public void setOnBoardItemClickListener(final BoardItemClickListener listener) {
-        boardItemClickListener = listener;
     }
 
     @Override
@@ -1343,28 +1158,18 @@ public class PostItemsListFragment extends MimiFragmentBase implements
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        ChanBoard b = boards.get(position);
-        boardName = b.getName();
-        boardTitle = b.getTitle();
+        if (parent.getCount() > position) {
+            ChanBoard b = (ChanBoard) parent.getItemAtPosition(position);
+            boardName = b.getName();
+            boardTitle = b.getTitle();
 
-        refreshBoard(true);
+            refreshBoard(true);
+        }
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
-    }
-
-    @Override
-    public boolean onMenuItemClick(MenuItem item) {
-        switch (item.getItemId()) {
-
-            case R.id.refresh_menu:
-                refreshBoard(true);
-                return true;
-
-        }
-        return false;
     }
 
     @Override

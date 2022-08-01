@@ -17,16 +17,12 @@
 package com.mimireader.chanlib.models;
 
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChanCatalog implements Parcelable {
+public class ChanCatalog {
 
     private String boardName;
-    private String boardTitle;
     private List<ChanPost> posts;
 
     public ChanCatalog() {
@@ -41,14 +37,6 @@ public class ChanCatalog implements Parcelable {
         this.boardName = boardName;
     }
 
-    public String getBoardTitle() {
-        return boardTitle;
-    }
-
-    public void setBoardTitle(String boardTitle) {
-        this.boardTitle = boardTitle;
-    }
-
     public List<ChanPost> getPosts() {
         return posts;
     }
@@ -60,32 +48,4 @@ public class ChanCatalog implements Parcelable {
     public void addPosts(List<ChanPost> posts) {
         this.posts.addAll(posts);
     }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(this.boardName);
-        dest.writeString(this.boardTitle);
-        dest.writeTypedList(posts);
-    }
-
-    protected ChanCatalog(Parcel in) {
-        this.boardName = in.readString();
-        this.boardTitle = in.readString();
-        this.posts = in.createTypedArrayList(ChanPost.CREATOR);
-    }
-
-    public static final Parcelable.Creator<ChanCatalog> CREATOR = new Parcelable.Creator<ChanCatalog>() {
-        public ChanCatalog createFromParcel(Parcel source) {
-            return new ChanCatalog(source);
-        }
-
-        public ChanCatalog[] newArray(int size) {
-            return new ChanCatalog[size];
-        }
-    };
 }
